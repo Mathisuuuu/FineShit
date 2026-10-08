@@ -1,0 +1,9 @@
+# Copier ce fichier en  Documents\NinjaTrader 8\Nexus\keys.txt  (NE JAMAIS le partager ni le versionner).
+# Une cle par ligne, NOM=valeur. Les proprietes "cle API" laissees vides dans les strategies lisent
+# ces noms (ou les variables d environnement Windows du meme nom, prioritaires).
+ANTHROPIC_API_KEY=
+DEEPSEEK_API_KEY=
+GEMINI_API_KEY=
+NEWSAPI_KEY=
+ALPHAVANTAGE_KEY=
+NEXUS_WEBHOOK_SECRET=

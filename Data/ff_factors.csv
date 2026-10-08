@@ -1,0 +1,6 @@
+# Facteurs Fama-French 3 facteurs (variante mensuelle de la fiche 4A).
+# Telecharger "F-F_Research_Data_Factors" (mensuel ou journalier) sur le site de Kenneth French
+# et coller les lignes sous l en-tete. Valeurs en POURCENTS (detection automatique), dates yyyyMM ou yyyyMMdd.
+# Sans ce fichier, la fiche 4A mensuelle utilise un modele de marche (SPY).
+date,mkt_rf,smb,hml,rf
+# 202601,<Mkt-RF>,<SMB>,<HML>,<RF>

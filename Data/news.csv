@@ -1,0 +1,7 @@
+# Actualites pour les fiches 7, 8, 9, 10 (backtest). Horodatage en UTC (suffixe Z conseille).
+# Une ligne par titre ET par symbole concerne. source : newsapi:<editeur>, reddit:r/<sub>, csv...
+# Les titres Reddit (source contenant 'reddit') sont exclus du score par defaut.
+# Les lignes commencant par # sont ignorees : remplacer les exemples par vos donnees.
+published_utc,symbol,source,headline,url
+# 2026-03-05T12:15:00Z,AAPL,newsapi:Reuters,"Exemple : titre publie avant l ouverture du lendemain",https://exemple.invalid/1
+# 2026-03-05T21:40:00Z,MSFT,newsapi:Bloomberg,"Exemple : titre publie apres la cloture (trade a l ouverture suivante)",https://exemple.invalid/2

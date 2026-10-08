@@ -1,0 +1,7 @@
+# Dates de publication des resultats trimestriels (fiches 8 et 14).
+# Le format Alpha Vantage EARNINGS_CALENDAR est accepte (colonnes symbol, reportDate).
+# Mise a jour automatique possible avec une cle Alpha Vantage (propriete "Cle Alpha Vantage").
+# Les lignes commencant par # sont ignorees.
+symbol,date
+# AAPL,2026-10-29
+# MSFT,2026-10-27

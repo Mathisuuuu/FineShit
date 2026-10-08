@@ -1,0 +1,7 @@
+# Fondamentaux POINT-IN-TIME pour la fiche 3 (et la fiche 8 en source multi-facteurs).
+# available_date = date a laquelle l information etait PUBLIQUE (depot 10-Q / 10-K), PAS la fin de trimestre :
+# utiliser la date de fin de trimestre introduirait un biais d anticipation.
+# Montants en devise de cotation ; *_ttm = 12 mois glissants ; total_liabilities peut etre remplace par total_debt.
+# Une ligne par symbole et par publication. Les lignes commencant par # sont ignorees.
+symbol,available_date,book_equity,net_income_ttm,gross_profit_ttm,total_assets,total_liabilities,shares_outstanding
+# AAPL,2026-08-01,<fonds propres>,<resultat net 12m>,<marge brute 12m>,<total actif>,<total passif>,<actions en circulation>

@@ -1,0 +1,5 @@
+# Agenda macro pour le veto de la fiche 13. Heures en UTC. impact : high / medium / low (ou 3 / 2 / 1).
+# currency : devise concernee (USD, EUR, GBP, JPY, AUD...). Les lignes commencant par # sont ignorees.
+datetime_utc,currency,impact,title
+# 2026-10-28T18:00:00Z,USD,high,Exemple : decision de taux FOMC
+# 2026-10-30T12:15:00Z,EUR,high,Exemple : decision de politique monetaire BCE
