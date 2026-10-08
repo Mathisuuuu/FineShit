@@ -206,3 +206,17 @@ dernières : les propriétés sont enregistrées en clair dans les workspaces.
 - **Non vérifié ici** : l'exécution dans le moteur NinjaTrader (aucun backtest lancé depuis cette
   machine) et les appels réels aux API (aucune clé utilisée). Premier pas recommandé : un backtest de
   `Nexus01_TSMOM` sur SPY journalier, puis Sim101.
+
+## 11. Version Python (vectorbt)
+
+Le dossier `Python/` contient un moteur de backtest Python qui reproduit les fiches 1, 2, 3, 4A, 5, 6,
+12, 13 et 14 avec les modules A, B et C, pour tester sans NinjaTrader :
+
+```
+cd Python
+pip install -r requirements.txt
+python -m nexus verifier --donnees "C:\Users\Mathis\Desktop\Cotations"
+python -m nexus backtest -s 01 --donnees "C:\Users\Mathis\Desktop\Cotations" --html
+```
+
+Détails, formats de cotations acceptés et constats sur le code NinjaScript : `Python/LISEZMOI.md`.

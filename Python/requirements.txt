@@ -1,0 +1,6 @@
+vectorbt>=0.26
+numpy>=1.26
+pandas>=2.1
+numba>=0.59
+plotly>=5.18
+pytest>=8.0
