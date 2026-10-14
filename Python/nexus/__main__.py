@@ -30,7 +30,7 @@ from .strategies import available, get
 
 REPO_DATA = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "Data"))
 EXTERNAL_FILES = {"fundamentals_file": "fundamentals.csv", "factors_file": "ff_factors.csv",
-                  "earnings_file": "earnings.csv", "macro_file": "macro_events.csv"}
+                  "earnings_file": "earnings.csv", "macro_file": "macro_events.csv", "gex_file": "gex.csv"}
 
 
 def _value(v: str):
@@ -76,12 +76,17 @@ def _external_params(klass, folder):
     return out
 
 
-def _load(args):
+def _load(args, klass=None, params=None):
     if getattr(args, "synthetique", False):
         return None
     if not args.donnees:
         raise SystemExit("indiquer --donnees DOSSIER (ou --synthetique pour une demonstration)")
-    data = D.load_folder(args.donnees, verbose=getattr(args, "verbeux", False))
+    if klass is not None and getattr(klass, "INTRADAY", False):
+        # Barres minute : seuls les fichiers des symboles utiles sont lus, sans agregation en jour.
+        need = klass(**(params or {})).data_symbols()
+        data = D.load_folder(args.donnees, daily=False, verbose=getattr(args, "verbeux", False), only=need)
+    else:
+        data = D.load_folder(args.donnees, verbose=getattr(args, "verbeux", False))
     if not data:
         raise SystemExit(f"aucun fichier de cotations lisible dans {args.donnees}")
     return data
@@ -89,6 +94,10 @@ def _load(args):
 
 def _synthetic_for(klass, params):
     st = klass(**params)
+    if getattr(klass, "INTRADAY", False):
+        from . import intraday as I
+        print("ATTENTION : barres minute SYNTHETIQUES (marche aleatoire, demonstration du moteur) - aucun resultat n est significatif.")
+        return {st.data_symbols()[0]: I.synthetic_minutes("2016-01-04", "2025-12-31")}
     syms = set(split_list(st.p.symbols)) | set(st.required_references()) | set(split_list(st.p.reference_symbols))
     print("ATTENTION : donnees SYNTHETIQUES (demonstration du moteur) - aucun resultat n est significatif.")
     return D.synthetic_universe(sorted(syms), "2010-01-04", "2025-12-31")
@@ -108,6 +117,8 @@ def _save(res, folder, html=False):
     pd.DataFrame({"equity": res.equity, "exposition_brute": res.exposure}).to_csv(os.path.join(folder, "equity.csv"))
     with open(os.path.join(folder, "journal.txt"), "w", encoding="utf-8") as f:
         f.write("\n".join(res.log + [""] + res.breaker_events))
+    if getattr(res, "daily_panel", None) is not None:
+        res.daily_panel.to_csv(os.path.join(folder, "jours.csv"))
     if html:
         from .vbt_bridge import html_report
         html_report(res, os.path.join(folder, "graphique.html"))
@@ -157,7 +168,7 @@ def cmd_verifier(args):
 def cmd_backtest(args):
     klass = get(args.strategie)
     params = {**_external_params(klass, args.externes), **_params(args.param)}
-    data = _load(args) if not args.synthetique else _synthetic_for(klass, params)
+    data = _load(args, klass, params) if not args.synthetique else _synthetic_for(klass, params)
     t = time.time()
     st = klass(**params)
     res = st.run(data, start=args.debut, end=args.fin, trade_start=args.debut_trading)
@@ -173,6 +184,9 @@ def cmd_tout(args):
     folder = _out_dir(args.sortie, "tout")
     for code in available():
         klass = get(code)
+        if getattr(klass, "INTRADAY", False):
+            print(f"{code} ignoree : barres 1 minute requises (python -m nexus backtest -s {code} -d DOSSIER_MINUTE)")
+            continue
         st = klass(**_external_params(klass, args.externes))
         try:
             res = st.run(data, start=args.debut, end=args.fin, trade_start=args.debut_trading)
@@ -199,7 +213,8 @@ def cmd_grille(args):
     klass = get(args.strategie)
     grid = _params(args.param, grid=True)
     base = _external_params(klass, args.externes)
-    data = _load(args) if not args.synthetique else _synthetic_for(klass, {k: v[0] for k, v in grid.items()})
+    first = {**base, **{k: v[0] for k, v in grid.items()}}
+    data = _load(args, klass, first) if not args.synthetique else _synthetic_for(klass, first)
     keys = list(grid)
     rets, rows, results = {}, [], {}
     combos = list(itertools.product(*[grid[k] for k in keys])) or [()]
@@ -216,7 +231,8 @@ def cmd_grille(args):
                          sharpe=V.annualized_sharpe(res.returns.values), dd_max=V.max_drawdown(eq.values),
                          expo_moy=float(res.exposure.mean())))
         print(f"  {label:60} sharpe {rows[-1]['sharpe']:.2f}  trades {len(res.trades)}")
-    tab = pd.DataFrame(rows).sort_values("sharpe", ascending=False)
+    raw = pd.DataFrame(rows)
+    tab = raw.sort_values("sharpe", ascending=False)
     rmat = pd.DataFrame(rets).dropna()
     srs = [V.sharpe_per_period(rmat[c].values) for c in rmat]
     var_sr = float(np.var([s for s in srs if M.ok(s)], ddof=1)) if len(srs) > 1 else M.NAN
@@ -253,7 +269,62 @@ def cmd_grille(args):
                 f.write("\n" + wf + "\n")
     with pd.option_context("display.float_format", "{:.4f}".format, "display.width", 200):
         print(tab.to_string(index=False))
+    if len(keys) >= 1 and len(combos) > 1:
+        plateau = _plateau(raw, combos, keys, grid, folder, args.html)
+        print(plateau)
+        with open(os.path.join(folder, "rapport.txt"), "a", encoding="utf-8") as f:
+            f.write("\n" + plateau + "\n")
     print(f"[nexus] PBO {pbo:.1%} sur {rmat.shape[1]} configurations - resultats dans {folder}" if M.ok(pbo) else f"[nexus] resultats dans {folder}")
+
+
+def _plateau(raw, combos, keys, grid, folder, html=False) -> str:
+    """Plateau de parametres : Sharpe des configurations voisines (un pas sur un seul parametre) de la
+    meilleure, part des configurations proches de la meilleure, tableaux croises (moyenne sur les autres
+    parametres) et cartes de chaleur HTML."""
+    sh = dict(zip(combos, raw["sharpe"].to_numpy(float)))
+    best = max(sh, key=lambda k: sh[k] if M.ok(sh[k]) else -1e9)
+    pos = [list(grid[k]).index(v) for k, v in zip(keys, best)]
+    neigh = []
+    for i, k in enumerate(keys):
+        for step in (-1, 1):
+            j = pos[i] + step
+            if 0 <= j < len(grid[k]):
+                c = list(best)
+                c[i] = grid[k][j]
+                if tuple(c) in sh and M.ok(sh[tuple(c)]):
+                    neigh.append(sh[tuple(c)])
+    b = sh[best]
+    vals = np.array([v for v in sh.values() if M.ok(v)])
+    out = ["--- Plateau de parametres -----------------------------------------------------",
+           f"Meilleure : {', '.join(f'{k}={v}' for k, v in zip(keys, best))} (Sharpe {b:.2f})"]
+    if neigh:
+        out.append(f"Voisins ({len(neigh)}) : Sharpe moyen {np.mean(neigh):.2f}, minimum {np.min(neigh):.2f}"
+                   + (f" -> {np.mean(neigh) / b:.0%} du meilleur" if b > 0 else "")
+                   + ("  -> PIC ISOLE (pas de plateau)" if b > 0 and np.mean(neigh) < 0.7 * b else ""))
+    if b > 0 and len(vals):
+        out.append(f"Configurations a >= 75 % du meilleur Sharpe : {(vals >= 0.75 * b).mean():.0%} ; Sharpe > 0 : {(vals > 0).mean():.0%}")
+    frame = pd.DataFrame(list(sh.keys()), columns=keys)
+    frame["sharpe"] = list(sh.values())
+    figs = []
+    for a, c in itertools.combinations([k for k in keys if len(grid[k]) > 1], 2):
+        pv = frame.pivot_table(index=a, columns=c, values="sharpe", aggfunc="mean")
+        out.append(f"Sharpe moyen {a} (lignes) x {c} (colonnes) :")
+        out.append(pv.to_string(float_format=lambda x: f"{x:6.2f}"))
+        figs.append((a, c, pv))
+    if html and figs:
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+        fig = make_subplots(rows=len(figs), cols=1, subplot_titles=[f"Sharpe : {a} x {c}" for a, c, _ in figs])
+        for i, (a, c, pv) in enumerate(figs, 1):
+            fig.add_trace(go.Heatmap(z=pv.values, x=[str(x) for x in pv.columns], y=[str(y) for y in pv.index],
+                                     colorscale="RdYlGn", zmid=0, text=np.round(pv.values, 2), texttemplate="%{text}",
+                                     showscale=(i == 1)), i, 1)
+            fig.update_xaxes(title_text=c, row=i, col=1)
+            fig.update_yaxes(title_text=a, row=i, col=1)
+        fig.update_layout(height=380 * len(figs), template="plotly_white")
+        fig.write_html(os.path.join(folder, "plateau.html"), include_plotlyjs="cdn")
+        out.append(f"Cartes de chaleur : {os.path.join(folder, 'plateau.html')}")
+    return "\n".join(out)
 
 
 def cmd_recherche(args):
@@ -279,7 +350,7 @@ def main(argv=None):
 
     def common(p, strategy=True):
         if strategy:
-            p.add_argument("--strategie", "-s", required=True, help="numero de fiche (01, 02, 03, 4A, 05, 06, 12, 13, 14)")
+            p.add_argument("--strategie", "-s", required=True, help="numero de fiche (01, 02, 03, 4A, 05, 06, 12, 13, 14, 16)")
         p.add_argument("--donnees", "-d", help="dossier des cotations (CSV/TXT)")
         p.add_argument("--synthetique", action="store_true", help="donnees synthetiques (demonstration)")
         p.add_argument("--debut", help="premiere date chargee (AAAA-MM-JJ)")

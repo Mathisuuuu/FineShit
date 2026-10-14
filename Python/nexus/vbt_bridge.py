@@ -87,6 +87,52 @@ def to_portfolio(res):
     return pf, daily.rename("valeur_vectorbt"), diff
 
 
+def intraday_portfolio(res):
+    """Rejeu vectorbt d un backtest minute (fiche 16) : une ligne par minute de seance des jours trades,
+    deux colonnes a cash partage (executions a l ouverture / a la cloture de la barre) car vectorbt
+    n accepte qu un ordre par barre et par colonne. -> (pf, valeur_journaliere, ecart_max_relatif)."""
+    _need_vbt()
+    g, f = res.grid, res.fills
+    pv = float(res.point_value)
+    init = float(res.strategy.p.initial_bankroll)
+    if f is None or len(f) == 0:
+        return None, res.equity.rename("valeur_vectorbt"), 0.0
+    t = pd.DatetimeIndex(f["time"])
+    day = t.normalize()
+    rel = ((t - day) / pd.Timedelta(minutes=1)).to_numpy().astype(int) - (9 * 60 + 30)
+    pos = g.days.get_indexer(day)
+    at_open = (f["moment"] == "ouverture").to_numpy()
+    slot = np.where(at_open, rel, rel - 1)          # ouverture de la barre s datee s ; cloture datee s + 1
+    px = f["price"].to_numpy(float)
+    tdays = np.unique(pos)
+    rows = []
+    for d in tdays:
+        n = int(g.last_slot[d]) + 1
+        rows.append(pd.DataFrame({"close": g.c[d, :n]}, index=g.timestamps(d, np.arange(n))))
+    close1 = pd.concat(rows)["close"]
+    close = pd.DataFrame({"ouverture": close1, "cloture": close1})
+    size = pd.DataFrame(np.nan, index=close.index, columns=close.columns)
+    price = size.copy()
+    fees = pd.DataFrame(0.0, index=close.index, columns=close.columns)
+    ts = g.days[pos] + pd.to_timedelta(9 * 60 + 30 + slot + 1, unit="min")
+    for tsi, col, q, p_, c_ in zip(ts, np.where(at_open, "ouverture", "cloture"), f["qty"].to_numpy(float), px, f["cost"].to_numpy(float)):
+        size.at[tsi, col] = q * pv
+        price.at[tsi, col] = p_
+        fees.at[tsi, col] = c_
+    buf = init * 50
+    pf = vbt.Portfolio.from_orders(close, size=size, price=price, fixed_fees=fees, size_type="amount", direction="both",
+                                   cash_sharing=True, group_by=True, call_seq="auto", init_cash=init + buf, freq="1min")
+    value = pf.value() - buf
+    ends = pd.DatetimeIndex([g.timestamps(d, [int(g.last_slot[d])])[0] for d in tdays])
+    daily = value.reindex(ends)
+    daily.index = ends.normalize()
+    eq = res.equity.reindex(daily.index)
+    diff = float(np.nanmax(np.abs(daily / eq - 1))) if len(eq) else M.NAN
+    # jours sans execution : equity inchangee (aucune position la nuit)
+    full = daily.reindex(res.equity.index).ffill().fillna(init)
+    return pf, full.rename("valeur_vectorbt"), diff
+
+
 def daily_stats(daily_value: pd.Series) -> pd.Series:
     """Statistiques vectorbt sur une serie de valeurs journalieres (252 jours/an)."""
     _need_vbt()
@@ -102,7 +148,7 @@ def html_report(res, path: str) -> str:
     _need_vbt()
     from plotly.subplots import make_subplots
     import plotly.graph_objects as go
-    pf, daily, diff = to_portfolio(res)
+    pf, daily, diff = intraday_portfolio(res) if getattr(res, "intraday", False) else to_portfolio(res)
     eq = res.equity
     dd = eq / eq.cummax() - 1
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True, row_heights=[0.55, 0.25, 0.20], vertical_spacing=0.04,

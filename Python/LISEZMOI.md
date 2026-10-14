@@ -21,6 +21,7 @@ comptabilité), aux graphiques et aux grilles de recherche rapides.
 | 12 Régime de vol | `s12_volregime.py` | complet (terciles ou HMM du module A) |
 | 13 Trend prop 24/5 | `s13_proptrend.py` | complet sauf veto Claude, webhook et comptes miroirs (temps réel) |
 | 14 Swing strict | `s14_strictswing.py` | complet (spread mesurable seulement en temps réel, comme en C#) |
+| 16 Noise Area (barres 1 min) | `s16_noisearea.py` | Python seulement, voir § 8 |
 | Module A | `regime.py` | HMM 3 états (Baum-Welch compilé numba) + terciles |
 | Module B | `sizing.py` | demi-Kelly, waiver, corrélation, plafonds |
 | Module C | `risk.py`, `validation.py`, `report.py` | disjoncteurs, coûts, Monte Carlo, bootstrap, DSR, PBO, walk-forward |
@@ -70,6 +71,7 @@ python -m nexus backtest -s 01 --synthetique                   # démonstration 
 python -m nexus tout -d DOSSIER                                # toutes les fiches + tableau récapitulatif
 python -m nexus grille -s 01 -d DOSSIER -p lookback_days=126,252 -p skip_days=0,21 --walkforward 180/30
 python -m nexus recherche --type tsmom -d DOSSIER -p lookback=63,126,252 -p skip=0,21
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES --html     # barres 1 minute, voir § 8
 ```
 
 - `--debut` / `--fin` bornent les données chargées ; `--debut-trading` laisse le chauffage avant cette
@@ -78,7 +80,9 @@ python -m nexus recherche --type tsmom -d DOSSIER -p lookback=63,126,252 -p skip
   (`LookbackDays` → `lookback_days`) ; `python -m nexus liste --details` les affiche.
 - `grille` lance le moteur complet pour chaque configuration, puis calcule le **PBO** (CSCV), le
   **Deflated Sharpe** avec le vrai nombre d'essais et un **walk-forward** (sélection sur la fenêtre
-  d'entraînement, rendement hors échantillon concaténé).
+  d'entraînement, rendement hors échantillon concaténé). Il affiche aussi le **plateau** : Sharpe des
+  configurations voisines de la meilleure (un cran sur un seul paramètre), tableaux croisés par paire
+  de paramètres et, avec `--html`, cartes de chaleur (`plateau.html`).
 - `recherche` est une grille vectorbt **signal seul** (sans module B ni stops), très rapide, pour
   explorer avant de lancer `grille`.
 - Les résultats sont écrits dans `resultats/<stratégie>_<date>/`.
@@ -101,7 +105,7 @@ avec rattrapage.
 - **Disjoncteur journalier** : par défaut (`daily_breaker_ref=veille`), la perte du jour est mesurée
   depuis la clôture précédente, comme en temps réel ; `daily_breaker_ref=ninja` reproduit le backtest C#.
 
-Contrôles : `python -m pytest -q tests` (35 tests) reprend les contrôles numériques de
+Contrôles : `python -m pytest -q tests` (51 tests, dont 15 pour la fiche 16) reprend les contrôles numériques de
 `Tests/Unit/Tests.cs` et vérifie le moteur. Il couvre :
 
 - les exécutions, stops et ordres limites ;
@@ -132,6 +136,7 @@ Le moteur Python reproduit fidèlement ces comportements, qui existent donc auss
 nexus/
   mathx.py       NxMath, MCO, ADF + MacKinnon, Engle-Granger, OU, Black-Scholes
   data.py        instruments, lecture des cotations, historiques, fichiers Data/*.csv, données synthétiques
+  intraday.py    barres 1 minute : fuseau, horodatage, séance cash 9:30-16:00 en matrices, minutes synthétiques
   engine.py      NexusStrategyBase : univers, lot synchronisé, position cible, exécutions, comptabilité
   sizing.py      module B          risk.py  disjoncteurs, coûts, stress test
   validation.py  Monte Carlo, bootstrap, Sharpe, PSR, DSR, PBO, walk-forward
@@ -143,3 +148,114 @@ nexus/
 
 Pour ajouter une stratégie : hériter de `NexusStrategy`, définir `NAME`, `DEFAULTS`, `on_batch(jour)`
 (ou `on_symbol_bar` avec `BATCH_MODE = False`) et l'enregistrer dans `strategies/__init__.py`.
+
+## 8. Fiche 16 — Noise Area Intraday Momentum (barres 1 minute)
+
+Liste de recherche « fiche 02 » (la fiche 01, rebalancement des ETF à levier, est la fiche 15 du dépôt).
+Source : Zarattini, Aziz & Barbon (2024), *Beat the Market: An Effective Intraday Momentum Strategy
+for S&P500 ETF (SPY)*, SSRN 4824172 — 19,6 %/an, Sharpe 1,33 nets de coûts sur SPY, 2007–début 2024.
+Pas d'équivalent NinjaScript : la fiche n'existe qu'en Python.
+
+### Données
+
+- **Barres 1 minute** de la séance cash (les barres hors séance sont ignorées) : `SPY.Last.txt`,
+  `ES ##-##.Last.txt` (série continue NinjaTrader → symbole `ES`), CSV génériques. Seuls les fichiers des
+  symboles utiles sont lus, sans agrégation en jour.
+- **Futures : série continue ajustée des rolls** (NinjaTrader : *Merge Back Adjusted*). Des contrats
+  individuels (`ES 03-25`…) sont refusés ; le rapport signale des gaps anormaux en fenêtre de roll.
+- **Fuseau** : NinjaTrader exporte dans le fuseau du PC. En France : `-p data_timezone=Europe/Paris`
+  (`UTC` pour la plupart des fournisseurs). Si moins de la moitié des jours ont une séance complète, le
+  run s'arrête en suggérant le fuseau.
+- **Horodatage des barres** (`bar_label=auto`) : début ou fin de barre, déduit du saut de volume à
+  l'ouverture (NinjaTrader date en fin de barre : la barre 9:30-9:31 est datée 9:31). Le rapport indique
+  ce qui a été retenu ; forcer avec `-p bar_label=debut|fin`.
+- Facultatif : `^VIX.csv` journalier dans le même dossier (régime VIX), `Data/gex.csv` (format de la
+  fiche 15, branché automatiquement s'il existe ; régime gamma), `-p dividends_file=...` (CSV
+  `date,dividend` au jour ex : PrevClose ajusté, utile pour SPY non ajusté).
+- Demi-séances (13:00) reconnues ; jour incomplet (première barre après 9:35 ou séance tronquée) ignoré.
+
+### Règles et paramètres
+
+| Règle de la fiche | Implémentation | Paramètre (défaut) |
+|---|---|---|
+| sigma(t) = moyenne 14 j de \|Close(t)/Open − 1\| | même minute, 14 jours **précédents** (jour courant exclu) | `lookback_days=14` |
+| Upper/Lower avec max/min(Open, PrevClose) | PrevClose = clôture 16:00 de la veille | `band_mult=1.0` |
+| Contrôle toutes les 30 min | 10:00, 10:30… 15:30 (minutes depuis l'ouverture multiples de M) | `check_interval_min=30`, `first_check_min` |
+| Long > Upper, short < Lower | l'entrée exige aussi Close > VWAP (< VWAP), comme le code des auteurs | `vwap_entry_filter=true` (false = règle littérale) |
+| Stop suiveur max(Upper, VWAP) | vérifié aux contrôles (papier) ou chaque minute | `use_vwap_stop=true`, `stop_check=controle\|minute` |
+| Clôture en fin de séance | ordre MOC (clôture de la barre 16:00) ou N min avant | `exit_minutes_before_close=0` (10 → 15:50) |
+| Ciblage de volatilité | AUM de la veille × min(2 % / vol 14 j, 4) / Open, arrondi | `target_daily_vol_pct=2`, `max_leverage=4`, `sizing=vol_cible\|fixe` |
+| Exécution | **ouverture de la barre suivante** (pas au prix du franchissement) | `execution=ouverture_suivante\|cloture\|cloture_suivante` |
+
+Coûts par exécution, selon l'instrument (surchargeables : `commission_per_unit`,
+`commission_min_per_order`, `slippage_ticks`, `point_value`, `tick_size`) :
+
+| Instrument | $/point | Commission | Glissement |
+|---|---|---|---|
+| SPY, QQQ, IWM, DIA | 1 | 0,0035 $/action, min 0,35 $/ordre (papier) | 0,1 tick = 0,001 $ (papier) |
+| ES / NQ / RTY / YM | 50 / 20 / 50 / 5 | 2,25 $/contrat | 0,5 tick |
+| MES / MNQ / M2K / MYM | 5 / 2 / 5 / 0,5 | 0,62 $/contrat | 0,5 tick |
+
+Un instrument par run. Quantités entières (`fractional_units=true` pour juger le signal sans
+l'arrondi : 1 ES = 250 000 $ de notionnel). Le module B (Kelly) n'est pas utilisé : la taille est
+celle du papier. Disjoncteurs du module C désactivés par défaut (absents du papier),
+`-p use_circuit_breakers=true` pour les activer (ils bloquent les entrées, jamais les sorties).
+
+### Plan de test
+
+```
+# 1. Réplication SPY (viser un Sharpe proche de 1,3 ; execution=cloture = prix du franchissement, comme le papier)
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=SPY --debut 2007-01-01 --fin 2024-04-30 --html
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=SPY --debut 2007-01-01 --fin 2024-04-30 -p execution=cloture
+
+# 2. Portage ES puis NQ (coûts futures), données Paris
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES -p data_timezone=Europe/Paris --html
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=NQ -p data_timezone=Europe/Paris
+
+# 3. Post-publication seul (chauffage avant, rapport à partir du 1er juin 2024)
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES --debut 2024-01-01 --debut-trading 2024-06-01
+
+# 4. Sensibilité (48 configurations, PBO, Deflated Sharpe, plateau, walk-forward 3 ans / 6 mois)
+python -m nexus grille -s 16 -d DOSSIER_MINUTE -p symbols=ES -p lookback_days=7,14,21,30 -p check_interval_min=15,30,60 -p band_mult=0.8,1,1.2,1.5 --walkforward 756/126 --html
+
+# 5. Régimes : ^VIX.csv dans le dossier, Data/gex.csv rempli ; variante filtre gamma
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES -p gamma_filter=court
+
+# 6. Coûts : le rapport donne trades/séance, coût total et Sharpe à 0x/1x/2x/3x les coûts
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES -p slippage_ticks=1
+# Variante : sortie forcée à 15:50
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES -p exit_minutes_before_close=10
+```
+
+Le rapport (section « Spécifique à la stratégie ») contient : séances valides et demi-séances, levier
+moyen et part des jours plafonnés, trades par séance et leur répartition, raisons de sortie (stop bande,
+stop VWAP, inversion, fin de séance), PnL long/short, coûts (total, bp par aller-retour, Sharpe selon le
+multiple des coûts), buy & hold et corrélation, avant/après la date de publication (`publication_date`),
+tableau par année, robustesse (sans le top 1 % des séances, hors 2008/2020/2022), régimes VIX et gamma,
+contrôle des rolls, et les **critères de rejet** de la fiche :
+
+- `[REJET]` si le Sharpe net après publication est < 0,5 (au moins 60 séances) ;
+- `[ALERTE]` si le Sharpe tombe sous 0,5 sans le top 1 % des séances ou hors années de crise ;
+- plateau : `grille` (Sharpe des voisins, « PIC ISOLÉ » s'ils font moins de 70 % du meilleur).
+
+Fichiers : `rapport.txt`, `trades.csv`, `fills.csv` (colonne `moment` : ouverture/clôture de barre),
+`jours.csv` (une ligne par séance : Open, PrevClose, gap, vol 14 j, levier, unités, trades, PnL brut,
+coûts, VIX de la veille, GEX…), `equity.csv`, `graphique.html` (rejeu vectorbt minute par minute, qui
+doit retrouver l'equity du moteur ; écart affiché dans le titre).
+
+### Garde-fous (red flags de la fiche)
+
+- **Biais d'anticipation** : sigma n'utilise que les jours précédents ; vol de taille décalée d'un jour ;
+  test : modifier les prix après 12:00 un jour donné ne change aucune exécution antérieure.
+- **Prix du franchissement** : exécution par défaut à l'ouverture de la minute suivante ;
+  `execution=cloture` mesure l'écart avec l'hypothèse du papier.
+- **Globex** : PrevClose = 16:00 heure de New York (le gap de nuit compte dans la bande) ; contrôle des
+  rolls pour les séries non ajustées.
+
+### Limites connues
+
+- Exécutions sur barres 1 minute (pas de ticks) ; la « clôture MOC » d'un future est la dernière
+  minute avant 16:00, pas une enchère.
+- Un jour aux données incomplètes est écarté entier (filtre de qualité des données, pas de signal).
+- `--synthetique` produit une marche aléatoire minute : le Sharpe brut doit y être proche de 0 (les
+  tests vérifient aussi qu'un momentum intrajournalier planté est bien capté).

@@ -220,3 +220,6 @@ python -m nexus backtest -s 01 --donnees "C:\Users\Mathis\Desktop\Cotations" --h
 ```
 
 Détails, formats de cotations acceptés et constats sur le code NinjaScript : `Python/LISEZMOI.md`.
+
+La fiche 16 (Noise Area Intraday Momentum, barres 1 minute, SPY puis ES/NQ) n'existe qu'en Python :
+`python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES --html` (voir `Python/LISEZMOI.md` § 8).

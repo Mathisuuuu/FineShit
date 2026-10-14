@@ -120,7 +120,11 @@ def test_toutes_les_strategies_tournent(code):
     klass = get(code)
     st = klass()
     syms = set(split_list(st.p.symbols)) | set(st.required_references())
-    u = D.synthetic_universe(sorted(syms), "2016-01-04", "2019-12-31", seed=5)
+    if getattr(klass, "INTRADAY", False):
+        from nexus import intraday as I
+        u = {st.data_symbols()[0]: I.synthetic_minutes("2018-01-02", "2019-12-31", seed=5)}
+    else:
+        u = D.synthetic_universe(sorted(syms), "2016-01-04", "2019-12-31", seed=5)
     res = st.run(u)
     assert len(res.equity) > 100 and math.isfinite(res.equity.iloc[-1])
     assert "RAPPORT NEXUS" in res.report

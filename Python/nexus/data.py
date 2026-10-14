@@ -134,8 +134,8 @@ def symbol_from_filename(path: str, aliases: dict | None = None) -> str:
         head = up.split(".")[0]
         up = head if head else up
     parts = [p for p in re.split(r"[_\s]+", up) if p]
-    while len(parts) > 1 and parts[-1] in _SUFFIX_TOKENS:
-        parts.pop()
+    while len(parts) > 1 and (parts[-1] in _SUFFIX_TOKENS or parts[-1] == "##-##"):
+        parts.pop()                      # "ES ##-##" = contrat continu NinjaTrader -> "ES"
     up = "".join(parts)
     if up in al:
         return al[up]
@@ -188,6 +188,14 @@ def _parse_dates(s: pd.Series) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(pd.to_datetime(s, errors="coerce", utc=True)).tz_convert(None)
 
 
+def _read_csv(path: str, **kw) -> pd.DataFrame:
+    """Lecteur C de pandas (rapide sur les fichiers minute de plusieurs millions de lignes), lecteur python en repli."""
+    try:
+        return pd.read_csv(path, encoding="utf-8-sig", engine="c", **kw)
+    except (ValueError, pd.errors.ParserError):
+        return pd.read_csv(path, encoding="utf-8-sig", engine="python", **kw)
+
+
 def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
     """Lit un fichier de cotations et renvoie un DataFrame open/high/low/close/volume indexe par date."""
     with open(path, "r", encoding="utf-8-sig", errors="replace") as fh:
@@ -197,7 +205,7 @@ def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
     has_header = bool(re.search(r"[A-Za-z<]", first.split(sep)[0])) and not re.fullmatch(r"\d{8}( \d{6})?", first.split(sep)[0].strip())
     decimal = "," if sep == ";" and re.search(r"\d,\d", "".join(head)) else "."
     if has_header:
-        df = pd.read_csv(path, sep=sep, decimal=decimal, encoding="utf-8-sig", engine="python")
+        df = _read_csv(path, sep=sep, decimal=decimal)
         cols = list(df.columns)
         cd, ct = _match_col(cols, "date"), _match_col(cols, "time")
         if cd is None:
@@ -217,7 +225,7 @@ def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
             for k in ("open", "high", "low", "close"):
                 out[k] = out[k].values * ratio
     else:
-        df = pd.read_csv(path, sep=sep, decimal=decimal, header=None, encoding="utf-8-sig", engine="python")
+        df = _read_csv(path, sep=sep, decimal=decimal, header=None)
         idx = pd.DatetimeIndex(_parse_dates(df[0]))
         n = df.shape[1]
         if n >= 6:
@@ -257,14 +265,21 @@ def resample_bars(df: pd.DataFrame, minutes: int) -> pd.DataFrame:
     return out.dropna(subset=["close"])
 
 
-def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, verbose: bool = False) -> dict[str, pd.DataFrame]:
-    """Charge tous les fichiers de cotations d un dossier (recursif). Retourne {symbole: DataFrame}."""
+def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, verbose: bool = False,
+                only=None) -> dict[str, pd.DataFrame]:
+    """Charge tous les fichiers de cotations d un dossier (recursif). Retourne {symbole: DataFrame}.
+    only : symboles a lire (les autres fichiers ne sont pas ouverts), utile pour les barres minute."""
     res: dict[str, pd.DataFrame] = {}
+    keep = {x.upper() for x in only} if only else None
     for root, _, files in os.walk(folder):
         for f in sorted(files):
             if not re.search(r"\.(csv|txt|tsv)$", f, re.I):
                 continue
             p = os.path.join(root, f)
+            if keep is not None:
+                key = symbol_from_filename(p, aliases).upper()
+                if key not in keep and re.sub(r"\d{2}-\d{2}$", "", key) not in keep:
+                    continue
             try:
                 df = read_quotes_file(p)
             except Exception as ex:  # fichier illisible : on continue
