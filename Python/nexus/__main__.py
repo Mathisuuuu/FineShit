@@ -4,7 +4,7 @@
     python -m nexus verifier   --donnees C:/Users/Mathis/Desktop/Cotations
     python -m nexus backtest   --strategie 01 --donnees DOSSIER [--debut 2012-01-01] [--param target_vol_pct=10] [--html]
     python -m nexus backtest   --strategie 01 --synthetique          (demonstration sans donnees)
-    python -m nexus tout       --donnees DOSSIER                     (toutes les fiches, tableau recapitulatif)
+    python -m nexus tout       --donnees DOSSIER [--donnees-minute DOSSIER_MINUTE]  (toutes les fiches, tableau recapitulatif)
     python -m nexus grille     --strategie 01 --donnees DOSSIER --param lookback_days=126,252 --param skip_days=0,21
     python -m nexus recherche  --type tsmom --donnees DOSSIER --param lookback=63,126,252 --param skip=0,21
 """
@@ -178,29 +178,72 @@ def cmd_backtest(args):
     print(f"[nexus] {time.time() - t:.1f} s - resultats ecrits dans {folder}")
 
 
+def _known(klass, params: dict) -> dict:
+    """Parametres de la ligne de commande que la strategie connait (les autres sont ignores pour elle)."""
+    keys = set(klass().params)
+    return {k: v for k, v in params.items() if k in keys}
+
+
+def _tout_intraday(code, klass, args, params, folder) -> list[dict]:
+    """Fiche intrajournaliere dans le recapitulatif : un run par instrument present en barres minute."""
+    mfolder = args.donnees_minute or args.donnees
+    present = D.list_symbols(mfolder) if mfolder else set()
+    wanted = split_list(params["symbols"]) if "symbols" in params else list(getattr(klass, "TOUT_SYMBOLS", ()))
+    todo = [s for s in wanted if s.upper() in present]
+    if not todo:
+        print(f"{code} ignoree : aucune serie minute parmi {', '.join(wanted)} dans {mfolder}")
+        return []
+    rows = []
+    for sym in todo:
+        kw = {**_external_params(klass, args.externes), **_known(klass, params), "symbols": sym}
+        kw.setdefault("instance_tag", sym)
+        st = klass(**kw)
+        data = D.load_folder(mfolder, daily=False, only=st.data_symbols())
+        try:
+            res = st.run(data, start=args.debut, end=args.fin, trade_start=args.debut_trading)
+        except ValueError as ex:
+            print(f"{code} {sym} ignoree : {ex}")
+            continue
+        rows.append(_tout_row(code, st, res, folder, args.html))
+        print(f"{code} {sym} termine")
+    return rows
+
+
+def _tout_row(code, st, res, folder, html) -> dict:
+    sub = os.path.join(folder, st.strategy_id)
+    os.makedirs(sub, exist_ok=True)
+    _save(res, sub, html)
+    eq = res.equity
+    return dict(fiche=code, strategie=st.strategy_id, trades=len(res.trades),
+                rendement=eq.iloc[-1] / eq.iloc[0] - 1, sharpe=V.annualized_sharpe(res.returns.values),
+                dd_max=V.max_drawdown(eq.values), expo_moy=float(res.exposure.mean()),
+                pnl_net=sum(x.net_pnl for x in res.trades))
+
+
 def cmd_tout(args):
-    data = _load(args)
+    params = _params(args.param)
+    klasses = [(code, get(code)) for code in available()]
+    need = set()
+    for _, k in klasses:
+        if not getattr(k, "INTRADAY", False):
+            st = k(**_known(k, params))
+            need |= set(split_list(st.p.symbols)) | set(st.required_references()) | set(split_list(st.p.reference_symbols))
+    data = {}
+    if args.donnees:          # seuls les fichiers des symboles utiles sont lus
+        data = D.load_folder(args.donnees, verbose=getattr(args, "verbeux", False), only=need)
     rows = []
     folder = _out_dir(args.sortie, "tout")
-    for code in available():
-        klass = get(code)
+    for code, klass in klasses:
         if getattr(klass, "INTRADAY", False):
-            print(f"{code} ignoree : barres 1 minute requises (python -m nexus backtest -s {code} -d DOSSIER_MINUTE)")
+            rows += _tout_intraday(code, klass, args, params, folder)
             continue
-        st = klass(**_external_params(klass, args.externes))
+        st = klass(**_external_params(klass, args.externes), **_known(klass, params))
         try:
             res = st.run(data, start=args.debut, end=args.fin, trade_start=args.debut_trading)
         except ValueError as ex:
             print(f"{code} ignoree : {ex}")
             continue
-        sub = os.path.join(folder, st.strategy_id)
-        os.makedirs(sub, exist_ok=True)
-        _save(res, sub, args.html)
-        eq = res.equity
-        rows.append(dict(fiche=code, strategie=st.NAME, trades=len(res.trades),
-                         rendement=eq.iloc[-1] / eq.iloc[0] - 1, sharpe=V.annualized_sharpe(res.returns.values),
-                         dd_max=V.max_drawdown(eq.values), expo_moy=float(res.exposure.mean()),
-                         pnl_net=sum(x.net_pnl for x in res.trades)))
+        rows.append(_tout_row(code, st, res, folder, args.html))
         print(f"{code} termine")
     tab = pd.DataFrame(rows)
     tab.to_csv(os.path.join(folder, "recapitulatif.csv"), index=False)
@@ -214,6 +257,8 @@ def cmd_grille(args):
     grid = _params(args.param, grid=True)
     base = {**_external_params(klass, args.externes), **{k: v[0] for k, v in grid.items() if len(v) == 1}}
     grid = {k: v for k, v in grid.items() if len(v) > 1}          # parametres fixes : hors des libelles
+    if getattr(klass, "INTRADAY", False) and "symbols" in base:      # un dossier de grille par instrument
+        base.setdefault("instance_tag", str(base["symbols"]))
     first = {**base, **{k: v[0] for k, v in grid.items()}}
     data = _load(args, klass, first) if not args.synthetique else _synthetic_for(klass, first)
     keys = list(grid)
@@ -375,6 +420,8 @@ def main(argv=None):
     p.set_defaults(func=cmd_backtest)
     p = sub.add_parser("tout", help="toutes les strategies sur le meme dossier")
     common(p, strategy=False)
+    p.add_argument("--donnees-minute", dest="donnees_minute",
+                   help="dossier des barres 1 minute des fiches intrajournalieres (defaut : --donnees)")
     p.set_defaults(func=cmd_tout)
     p = sub.add_parser("grille", help="grille de parametres (moteur complet) + PBO / DSR / walk-forward")
     common(p)

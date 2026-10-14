@@ -317,6 +317,7 @@ class Nexus16NoiseArea(NexusStrategy):
     NAME = "Nexus16_NoiseAreaMomentum"
     DESCRIPTION = "Fiche 16 - Noise Area intraday momentum (Zarattini-Aziz-Barbon) : bandes de bruit 14 j, controle 30 min, stop max(bande, VWAP)."
     INTRADAY = True
+    TOUT_SYMBOLS = ("SPY", "QQQ", "IWM", "DIA", "ES", "NQ", "YM", "RTY", "MES", "MNQ", "M2K", "MYM")   # recapitulatif `tout`
     DEFAULTS = dict(
         symbols="SPY",
         allow_short_selling=True,
@@ -348,7 +349,7 @@ class Nexus16NoiseArea(NexusStrategy):
         # --- Donnees ---
         data_timezone="auto",                # auto (UTC si le fichier porte un fuseau, sinon New York) | Europe/Paris | UTC...
         bar_label="auto",                    # auto | debut | fin
-        roll_adjust="aucun",                 # aucun | minuit_utc (contrats continus Databento .v.0 non ajustes)
+        roll_adjust="auto",                  # auto (minuit_utc pour un future dont le fichier est en UTC, ex. Databento) | minuit_utc | aucun
         exchange_calendar="NYSE",            # NYSE (feries exclus : seance futures raccourcie sans seance cash) | aucun
         dividends_file="",                   # CSV date,dividend (jour ex) : PrevClose ajuste
         # --- Analyse ---
@@ -413,9 +414,12 @@ class Nexus16NoiseArea(NexusStrategy):
             raise ValueError(f"execution inconnue '{p.execution}' ({', '.join(EXEC_MODES)})")
         spec = self._spec(sym)
         tz = df.attrs.get("fuseau", I.NY) if p.data_timezone == "auto" else p.data_timezone
-        if p.roll_adjust not in ("aucun", "minuit_utc"):
-            raise ValueError(f"roll_adjust inconnu '{p.roll_adjust}' (aucun | minuit_utc)")
-        grid, note, rolls = _grid_for(df, tz, p.bar_label, p.roll_adjust)
+        if p.roll_adjust not in ("auto", "aucun", "minuit_utc"):
+            raise ValueError(f"roll_adjust inconnu '{p.roll_adjust}' (auto | aucun | minuit_utc)")
+        roll = p.roll_adjust
+        if roll == "auto":         # contrats continus Databento (.v.0) : fichier Parquet horodate en UTC, sans ajustement
+            roll = "minuit_utc" if spec.asset_class == "Future" and df.attrs.get("fuseau") == "UTC" else "aucun"
+        grid, note, rolls = _grid_for(df, tz, p.bar_label, roll)
         self.symbol, self.spec, self.data_note, self.tz, self.rolls = sym, spec, note, tz, rolls
         self.nx(f"{sym} : {note}, fuseau source {tz}")
         if len(rolls):

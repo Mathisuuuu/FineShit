@@ -261,3 +261,20 @@ def test_parquet_utc_feries_et_noms_databento(tmp_path):
     assert pd.Timestamp("2024-01-16") in pan.index and "feries NYSE exclus" in res.report
     assert {"2024-01-15", "2024-03-29", "2022-06-20", "2025-01-09"} <= set(I.nyse_holidays("2022-01-01", "2025-12-31").strftime("%Y-%m-%d"))
     assert pd.Timestamp("2021-12-31") not in I.nyse_holidays("2021-12-01", "2022-01-31")
+
+
+def test_recapitulatif_tout_avec_barres_minute(tmp_path):
+    """`tout` : la fiche 16 tourne sur chaque instrument present en barres minute, les fiches journalieres
+    sans donnees sont ignorees sans arreter le recapitulatif ; un -p inconnu d une fiche ne la bloque pas."""
+    pytest.importorskip("pyarrow")
+    from nexus.__main__ import main
+    df = _globex_utc("2023-12-03 23:00", "2024-02-29 21:59", seed=7)
+    df.index = df.index.tz_localize("UTC").rename("ts_event")
+    (tmp_path / "minute").mkdir()
+    df.to_parquet(tmp_path / "minute" / "ES_v0_1m.parquet")
+    df.to_parquet(tmp_path / "minute" / "NQ_v0_1m.parquet")
+    main(["tout", "-d", str(tmp_path / "minute"), "--sortie", str(tmp_path / "out"),
+          "-p", "lookback_days=5", "-p", "vol_lookback_days=5", "-p", "initial_bankroll=1000000"])
+    recap = pd.read_csv(next((tmp_path / "out").glob("tout_*")) / "recapitulatif.csv")
+    assert list(recap["strategie"]) == ["Nexus16_NoiseAreaMomentum_ES", "Nexus16_NoiseAreaMomentum_NQ"]
+    assert (recap["trades"] > 0).all()

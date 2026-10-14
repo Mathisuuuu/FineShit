@@ -290,6 +290,14 @@ def resample_bars(df: pd.DataFrame, minutes: int) -> pd.DataFrame:
     return out.dropna(subset=["close"])
 
 
+def list_symbols(folder: str, aliases: dict | None = None) -> set[str]:
+    """Symboles (en majuscules) des fichiers de cotations d un dossier, sans les lire."""
+    out = set()
+    for _, _, files in os.walk(folder):
+        out |= {symbol_from_filename(f, aliases).upper() for f in files if re.search(r"\.(csv|txt|tsv|parquet)$", f, re.I)}
+    return out
+
+
 def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, verbose: bool = False,
                 only=None) -> dict[str, pd.DataFrame]:
     """Charge tous les fichiers de cotations d un dossier (recursif). Retourne {symbole: DataFrame}.

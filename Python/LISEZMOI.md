@@ -68,12 +68,15 @@ python -m nexus liste [--details]                              # fiches et param
 python -m nexus backtest -s 01 -d DOSSIER --html               # rapport + trades.csv + equity.csv + graphique
 python -m nexus backtest -s 01 -d DOSSIER -p target_vol_pct=10 -p use_panic_state=false
 python -m nexus backtest -s 01 --synthetique                   # démonstration sans données
-python -m nexus tout -d DOSSIER                                # toutes les fiches + tableau récapitulatif
+python -m nexus tout -d DOSSIER [--donnees-minute DOSSIER_MINUTE]  # toutes les fiches + tableau récapitulatif
 python -m nexus grille -s 01 -d DOSSIER -p lookback_days=126,252 -p skip_days=0,21 --walkforward 180/30
 python -m nexus recherche --type tsmom -d DOSSIER -p lookback=63,126,252 -p skip=0,21
 python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES --html     # barres 1 minute, voir § 8
 ```
 
+- `tout` lit seulement les symboles dont chaque fiche a besoin ; la fiche 16 y tourne une fois par
+  instrument présent en barres minute (SPY, QQQ, IWM, DIA, ES, NQ, YM, RTY et micros), une ligne chacun.
+  Les `-p` s'appliquent aux fiches qui connaissent le paramètre (ex. `-p initial_bankroll=1000000`).
 - `--debut` / `--fin` bornent les données chargées ; `--debut-trading` laisse le chauffage avant cette
   date (indicateurs calculés, aucun ordre) et ne compte que la période tradée dans le rapport.
 - Les noms de paramètres sont ceux du C# en minuscules avec des tirets bas
@@ -105,7 +108,7 @@ avec rattrapage.
 - **Disjoncteur journalier** : par défaut (`daily_breaker_ref=veille`), la perte du jour est mesurée
   depuis la clôture précédente, comme en temps réel ; `daily_breaker_ref=ninja` reproduit le backtest C#.
 
-Contrôles : `python -m pytest -q tests` (53 tests, dont 17 pour la fiche 16) reprend les contrôles numériques de
+Contrôles : `python -m pytest -q tests` (54 tests, dont 18 pour la fiche 16) reprend les contrôles numériques de
 `Tests/Unit/Tests.cs` et vérifie le moteur. Il couvre :
 
 - les exécutions, stops et ordres limites ;
@@ -163,8 +166,9 @@ Pas d'équivalent NinjaScript : la fiche n'existe qu'en Python.
   (`ES_v0_1m.parquet` du dépôt Cotations, Databento → symbole `ES`). Seuls les fichiers des symboles
   utiles sont lus, sans agrégation en jour (`pip install pyarrow` pour le Parquet).
 - **Futures : rolls**. NinjaTrader : série continue *Merge Back Adjusted*. Databento `.v.0` : contrats
-  raboutés **sans ajustement** (sauts de −0,6 % à +1,4 % par trimestre) → `-p roll_adjust=minuit_utc`
-  repère le saut à 00:00 UTC de chaque mois d'échéance et ajuste les prix antérieurs en proportion
+  raboutés **sans ajustement** (sauts de −0,6 % à +1,4 % par trimestre) → `roll_adjust=auto` (défaut :
+  un future dont le fichier est horodaté en UTC) ou `minuit_utc` repère le saut à 00:00 UTC de chaque mois
+  d'échéance et ajuste les prix antérieurs en proportion
   (les rendements sont conservés ; trimestres sans saut net, < 5 bp ou ambigu, laissés tels quels).
   Des contrats individuels (`ES 03-25`…) sont refusés ; le rapport signale des gaps anormaux en fenêtre de roll.
 - **Jours fériés NYSE exclus** (`exchange_calendar=NYSE`) : les futures CME y ont une séance raccourcie
@@ -216,8 +220,8 @@ python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=SPY --debut 2007-01-
 python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=SPY --debut 2007-01-01 --fin 2024-04-30 -p execution=cloture
 
 # 2. Portage ES puis NQ (coûts futures) ; données Databento du dépôt Cotations (1 M$ : arrondi des contrats négligeable)
-python -m nexus backtest -s 16 -d ../../cotations/indices -p symbols=ES -p roll_adjust=minuit_utc -p initial_bankroll=1000000 --html
-python -m nexus backtest -s 16 -d ../../cotations/indices -p symbols=NQ -p roll_adjust=minuit_utc -p initial_bankroll=1000000
+python -m nexus backtest -s 16 -d ../../cotations/indices -p symbols=ES -p initial_bankroll=1000000 --html
+python -m nexus tout -d ../../cotations/indices -p initial_bankroll=1000000 --html     # ES, NQ, YM au récapitulatif
 # export NinjaTrader en heure de Paris
 python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES -p data_timezone=Europe/Paris
 
