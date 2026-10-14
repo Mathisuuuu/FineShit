@@ -49,7 +49,7 @@ DEFAULT_ALIASES = {
 
 _SUFFIX_TOKENS = {"LAST", "BID", "ASK", "DAILY", "DAY", "JOUR", "JOURNALIER", "D1", "1D", "D", "HIST", "HISTORY",
                   "HISTORIQUE", "DATA", "DONNEES", "OHLC", "OHLCV", "QUOTES", "COTATIONS", "PRICES", "M1", "M15",
-                  "1MIN", "15MIN", "H1", "1H", "60MIN", "MINUTE", "TICK", "TICKS", "US", "USA"}
+                  "1MIN", "15MIN", "H1", "1H", "60MIN", "MINUTE", "TICK", "TICKS", "US", "USA", "1M", "5M", "15M", "30M"}
 
 
 @dataclass
@@ -121,7 +121,7 @@ def clean_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 # =============================================================================
 def symbol_from_filename(path: str, aliases: dict | None = None) -> str:
     base = os.path.basename(path)
-    for ext in (".csv", ".txt", ".tsv", ".dat", ".gz", ".zip"):
+    for ext in (".csv", ".txt", ".tsv", ".dat", ".gz", ".zip", ".parquet"):
         if base.lower().endswith(ext):
             base = base[: -len(ext)]
     stem = base
@@ -134,8 +134,8 @@ def symbol_from_filename(path: str, aliases: dict | None = None) -> str:
         head = up.split(".")[0]
         up = head if head else up
     parts = [p for p in re.split(r"[_\s]+", up) if p]
-    while len(parts) > 1 and (parts[-1] in _SUFFIX_TOKENS or parts[-1] == "##-##"):
-        parts.pop()                      # "ES ##-##" = contrat continu NinjaTrader -> "ES"
+    while len(parts) > 1 and (parts[-1] in _SUFFIX_TOKENS or parts[-1] == "##-##" or re.fullmatch(r"[VCN]\d", parts[-1])):
+        parts.pop()                      # "ES ##-##" (NinjaTrader), "ES_v0_1m" (Databento ES.v.0) -> "ES"
     up = "".join(parts)
     if up in al:
         return al[up]
@@ -196,8 +196,33 @@ def _read_csv(path: str, **kw) -> pd.DataFrame:
         return pd.read_csv(path, encoding="utf-8-sig", engine="python", **kw)
 
 
+def _read_parquet(path: str) -> pd.DataFrame:
+    """Parquet (ex. Databento) : index ou colonne de dates, colonnes open/high/low/close/volume.
+    Un index avec fuseau est converti en UTC naif et le fuseau note dans attrs["fuseau"]."""
+    df = pd.read_parquet(path)
+    if not isinstance(df.index, pd.DatetimeIndex):
+        cd = _match_col(list(df.columns), "date") or next((c for c in df.columns if "ts_" in str(c).lower()), None)
+        if cd is None:
+            raise ValueError(f"aucune colonne de dates dans {path}")
+        df = df.set_index(pd.DatetimeIndex(pd.to_datetime(df[cd], utc=True)))
+    idx = pd.DatetimeIndex(df.index)
+    tz = None
+    if idx.tz is not None:
+        idx, tz = idx.tz_convert("UTC").tz_localize(None), "UTC"
+    out = pd.DataFrame(index=idx)
+    for k in ("open", "high", "low", "close", "volume"):
+        c = _match_col(list(df.columns), k)
+        out[k] = pd.to_numeric(df[c], errors="coerce").to_numpy() if c is not None else np.nan
+    out = out[~out.index.isna()].sort_index()
+    if tz:
+        out.attrs["fuseau"] = tz
+    return out
+
+
 def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
     """Lit un fichier de cotations et renvoie un DataFrame open/high/low/close/volume indexe par date."""
+    if path.lower().endswith(".parquet"):
+        return _read_parquet(path)
     with open(path, "r", encoding="utf-8-sig", errors="replace") as fh:
         head = [fh.readline() for _ in range(5)]
     first = next((l for l in head if l.strip()), "")
@@ -273,7 +298,7 @@ def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, ve
     keep = {x.upper() for x in only} if only else None
     for root, _, files in os.walk(folder):
         for f in sorted(files):
-            if not re.search(r"\.(csv|txt|tsv)$", f, re.I):
+            if not re.search(r"\.(csv|txt|tsv|parquet)$", f, re.I):
                 continue
             p = os.path.join(root, f)
             if keep is not None:
@@ -288,6 +313,7 @@ def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, ve
                 continue
             if df.empty:
                 continue
+            tz = df.attrs.get("fuseau")
             if daily:
                 df = to_daily(df)
             df = clean_ohlcv(df)
@@ -295,6 +321,8 @@ def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, ve
             if sym in res:
                 df = pd.concat([res[sym], df])
                 df = df[~df.index.duplicated(keep="last")].sort_index()
+            if tz:
+                df.attrs["fuseau"] = tz          # horodatages en UTC (fichier avec fuseau)
             res[sym] = df
             if verbose:
                 print(f"[data] {sym:<10} {len(df):6d} barres {df.index[0].date()} -> {df.index[-1].date()} ({f})")

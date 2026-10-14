@@ -248,16 +248,19 @@ def _kernel(o, c, sigma, vwap, last_slot, exit_dec, dec_mask, tradable, lev, day
 _GRID_CACHE: dict = {}
 
 
-def _grid_for(df: pd.DataFrame, tz: str, label: str):
-    """Grille de seance mise en cache pour les grilles de parametres (meme DataFrame, meme fuseau)."""
-    key = (id(df), tz, label)
+def _grid_for(df: pd.DataFrame, tz: str, label: str, roll: str = "aucun"):
+    """Grille de seance mise en cache pour les grilles de parametres (meme DataFrame, meme fuseau).
+    -> (grille, note sur l horodatage, table des rolls ajustes)."""
+    key = (id(df), tz, label, roll)
     hit = _GRID_CACHE.get(key)
     if hit is None or hit[0] is not df:          # la reference gardee empeche la reutilisation de l id
         if len(_GRID_CACHE) >= 2:
             _GRID_CACHE.pop(next(iter(_GRID_CACHE)))
-        mins, note = I.prepare_minutes(df, tz, label)
-        hit = _GRID_CACHE[key] = (df, I.build_grid(mins), note)
-    return hit[1], hit[2]
+        src, rolls = (I.adjust_rolls_midnight_utc(df, tz) if roll == "minuit_utc"
+                      else (df, pd.DataFrame(columns=["utc", "bar", "saut_bp", "second_bp"])))
+        mins, note = I.prepare_minutes(src, tz, label)
+        hit = _GRID_CACHE[key] = (df, I.build_grid(mins), note, rolls)
+    return hit[1], hit[2], hit[3]
 
 
 def _find_series(data: dict, name: str):
@@ -343,8 +346,10 @@ class Nexus16NoiseArea(NexusStrategy):
         commission_min_per_order=None,
         slippage_ticks=None,
         # --- Donnees ---
-        data_timezone=I.NY,                  # fuseau des horodatages des fichiers (ex. Europe/Paris, UTC)
+        data_timezone="auto",                # auto (UTC si le fichier porte un fuseau, sinon New York) | Europe/Paris | UTC...
         bar_label="auto",                    # auto | debut | fin
+        roll_adjust="aucun",                 # aucun | minuit_utc (contrats continus Databento .v.0 non ajustes)
+        exchange_calendar="NYSE",            # NYSE (feries exclus : seance futures raccourcie sans seance cash) | aucun
         dividends_file="",                   # CSV date,dividend (jour ex) : PrevClose ajuste
         # --- Analyse ---
         publication_date="2024-06-01",
@@ -407,9 +412,14 @@ class Nexus16NoiseArea(NexusStrategy):
         if p.execution not in EXEC_MODES:
             raise ValueError(f"execution inconnue '{p.execution}' ({', '.join(EXEC_MODES)})")
         spec = self._spec(sym)
-        grid, note = _grid_for(df, p.data_timezone, p.bar_label)
-        self.symbol, self.spec, self.data_note = sym, spec, note
-        self.nx(f"{sym} : {note}")
+        tz = df.attrs.get("fuseau", I.NY) if p.data_timezone == "auto" else p.data_timezone
+        if p.roll_adjust not in ("aucun", "minuit_utc"):
+            raise ValueError(f"roll_adjust inconnu '{p.roll_adjust}' (aucun | minuit_utc)")
+        grid, note, rolls = _grid_for(df, tz, p.bar_label, p.roll_adjust)
+        self.symbol, self.spec, self.data_note, self.tz, self.rolls = sym, spec, note, tz, rolls
+        self.nx(f"{sym} : {note}, fuseau source {tz}")
+        if len(rolls):
+            self.nx(f"{sym} : {len(rolls)} rolls ajustes a 00:00 UTC (saut moyen {rolls['saut_bp'].abs().mean():.0f} bp)")
         if grid.valid.mean() < 0.5:
             raise ValueError(f"{self.NAME} : moins de la moitie des jours ont une seance cash complete - fuseau des donnees "
                              f"('{p.data_timezone}') ou horodatage incorrect ? Ex. -p data_timezone=Europe/Paris")
@@ -420,9 +430,14 @@ class Nexus16NoiseArea(NexusStrategy):
         hi = np.searchsorted(days.values, np.datetime64(pd.Timestamp(end)), side="right") if end is not None else len(days)
         sl = slice(lo, hi)
         days = days[sl]
-        o, c, valid = grid.o[sl], grid.c[sl], grid.valid[sl]
+        o, c, valid = grid.o[sl], grid.c[sl], grid.valid[sl].copy()
         last_slot, half = grid.last_slot[sl], grid.half_day[sl]
         n = len(days)
+        holiday = np.zeros(n, bool)
+        if p.exchange_calendar == "NYSE" and n:
+            holiday = np.asarray(days.isin(I.nyse_holidays(days[0], days[-1])))
+            valid &= ~holiday
+            half = half & valid
         if n < int(p.lookback_days) + 1:
             raise ValueError(f"{self.NAME} : historique trop court ({n} jours)")
         g = I.SessionGrid(days, o, grid.h[sl], grid.l[sl], c, grid.v[sl], last_slot, valid, half, grid.first_slot[sl])
@@ -565,7 +580,8 @@ class Nexus16NoiseArea(NexusStrategy):
         panel["rendement_brut"] = np.where(valid, gross_day / prev_eq, np.nan)
         panel["cout_rel"] = np.where(valid, cost_day / prev_eq, np.nan)
 
-        self.log_counts = dict(valid=int(valid.sum()), half=int(half.sum()), invalid=int((~valid).sum()),
+        self.log_counts = dict(valid=int(valid.sum()), half=int(half.sum()), invalid=int((~valid & ~holiday).sum()),
+                               holidays=int(holiday.sum()),
                                warm=warm, tradable=int(tradable.sum()), gamma_skip=gamma_skip,
                                n_dec=int((dec_idx < I.SESSION_MINUTES - 1 - int(p.exit_minutes_before_close)).sum()))
         self.panel = panel[keep]
@@ -596,8 +612,13 @@ class Nexus16NoiseArea(NexusStrategy):
         tr = res.trades
         r = pan["rendement"].dropna()
         lines.append(f"Instrument {self.symbol} ({spec.asset_class}, {spec.point_value:g} $/point, tick {spec.tick_size:g}) ; "
-                     f"donnees : {self.data_note}, fuseau source {p.data_timezone}")
-        lines.append(f"Seances : {lc['valid']} valides (dont {lc['half']} demi-seances), {lc['invalid']} incompletes ignorees, "
+                     f"donnees : {self.data_note}, fuseau source {self.tz}")
+        if len(self.rolls):
+            rb = self.rolls["saut_bp"]
+            lines.append(f"Rolls ajustes (00:00 UTC, proportionnel) : {len(rb)}, saut moyen {rb.abs().mean():.0f} bp, "
+                         f"max {rb.abs().max():.0f} bp, du {self.rolls['utc'].iloc[0]:%Y-%m-%d} au {self.rolls['utc'].iloc[-1]:%Y-%m-%d}")
+        lines.append(f"Seances : {lc['valid']} valides (dont {lc['half']} demi-seances), {lc['holidays']} feries NYSE exclus, "
+                     f"{lc['invalid']} incompletes ignorees, "
                      f"{lc['tradable']} tradables (chauffage {lc['warm']}" + (f", {lc['gamma_skip']} exclues par le filtre gamma" if lc["gamma_skip"] else "") + ")")
         first = int(p.first_check_min) if int(p.first_check_min) > 0 else int(p.check_interval_min)
         exit_txt = "cloture (MOC)" if int(p.exit_minutes_before_close) == 0 else f"{p.exit_minutes_before_close} min avant la cloture"
@@ -697,6 +718,12 @@ class Nexus16NoiseArea(NexusStrategy):
             regime_table(f"Regime VIX (cloture de la veille, {p.vix_symbol}) :", lab)
         else:
             lines.append(f"Regime VIX : {p.vix_symbol} absent des donnees (ajouter ^VIX.csv au dossier)")
+            rv = (pan["cloture"] / pan["prev_close"] - 1).rolling(20).std().shift(1) * np.sqrt(252)
+            if rv.notna().sum() > 60:
+                q = rv.quantile([1 / 3, 2 / 3]).to_numpy()
+                lab = pd.cut(rv, [-np.inf, q[0], q[1], np.inf], right=False,
+                             labels=[f"vol<{q[0]:.0%}", f"{q[0]:.0%}-{q[1]:.0%}", f"vol>={q[1]:.0%}"]).astype(object)
+                regime_table(f"  proxy : vol realisee 20 j de {self.symbol} a la veille (terciles de la periode) :", lab)
         gx = pan["gex"]
         if gx.notna().any():
             lab = pd.Series(np.where(gx.isna(), "inconnu", np.where(gx < 0, "court gamma", "long gamma")), index=gx.index)
@@ -713,7 +740,8 @@ class Nexus16NoiseArea(NexusStrategy):
                 share_big, share_all = float(roll[big].mean()) if big.any() else 0.0, float(roll.mean())
                 warn = big.sum() >= 4 and share_big > 2.5 * share_all
                 lines.append(f"Rolls : {_p(share_big)} des gaps > 4x la mediane tombent en fenetre de roll (attendu {_p(share_all)})"
-                             + ("  -> DONNEES PROBABLEMENT NON AJUSTEES (Merge Back Adjusted)" if warn else ""))
+                             + ("  -> DONNEES PROBABLEMENT NON AJUSTEES (NinjaTrader : Merge Back Adjusted ; "
+                                "Databento .v.0 : -p roll_adjust=minuit_utc)" if warn else ""))
 
         # --- criteres de rejet ---
         lines.append("")

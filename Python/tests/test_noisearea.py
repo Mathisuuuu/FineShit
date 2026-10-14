@@ -219,3 +219,45 @@ def test_entree_sans_filtre_vwap():
     t = res.trades[0]
     assert t.direction == 1 and t.entry_time == pd.Timestamp(f"{test_day:%Y-%m-%d} 10:00")
     assert t.exit_time == pd.Timestamp(f"{test_day:%Y-%m-%d} 10:30") and t.exit_reason == "stop VWAP"
+
+
+def _globex_utc(start, end, seed=3):
+    """Barres 1 minute 24 h/24 en UTC (dimanche 23:00 -> vendredi 22:00), marche aleatoire."""
+    idx = pd.date_range(start, end, freq="1min")
+    idx = idx[(idx.dayofweek < 5) | ((idx.dayofweek == 6) & (idx.hour >= 23))]
+    idx = idx[~((idx.dayofweek == 4) & (idx.hour >= 22))]
+    rng = np.random.default_rng(seed)
+    c = 4000 * np.exp(np.cumsum(rng.normal(0, 3e-4, len(idx))))
+    o = np.r_[c[0], c[:-1]]
+    return pd.DataFrame({"open": o, "high": np.maximum(o, c), "low": np.minimum(o, c), "close": c,
+                         "volume": rng.integers(50, 500, len(idx)).astype(float)}, index=idx)
+
+
+def test_roll_a_minuit_utc_ajuste():
+    df = _globex_utc("2023-02-26 23:00", "2023-04-14 21:59")
+    k = df.index.get_loc(pd.Timestamp("2023-03-15 00:00"))
+    raw = df.copy()
+    raw.iloc[k:, :4] *= 1.0105                                   # roll : +105 bp
+    adj, rolls = I.adjust_rolls_midnight_utc(raw, "UTC")
+    assert len(rolls) == 1 and rolls["utc"].iloc[0] == pd.Timestamp("2023-03-15")
+    assert rolls["saut_bp"].iloc[0] == pytest.approx(104.5, abs=3)
+    assert abs(math.log(adj["open"].iloc[k] / adj["close"].iloc[k - 1])) < 5e-4
+    assert np.allclose(adj["close"].iloc[k:], raw["close"].iloc[k:])           # derniere echeance inchangee
+    _, none = I.adjust_rolls_midnight_utc(df, "UTC")                            # serie deja continue
+    assert none.empty
+
+
+def test_parquet_utc_feries_et_noms_databento(tmp_path):
+    pytest.importorskip("pyarrow")
+    df = _globex_utc("2023-12-03 23:00", "2024-02-29 21:59", seed=5)
+    utc = df.copy()
+    utc.index = utc.index.tz_localize("UTC").rename("ts_event")
+    utc.to_parquet(tmp_path / "ES_v0_1m.parquet")
+    data = D.load_folder(str(tmp_path), daily=False, only=["ES"])
+    assert list(data) == ["ES"] and data["ES"].attrs.get("fuseau") == "UTC"
+    res = NA(symbols="ES", lookback_days=5, vol_lookback_days=5).run(data)       # fuseau lu dans le fichier
+    pan = res.daily_panel
+    assert pd.Timestamp("2024-01-15") not in pan.index                          # Martin Luther King : ferie NYSE
+    assert pd.Timestamp("2024-01-16") in pan.index and "feries NYSE exclus" in res.report
+    assert {"2024-01-15", "2024-03-29", "2022-06-20", "2025-01-09"} <= set(I.nyse_holidays("2022-01-01", "2025-12-31").strftime("%Y-%m-%d"))
+    assert pd.Timestamp("2021-12-31") not in I.nyse_holidays("2021-12-01", "2022-01-31")

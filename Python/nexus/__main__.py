@@ -212,7 +212,8 @@ def cmd_tout(args):
 def cmd_grille(args):
     klass = get(args.strategie)
     grid = _params(args.param, grid=True)
-    base = _external_params(klass, args.externes)
+    base = {**_external_params(klass, args.externes), **{k: v[0] for k, v in grid.items() if len(v) == 1}}
+    grid = {k: v for k, v in grid.items() if len(v) > 1}          # parametres fixes : hors des libelles
     first = {**base, **{k: v[0] for k, v in grid.items()}}
     data = _load(args, klass, first) if not args.synthetique else _synthetic_for(klass, first)
     keys = list(grid)

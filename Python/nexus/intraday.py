@@ -9,6 +9,8 @@
 """
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pandas as pd
 
@@ -92,6 +94,71 @@ def prepare_minutes(df: pd.DataFrame, tz: str | None = NY, bar_label: str = "aut
         out = out.copy()
         out.index = pd.DatetimeIndex(out.index) + pd.Timedelta(minutes=1)
     return out, f"horodatage '{label}' de barre ({why})"
+
+
+# =============================================================================
+#  Calendrier NYSE et rolls des contrats continus
+# =============================================================================
+NYSE_SPECIAL_CLOSURES = ("2007-01-02", "2012-10-29", "2012-10-30", "2018-12-05", "2025-01-09")
+
+
+def nyse_holidays(start, end) -> pd.DatetimeIndex:
+    """Jours feries NYSE (regles depuis 2007 + fermetures exceptionnelles). Les futures CME y ont une seance
+    raccourcie (jusqu a 13:00 New York) qui ressemble a une demi-seance mais n a pas de seance cash."""
+    from pandas.tseries.holiday import (AbstractHolidayCalendar, GoodFriday, Holiday, USLaborDay,
+                                        USMartinLutherKingJr, USMemorialDay, USPresidentsDay, USThanksgivingDay,
+                                        nearest_workday, sunday_to_monday)
+
+    class _Nyse(AbstractHolidayCalendar):
+        rules = [Holiday("Nouvel an", month=1, day=1, observance=sunday_to_monday), USMartinLutherKingJr, USPresidentsDay,
+                 GoodFriday, USMemorialDay, Holiday("Juneteenth", month=6, day=19, start_date="2022-01-01", observance=nearest_workday),
+                 Holiday("Independance", month=7, day=4, observance=nearest_workday), USLaborDay, USThanksgivingDay,
+                 Holiday("Noel", month=12, day=25, observance=nearest_workday)]
+
+    h = _Nyse().holidays(pd.Timestamp(start), pd.Timestamp(end))
+    h = h[~((h.month == 12) & (h.day == 31))]           # 1er janvier un samedi : pas de report au vendredi
+    special = pd.DatetimeIndex(NYSE_SPECIAL_CLOSURES)
+    return h.union(special[(special >= pd.Timestamp(start)) & (special <= pd.Timestamp(end))])
+
+
+def adjust_rolls_midnight_utc(df: pd.DataFrame, tz: str = "UTC", months=(3, 6, 9, 12), min_bp: float = 5.0,
+                              dominance: float = 4.0) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Contrats continus raboutes sans ajustement (Databento ES.v.0...) : le changement d echeance se fait a
+    00:00 UTC. Pour chaque mois d echeance, le saut a minuit UTC le plus fort (dans la meme session Globex,
+    >= min_bp et >= dominance x le second) est le roll ; les prix anterieurs sont multiplies par le rapport
+    (ajustement proportionnel : les rendements sont conserves). -> (DataFrame ajuste, table des rolls)."""
+    idx = pd.DatetimeIndex(df.index)
+    utc = idx.tz_convert("UTC") if idx.tz is not None else idx.tz_localize(tz, ambiguous="NaT", nonexistent="NaT").tz_convert("UTC")
+    t = utc.tz_localize(None).to_numpy()
+    o, c = df["open"].to_numpy(float), df["close"].to_numpy(float)
+    prev_t = np.concatenate([np.array(["NaT"], dtype=t.dtype), t[:-1]])
+    cand = (t.astype("datetime64[D]") != prev_t.astype("datetime64[D]")) & ((t - prev_t) <= np.timedelta64(30, "m"))
+    cand[0] = False
+    k = np.flatnonzero(cand)
+    gap = np.log(o[k] / c[k - 1])
+    when = pd.DatetimeIndex(t[k])
+    rows = []
+    for y in np.unique(when.year):
+        for m in months:
+            sel = np.flatnonzero((when.year == y) & (when.month == m) & (when.day <= 25))
+            if len(sel) < 2:
+                continue
+            a = np.abs(gap[sel])
+            order = np.argsort(a)[::-1]
+            g1, g2 = a[order[0]], a[order[1]]
+            if g1 * 1e4 >= min_bp and g1 >= dominance * g2:
+                j = sel[order[0]]
+                rows.append(dict(utc=when[j], bar=int(k[j]), saut_bp=float(gap[j] * 1e4), second_bp=float(g2 * 1e4)))
+    rolls = pd.DataFrame(rows, columns=["utc", "bar", "saut_bp", "second_bp"])
+    if rolls.empty:
+        return df, rolls
+    factor = np.ones(len(df))
+    for r in rolls.itertuples():
+        factor[: r.bar] *= math.exp(r.saut_bp / 1e4)
+    out = df.copy()
+    for col in ("open", "high", "low", "close"):
+        out[col] = out[col].to_numpy(float) * factor
+    return out, rolls
 
 
 class SessionGrid:

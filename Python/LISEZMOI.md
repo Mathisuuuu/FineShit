@@ -105,7 +105,7 @@ avec rattrapage.
 - **Disjoncteur journalier** : par défaut (`daily_breaker_ref=veille`), la perte du jour est mesurée
   depuis la clôture précédente, comme en temps réel ; `daily_breaker_ref=ninja` reproduit le backtest C#.
 
-Contrôles : `python -m pytest -q tests` (51 tests, dont 15 pour la fiche 16) reprend les contrôles numériques de
+Contrôles : `python -m pytest -q tests` (53 tests, dont 17 pour la fiche 16) reprend les contrôles numériques de
 `Tests/Unit/Tests.cs` et vérifie le moteur. Il couvre :
 
 - les exécutions, stops et ordres limites ;
@@ -159,17 +159,24 @@ Pas d'équivalent NinjaScript : la fiche n'existe qu'en Python.
 ### Données
 
 - **Barres 1 minute** de la séance cash (les barres hors séance sont ignorées) : `SPY.Last.txt`,
-  `ES ##-##.Last.txt` (série continue NinjaTrader → symbole `ES`), CSV génériques. Seuls les fichiers des
-  symboles utiles sont lus, sans agrégation en jour.
-- **Futures : série continue ajustée des rolls** (NinjaTrader : *Merge Back Adjusted*). Des contrats
-  individuels (`ES 03-25`…) sont refusés ; le rapport signale des gaps anormaux en fenêtre de roll.
-- **Fuseau** : NinjaTrader exporte dans le fuseau du PC. En France : `-p data_timezone=Europe/Paris`
-  (`UTC` pour la plupart des fournisseurs). Si moins de la moitié des jours ont une séance complète, le
-  run s'arrête en suggérant le fuseau.
+  `ES ##-##.Last.txt` (série continue NinjaTrader → symbole `ES`), CSV génériques, **Parquet**
+  (`ES_v0_1m.parquet` du dépôt Cotations, Databento → symbole `ES`). Seuls les fichiers des symboles
+  utiles sont lus, sans agrégation en jour (`pip install pyarrow` pour le Parquet).
+- **Futures : rolls**. NinjaTrader : série continue *Merge Back Adjusted*. Databento `.v.0` : contrats
+  raboutés **sans ajustement** (sauts de −0,6 % à +1,4 % par trimestre) → `-p roll_adjust=minuit_utc`
+  repère le saut à 00:00 UTC de chaque mois d'échéance et ajuste les prix antérieurs en proportion
+  (les rendements sont conservés ; trimestres sans saut net, < 5 bp ou ambigu, laissés tels quels).
+  Des contrats individuels (`ES 03-25`…) sont refusés ; le rapport signale des gaps anormaux en fenêtre de roll.
+- **Jours fériés NYSE exclus** (`exchange_calendar=NYSE`) : les futures CME y ont une séance raccourcie
+  jusqu'à 13:00 qui ressemblerait sinon à une demi-séance.
+- **Fuseau** (`data_timezone=auto`) : UTC si le fichier porte son fuseau (Parquet Databento), sinon New
+  York. NinjaTrader exporte dans le fuseau du PC : en France `-p data_timezone=Europe/Paris`. Si moins de
+  la moitié des jours ont une séance complète, le run s'arrête en suggérant le fuseau.
 - **Horodatage des barres** (`bar_label=auto`) : début ou fin de barre, déduit du saut de volume à
   l'ouverture (NinjaTrader date en fin de barre : la barre 9:30-9:31 est datée 9:31). Le rapport indique
   ce qui a été retenu ; forcer avec `-p bar_label=debut|fin`.
-- Facultatif : `^VIX.csv` journalier dans le même dossier (régime VIX), `Data/gex.csv` (format de la
+- Facultatif : `^VIX.csv` journalier dans le même dossier (régime VIX ; sans lui, le rapport découpe par
+  terciles de vol réalisée 20 j de l'instrument), `Data/gex.csv` (format de la
   fiche 15, branché automatiquement s'il existe ; régime gamma), `-p dividends_file=...` (CSV
   `date,dividend` au jour ex : PrevClose ajusté, utile pour SPY non ajusté).
 - Demi-séances (13:00) reconnues ; jour incomplet (première barre après 9:35 ou séance tronquée) ignoré.
@@ -208,9 +215,11 @@ celle du papier. Disjoncteurs du module C désactivés par défaut (absents du p
 python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=SPY --debut 2007-01-01 --fin 2024-04-30 --html
 python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=SPY --debut 2007-01-01 --fin 2024-04-30 -p execution=cloture
 
-# 2. Portage ES puis NQ (coûts futures), données Paris
-python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES -p data_timezone=Europe/Paris --html
-python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=NQ -p data_timezone=Europe/Paris
+# 2. Portage ES puis NQ (coûts futures) ; données Databento du dépôt Cotations (1 M$ : arrondi des contrats négligeable)
+python -m nexus backtest -s 16 -d ../../cotations/indices -p symbols=ES -p roll_adjust=minuit_utc -p initial_bankroll=1000000 --html
+python -m nexus backtest -s 16 -d ../../cotations/indices -p symbols=NQ -p roll_adjust=minuit_utc -p initial_bankroll=1000000
+# export NinjaTrader en heure de Paris
+python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES -p data_timezone=Europe/Paris
 
 # 3. Post-publication seul (chauffage avant, rapport à partir du 1er juin 2024)
 python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES --debut 2024-01-01 --debut-trading 2024-06-01
