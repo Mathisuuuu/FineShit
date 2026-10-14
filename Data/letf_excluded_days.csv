@@ -1,0 +1,9 @@
+# Jours exclus de la fiche 15, EN PLUS des regles automatiques : demi-seances NYSE (3 juillet, lendemain de
+# Thanksgiving, 24 decembre), quatre sorcieres et rebalancement trimestriel du Nasdaq-100 (3e vendredi de
+# mars, juin, septembre, decembre, avance si ferie). Les evenements USD a fort impact FOMC / CPI / NFP de
+# macro_events.csv sont aussi retenus (pas les minutes du FOMC ni l ADP).
+# reason : FOMC, CPI, NFP, NDX rebalance (rebalancements speciaux), demi-seance, ou tout autre texte (categorie "autre").
+date,reason
+# 2026-10-28,FOMC
+# 2026-11-06,NFP
+# 2023-07-24,NDX special rebalance

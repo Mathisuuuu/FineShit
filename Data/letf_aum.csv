@@ -1,0 +1,11 @@
+# Actif net des ETF a levier pour la fiche 15 (Nexus15_LetfRebalancing). Une ligne par fonds et par jour de bourse.
+# date = jour de la NAV et des parts en circulation (fin de journee). Utilisee pour les seances STRICTEMENT
+#        posterieures : A_i = parts x NAV de la VEILLE.
+# fund = TQQQ, SQQQ, QLD, QID (Nasdaq-100) ; UPRO, SPXU, SPXL, SPXS, SSO, SDS (S&P 500) - cf. propriete "Fonds LETF".
+# aum (facultatif) = actif net total, prioritaire sur shares_outstanding x nav.
+# net_flow_usd (facultatif) = creations - rachats ESTIMES du jour "date", connus a 15:25 ET, en dollars :
+#        le flux du fonds devient F + L x C. Sans cette colonne, la tendance des parts sur 5 jours sert de controle.
+# Sources : historiques NAV + parts de ProShares / Direxion, Bloomberg, ETF Global. Historique conseille : 2012 -> aujourd hui.
+date,fund,shares_outstanding,nav,net_flow_usd
+# 2026-10-12,TQQQ,345000000,97.10,
+# 2026-10-12,SQQQ,95000000,23.15,-12000000
