@@ -1,5 +1,8 @@
+/* Poste de travail de recherche : barre de navigation a gauche, panneaux de resultats a droite ; chiffres en mono tabulaire. */
 :root {
-  --fond: #f5f6f8;
+  --police: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --police-chiffres: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --fond: #f4f6f9;
   --surface: #ffffff;
   --surface-2: #f0f2f5;
   --bord: #dde1e7;
@@ -31,9 +34,9 @@
 html, body { margin: 0; }
 body {
   background: var(--fond); color: var(--texte);
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 14px/1.5 var(--police);
 }
-h1, h2, h3 { margin: 0; font-weight: 600; }
+h1, h2, h3 { margin: 0; font-weight: 600; text-wrap: balance; }
 h2 { font-size: 18px; }
 h3 { font-size: 15px; margin-bottom: 8px; }
 a { color: var(--accent); }
@@ -41,8 +44,9 @@ a { color: var(--accent); }
 .vide { color: var(--texte-2); padding: 24px; }
 
 .barre {
-  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
-  padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--bord);
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; align-items: center; gap: 12px;
+  padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--surface); border-bottom: 1px solid var(--bord);
 }
 .barre h1 { font-size: 17px; }
 .barre h1 span { color: var(--texte-2); font-weight: 400; }
@@ -57,7 +61,7 @@ a { color: var(--accent); }
 
 .cadre { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: calc(100vh - 53px); }
 nav#liste { border-right: 1px solid var(--bord); background: var(--surface); padding: 12px; overflow-y: auto; }
-main#contenu { padding: 18px 22px 40px; min-width: 0; }
+main#contenu { padding-block: 18px 40px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); min-width: 0; }
 
 .titre-liste { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--texte-2); margin: 14px 4px 6px; }
 .carte-strat {
@@ -87,17 +91,20 @@ main#contenu { padding: 18px 22px 40px; min-width: 0; }
 
 .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
 .kpi { background: var(--surface); border: 1px solid var(--bord); border-radius: 10px; padding: 10px 12px; box-shadow: var(--ombre); }
-.kpi .v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi .v { font: 600 19px/1.3 var(--police-chiffres); font-variant-numeric: tabular-nums; }
 .kpi .l { color: var(--texte-2); font-size: 12px; }
 
 .grille-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.panneau { background: var(--surface); border: 1px solid var(--bord); border-radius: 10px; padding: 12px 14px; box-shadow: var(--ombre); margin-bottom: 14px; min-width: 0; }
+.panneau { background: var(--surface); border: 1px solid var(--bord); border-radius: 10px; padding: 12px 14px; box-shadow: var(--ombre); margin-bottom: 14px; min-width: 0; overflow-x: auto; }
 .panneau .sous { color: var(--texte-2); font-size: 12.5px; margin: -4px 0 8px; }
 .graph { width: 100%; height: 320px; }
 .graph.haut { height: 400px; }
 .graph.bas { height: 240px; }
 
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+td.n { font-family: var(--police-chiffres); font-size: 12.5px; }
+.titre-liste, th { letter-spacing: .04em; }
+a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bord); vertical-align: top; }
 th { color: var(--texte-2); font-weight: 600; font-size: 12.5px; background: var(--surface); position: sticky; top: 0; }
 td.n, th.n { text-align: right; }
@@ -125,8 +132,9 @@ dialog pre { background: var(--surface-2); padding: 10px; border-radius: 8px; ma
 @media (max-width: 860px) {
   .icone { display: block; }
   .cadre { grid-template-columns: minmax(0, 1fr); }
-  nav#liste { display: none; position: fixed; inset: 53px 0 0 0; z-index: 4; }
+  nav#liste { display: none; position: fixed; inset: 53px 0 0 0; z-index: 4;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   nav#liste.ouvert { display: block; }
-  main#contenu { padding: 14px 16px 32px; }
+  main#contenu { padding-block: 14px 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   #genere { display: none; }
 }

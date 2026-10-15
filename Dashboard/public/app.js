@@ -2,7 +2,7 @@
 // Toutes les valeurs affichees viennent des fichiers JSON exportes par le moteur Python (vectorbt, scipy).
 "use strict";
 
-const etat = { index: null, fiches: {}, id: null, onglet: "apercu", trades: { page: 0, tri: "entree", sens: -1, filtre: "" } };
+const etat = { index: null, fiches: {}, id: null, onglet: "apercu", statique: false, trades: { page: 0, tri: "entree", sens: -1, filtre: "" } };
 const ONGLETS = [["apercu", "Vue d'ensemble"], ["fonctionnement", "Fonctionnement"], ["vectorbt", "Statistiques vectorbt"],
   ["trades", "Trades"], ["tests", "Tests et Monte Carlo"]];
 const $ = (s, r = document) => r.querySelector(s);
@@ -63,8 +63,12 @@ function valeurStat(nom, v) {
 function couleurs() {
   const cs = getComputedStyle(document.documentElement);
   const g = (n) => cs.getPropertyValue(n).trim();
-  return { texte: g("--texte"), texte2: g("--texte-2"), bord: g("--bord"), accent: g("--accent"), vert: g("--vert"), rouge: g("--rouge"), surface: g("--surface") };
+  return { texte: g("--texte"), texte2: g("--texte-2"), bord: g("--bord"), accent: g("--accent"), vert: g("--vert"), rouge: g("--rouge"),
+    surface: g("--surface"), surface2: g("--surface-2") };
 }
+// echelle divergente aux couleurs du theme : perte (rouge) -> neutre -> gain (vert)
+const echelle = (c, haut) => [[0, c.rouge], [0.5, c.surface2], [1, haut || c.vert]];
+const virgule = (v, d = 1) => (v === null || v === undefined ? "" : v.toFixed(d).replace(".", ","));
 function trace(el, data, layout = {}) {
   if (!window.Plotly || !el) return;
   const c = couleurs();
@@ -84,7 +88,8 @@ function histo(el, series, { titre = "", observe = null, fmt = ".1%", noms = [] 
   const data = series.map((s, i) => ({ type: "histogram", x: s, name: noms[i] || "", opacity: series.length > 1 ? 0.6 : 0.85, marker: { color: tons[i % 3] }, nbinsx: 60 }));
   const shapes = observe === null ? [] : [{ type: "line", x0: observe, x1: observe, yref: "paper", y0: 0, y1: 1, line: { color: c.texte, width: 2, dash: "dash" } }];
   trace(el, data, { barmode: "overlay", shapes, showlegend: noms.length > 1, hovermode: "closest", xaxis: { tickformat: fmt, title: { text: titre } },
-    annotations: observe === null ? [] : [{ x: observe, yref: "paper", y: 1, text: "observe", showarrow: false, yanchor: "bottom", font: { size: 11 } }] });
+    legend: { orientation: "h", x: 0, y: -0.28 }, margin: { l: 56, r: 16, t: 10, b: noms.length > 1 ? 70 : 44 },
+    annotations: observe === null ? [] : [{ x: observe, yref: "paper", y: 0.98, text: " observe", showarrow: false, xanchor: "left", yanchor: "top", font: { size: 11, color: c.texte } }] });
 }
 
 // ------------------------------------------------------------------ donnees
@@ -94,8 +99,18 @@ async function json(url) {
   return r.json();
 }
 async function fiche(id) {
-  if (!etat.fiches[id]) etat.fiches[id] = await json(`/api/strategies/${encodeURIComponent(id)}`);
+  if (!etat.fiches[id]) {
+    etat.fiches[id] = await json(etat.statique ? `donnees/${encodeURIComponent(id)}.json` : `/api/strategies/${encodeURIComponent(id)}`);
+  }
   return etat.fiches[id];
+}
+// Avec le serveur Node : API /api/... ; sans serveur (copie statique) : fichiers donnees/*.json a cote de la page.
+async function chargerIndex() {
+  try {
+    const r = await fetch("/api/strategies", { cache: "no-store" });
+    if (r.ok && (r.headers.get("content-type") || "").includes("json")) return [await r.json(), false];
+  } catch (e) { /* pas de serveur */ }
+  return [await json("donnees/index.json"), true];
 }
 
 // ------------------------------------------------------------------ liste
@@ -105,7 +120,7 @@ function rendreListe() {
   const carte = (x) => {
     const k = x.kpi || {};
     const badge = x.statut === "validee" ? `<span class="badge validee">Validee</span>` : `<span class="badge candidate">Candidate</span>`;
-    return `<a class="carte-strat ${etat.id === x.id ? "active" : ""}" href="#/s/${encodeURIComponent(x.id)}/${etat.onglet}">
+    return `<a class="carte-strat ${etat.id === x.id ? "active" : ""}" href="#" data-route="s/${encodeURIComponent(x.id)}/${etat.onglet}">
       <div class="nom"><span>${esc(x.titre)}</span>${badge}</div>
       <div class="ligne"><span>Sharpe ${num(k.sharpe)}</span><span>perte max ${pct(k.perte_max)}</span></div>
       <div class="ligne"><span class="badge ok">${x.ok} ok</span><span class="badge alerte">${x.alertes} alerte(s)</span></div></a>`;
@@ -113,7 +128,7 @@ function rendreListe() {
   const val = s.filter((x) => x.statut === "validee");
   const cand = s.filter((x) => x.statut !== "validee");
   nav.innerHTML = `
-    <a class="carte-strat ${etat.id === null ? "active" : ""}" href="#/comparaison"><div class="nom"><span>Comparaison</span></div>
+    <a class="carte-strat ${etat.id === null ? "active" : ""}" href="#" data-route="comparaison"><div class="nom"><span>Comparaison</span></div>
       <div class="ligne">toutes les strategies, correlations, portefeuille combine</div></a>
     <div class="titre-liste">Strategies validees (${val.length})</div>${val.map(carte).join("") || '<p class="discret">aucune</p>'}
     <div class="titre-liste">Candidates a l'etude (${cand.length})</div>${cand.map(carte).join("") || '<p class="discret">aucune</p>'}`;
@@ -122,7 +137,7 @@ function rendreListe() {
 // ------------------------------------------------------------------ pages
 function entete(f) {
   const statut = f.statut === "validee" ? `<span class="badge validee">Validee le ${esc(f.valide_le)}</span>` : `<span class="badge candidate">Candidate, non validee</span>`;
-  const onglets = ONGLETS.map(([k, l]) => `<a href="#/s/${encodeURIComponent(f.id)}/${k}" class="${etat.onglet === k ? "actif" : ""}">${l}</a>`).join("");
+  const onglets = ONGLETS.map(([k, l]) => `<a href="#" data-route="s/${encodeURIComponent(f.id)}/${k}" class="${etat.onglet === k ? "actif" : ""}">${l}</a>`).join("");
   return `<div class="entete"><h2>${esc(f.titre)}</h2>${statut}</div>
     <p class="resume">${esc(f.resume)} <span class="discret">· calcule le ${esc(f.genere_le)}</span></p>
     <nav class="onglets">${onglets}</nav>`;
@@ -155,15 +170,15 @@ function pageApercu(f) {
   const c = couleurs();
   const shapes = (s.top_drawdowns || []).map((d) => ({ type: "rect", xref: "x", yref: "paper", x0: d.pic, x1: d.fin || s.dates[s.dates.length - 1], y0: 0, y1: 1, fillcolor: c.rouge, opacity: 0.08, line: { width: 0 } }));
   trace($("#g-valeur"), [{ x: s.dates, y: s.valeur, type: "scatter", mode: "lines", line: { color: c.accent, width: 1.6 }, name: "valeur" }],
-    { shapes, yaxis: { tickformat: ",.0f" } });
+    { shapes, yaxis: { tickformat: ".3~s" } });
   trace($("#g-dd"), [{ x: s.dates, y: s.drawdown, type: "scatter", mode: "lines", fill: "tozeroy", line: { color: c.rouge, width: 1 }, name: "perte" }],
     { yaxis: { tickformat: ".0%" } });
   trace($("#g-ans"), [{ x: s.annuel.annees, y: s.annuel.rendement, type: "bar", marker: { color: s.annuel.rendement.map((v) => (v >= 0 ? c.vert : c.rouge)) },
     text: s.annuel.rendement.map((v) => pct(v)), textposition: "outside", hovertemplate: "%{x} : %{y:.2%}<extra></extra>" }],
     { yaxis: { tickformat: ".0%" }, hovermode: "closest" });
   const mois = ["janv.", "fevr.", "mars", "avr.", "mai", "juin", "juil.", "aout", "sept.", "oct.", "nov.", "dec."];
-  trace($("#g-mois"), [{ z: s.mensuel.z, x: mois, y: s.mensuel.annees.map(String), type: "heatmap", colorscale: "RdYlGn", zmid: 0,
-    text: s.mensuel.z.map((r) => r.map((v) => (v === null ? "" : `${(v * 100).toFixed(1)}`))), texttemplate: "%{text}", hovertemplate: "%{y} %{x} : %{z:.2%}<extra></extra>", showscale: false }],
+  trace($("#g-mois"), [{ z: s.mensuel.z, x: mois, y: s.mensuel.annees.map(String), type: "heatmap", colorscale: echelle(c), zmid: 0,
+    text: s.mensuel.z.map((r) => r.map((v) => (v === null ? "" : virgule(v * 100)))), texttemplate: "%{text}", hovertemplate: "%{y} %{x} : %{z:.2%}<extra></extra>", showscale: false }],
     { yaxis: { autorange: "reversed", type: "category" }, hovermode: "closest", margin: { l: 48, r: 8, t: 8, b: 30 } });
   trace($("#g-sh"), [
     { x: s.dates, y: s.sharpe_1an, type: "scatter", mode: "lines", line: { color: c.accent, width: 1.4 }, name: "Sharpe 1 an" },
@@ -215,7 +230,7 @@ function pageTrades(f) {
       <div class="outils">
         <select id="f-annee"><option value="">toutes les annees</option>${annees.map((a) => `<option>${a}</option>`).join("")}</select>
         <select id="f-sens"><option value="">achats et ventes</option><option value="achat">achats</option><option value="vente">ventes</option></select>
-        <button class="bouton" id="csv">Telecharger en CSV</button>
+        ${etat.statique ? "" : '<button class="bouton" id="csv">Telecharger en CSV</button>'}
         <span class="discret">heures : ${esc(f.fuseau_trades)} · cliquer un titre de colonne pour trier</span>
       </div>
       <div id="t-trades" class="table-defile"></div>
@@ -258,7 +273,7 @@ function pageTrades(f) {
   $("#f-annee").onchange = $("#f-sens").onchange = () => { T.page = 0; courant = rendre(); };
   $("#prec").onclick = () => { T.page = Math.max(0, T.page - 1); courant = rendre(); };
   $("#suiv").onclick = () => { T.page += 1; courant = rendre(); };
-  $("#csv").onclick = () => {
+  if ($("#csv")) $("#csv").onclick = () => {
     const lignes = [cols.map((c2) => c2[0]).join(";"), ...courant.map((x) => cols.map(([k]) => x[k]).join(";"))];
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([lignes.join("\n")], { type: "text/csv" }));
@@ -296,9 +311,9 @@ function pageTests(f) {
   histo($("#g-mcdd"), [mc.dd_ordre, mc.dd_remise], { observe: mc.dd_observe, noms: ["ordre melange", "tirage avec remise"] });
   const fan = mc.eventail;
   trace($("#g-fan"), [
-    { x: fan.trade, y: fan.p95, mode: "lines", line: { width: 0 }, hoverinfo: "skip" },
+    { x: fan.trade, y: fan.p95, mode: "lines", line: { width: 0 }, hoverinfo: "skip", showlegend: false },
     { x: fan.trade, y: fan.p5, mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: "rgba(100,130,200,.15)", name: "5-95 %" },
-    { x: fan.trade, y: fan.p75, mode: "lines", line: { width: 0 }, hoverinfo: "skip" },
+    { x: fan.trade, y: fan.p75, mode: "lines", line: { width: 0 }, hoverinfo: "skip", showlegend: false },
     { x: fan.trade, y: fan.p25, mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: "rgba(100,130,200,.3)", name: "25-75 %" },
     { x: fan.trade, y: fan.p50, mode: "lines", line: { color: c.accent, width: 1.2, dash: "dot" }, name: "mediane" },
     { x: fan.trade, y: fan.observe, mode: "lines", line: { color: c.texte, width: 1.6 }, name: "reel" }],
@@ -310,11 +325,12 @@ function pageTests(f) {
     trace($(`#g-sens-${i}`), [
       { x: xs.map((x) => x.cas), y: xs.map((x) => x.sharpe), type: "bar", name: "Sharpe 2016-2026", marker: { color: c.accent } },
       { x: xs.map((x) => x.cas), y: xs.map((x) => x.sharpe_apres), type: "bar", name: "Sharpe apres publication", marker: { color: c.texte2 } }],
-    { barmode: "group", showlegend: true, hovermode: "closest", margin: { l: 48, r: 8, t: 10, b: 90 } });
+    { barmode: "group", showlegend: true, hovermode: "closest", margin: { l: 48, r: 8, t: 10, b: 20 }, xaxis: { automargin: true, tickangle: -25 } });
   });
   if (f.placebo) {
     trace($("#g-plac"), [{ x: f.placebo.map((x) => x.cas), y: f.placebo.map((x) => x.sharpe), type: "bar",
-      marker: { color: f.placebo.map((x, i) => (i === 0 ? c.accent : x.sharpe >= 0 ? c.vert : c.rouge)) } }], { hovermode: "closest", margin: { l: 48, r: 8, t: 10, b: 90 } });
+      marker: { color: f.placebo.map((x, i) => (i === 0 ? c.accent : x.sharpe >= 0 ? c.vert : c.rouge)) } }],
+    { hovermode: "closest", margin: { l: 48, r: 8, t: 10, b: 20 }, xaxis: { automargin: true, tickangle: -25 } });
   }
   if (f.grille) rendreGrille(f);
   if (f.walk_forward) {
@@ -350,8 +366,8 @@ function rendreGrille(f) {
     const c = couleurs();
     const ix = xs.findIndex((v) => String(v) === String(g.reference[choix.x])), iy = ys.findIndex((v) => String(v) === String(g.reference[choix.y]));
     const estRef = autres().every((a) => String(fixes[a]) === String(g.reference[a]));
-    trace($("#g-grille"), [{ z, x: xs.map(String), y: ys.map(String), type: "heatmap", colorscale: "RdYlGn", zmid: 0,
-      text: z.map((r) => r.map((v) => (v === null ? "" : v.toFixed(2)))), texttemplate: "%{text}", hovertemplate: `${choix.x} %{x}<br>${choix.y} %{y}<br>Sharpe %{z:.2f}<extra></extra>` }],
+    trace($("#g-grille"), [{ z, x: xs.map(String), y: ys.map(String), type: "heatmap", colorscale: echelle(c), zmid: 0,
+      text: z.map((r) => r.map((v) => (v === null ? "" : virgule(v, 2)))), texttemplate: "%{text}", hovertemplate: `${choix.x} %{x}<br>${choix.y} %{y}<br>Sharpe %{z:.2f}<extra></extra>` }],
     { hovermode: "closest", xaxis: { title: { text: choix.x }, type: "category" }, yaxis: { title: { text: choix.y }, type: "category" },
       shapes: estRef && ix >= 0 && iy >= 0 ? [{ type: "rect", x0: ix - 0.5, x1: ix + 0.5, y0: iy - 0.5, y1: iy + 0.5, line: { color: c.texte, width: 3 } }] : [] });
   };
@@ -365,7 +381,7 @@ async function pageComparaison() {
       <p>Depuis le dossier <code>Python/</code> : <code>python -m nexus tableau --cotations CHEMIN_VERS_COTATIONS</code>, puis recharger la page.</p></div>`;
     return;
   }
-  const rows = ix.strategies.map((s) => `<tr><td><a href="#/s/${encodeURIComponent(s.id)}/apercu">${esc(s.titre)}</a></td>
+  const rows = ix.strategies.map((s) => `<tr><td><a href="#" data-route="s/${encodeURIComponent(s.id)}/apercu">${esc(s.titre)}</a></td>
     <td>${s.statut === "validee" ? `<span class="badge validee">validee ${esc(s.valide_le)}</span>` : '<span class="badge candidate">candidate</span>'}</td>
     <td class="n">${num(s.kpi.sharpe)}</td><td class="n">${num(s.kpi.sortino)}</td><td class="n">${pct(s.kpi.rendement_annuel)}</td>
     <td class="n">${pct(s.kpi.volatilite)}</td><td class="n">${pct(s.kpi.perte_max)}</td><td class="n">${num(s.kpi.trades, 0)}</td>
@@ -385,8 +401,8 @@ async function pageComparaison() {
   for (const [id, cm] of [["#g-corr", ix.correlation], ["#g-corrm", ix.correlation_mensuelle]]) {
     if (!cm || !cm.ids.length) continue;
     const lab = cm.ids.map((i) => titres[i] || i);
-    trace($(id), [{ z: cm.matrice, x: lab, y: lab, type: "heatmap", colorscale: "RdBu", zmin: -1, zmax: 1, reversescale: true,
-      text: cm.matrice.map((r) => r.map((v) => (v === null ? "" : v.toFixed(2)))), texttemplate: "%{text}", hovertemplate: "%{x} / %{y} : %{z:.2f}<extra></extra>" }],
+    trace($(id), [{ z: cm.matrice, x: lab, y: lab, type: "heatmap", colorscale: echelle(c, c.accent), zmin: -1, zmax: 1,
+      text: cm.matrice.map((r) => r.map((v) => (v === null ? "" : virgule(v, 2)))), texttemplate: "%{text}", hovertemplate: "%{x} / %{y} : %{z:.2f}<extra></extra>" }],
     { hovermode: "closest", margin: { l: 130, r: 10, t: 10, b: 80 } });
   }
   if (ix.combine) {
@@ -399,8 +415,13 @@ async function pageComparaison() {
 }
 
 // ------------------------------------------------------------------ navigation
-async function route() {
-  const h = location.hash.replace(/^#\/?/, "").split("/");
+function aller(r) {
+  try { history.replaceState(null, "", `#/${r}`); } catch (e) { /* cadre sans historique */ }
+  route(r);
+}
+
+async function route(r) {
+  const h = (r ?? location.hash.replace(/^#\/?/, "")).split("/");
   $("#liste").classList.remove("ouvert");
   try {
     if (h[0] === "s" && h[1]) {
@@ -421,9 +442,10 @@ async function route() {
 }
 
 async function charger() {
-  etat.index = await json("/api/strategies");
+  [etat.index, etat.statique] = await chargerIndex();
   etat.fiches = {};
   $("#genere").textContent = etat.index.genere_le ? `resultats du ${etat.index.genere_le}` : "";
+  $("#recalculer").hidden = etat.statique;
   await route();
 }
 
@@ -445,7 +467,13 @@ async function recalculer() {
   suivre();
 }
 
-window.addEventListener("hashchange", route);
+window.addEventListener("hashchange", () => route());
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("[data-route]");
+  if (!a) return;
+  e.preventDefault();
+  aller(a.dataset.route);
+});
 window.addEventListener("DOMContentLoaded", () => {
   $("#menu").onclick = () => $("#liste").classList.toggle("ouvert");
   $("#recalculer").onclick = recalculer;
