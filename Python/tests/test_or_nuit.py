@@ -107,3 +107,37 @@ def test_heure_limite_prop_firm():
     s = pd.DatetimeIndex(tr["Exit Timestamp"]).tz_localize("UTC").tz_convert(N.NY).strftime("%H:%M").tolist()
     assert s == ["08:20", "16:10"]
     assert tr["Avg Exit Price"].tolist() == pytest.approx([101.0, 102.0])     # ouverture de la barre de 16:10, pas la cloture de 16:59
+
+
+def test_fenetres_libres():
+    m = pd.concat([_seance(d, _escalier) for d in ("2024-01-08", "2024-01-09")])
+    f = [("18:00", "08:20", 1), ("08:20", "13:30", -1, [pd.Timestamp("2024-01-09")])]
+    pf = N.portefeuille(m, fenetres=f, capital=100_000.0)
+    tr = pf.trades.records_readable
+    assert len(tr) == 3                                                   # 2 achats de nuit + 1 vente le 9 seulement
+    assert tr["Direction"].tolist().count("Short") == 1
+    v = tr[tr["Direction"] == "Short"]
+    assert v["Avg Entry Price"].iloc[0] == pytest.approx(101.0) and v["Avg Exit Price"].iloc[0] == pytest.approx(102.0)
+    a = N.valeur_journaliere(pf, pd.DatetimeIndex(["2024-01-08", "2024-01-09"]))
+    b = N.valeur_journaliere(N.portefeuille(m, fenetres=f, capital=100_000.0, compact=True), pd.DatetimeIndex(["2024-01-08", "2024-01-09"]))
+    assert np.allclose(a.to_numpy(), b.to_numpy())
+    r_ref = N.portefeuille(m, jambes="asie,soir", cloture="16:10", compact=True)
+    r_fen = N.portefeuille(m, fenetres=[("18:00", "08:20", 1), ("13:30", "17:00", 1)], cloture="16:10", compact=True)
+    assert np.allclose(r_ref.value().iloc[-1], r_fen.value().iloc[-1])
+
+
+def test_sans_week_end_contrats_et_swap():
+    m = pd.concat([_seance(d, _escalier) for d in ("2024-01-11", "2024-01-12", "2024-01-15")])   # jeudi, vendredi, lundi
+    tr = N.portefeuille(m, garder_weekend=False, cloture="16:10").trades.records_readable
+    loc = lambda c: pd.DatetimeIndex(tr[c]).tz_localize("UTC").tz_convert(N.NY).strftime("%a %H:%M").tolist()
+    assert loc("Entry Timestamp") == ["Thu 13:30", "Fri 13:30", "Sun 18:00"]
+    assert loc("Exit Timestamp") == ["Fri 08:20", "Fri 16:10", "Mon 08:20"]
+    m.attrs["multiplicateur"] = 10.0
+    pf = N.portefeuille(m, contrats=2, capital=50_000.0)                    # 2 micros = 20 onces
+    t2 = pf.trades.records_readable
+    assert (t2["Size"] == 20.0).all()
+    assert N.valeur(pf).iloc[0] == pytest.approx(50_000.0)
+    assert N.valeur(pf).iloc[-1] == pytest.approx(50_000.0 + t2["PnL"].sum())
+    sw = N.portefeuille(m, contrats=2, capital=50_000.0, swap_nuit=20.0).trades.records_readable
+    # 20 $ par 100 onces et par nuit : 1 nuit (jeudi) + 3 nuits (vendredi -> lundi), pour 20 onces
+    assert (t2["PnL"] - sw["PnL"]).sum() == pytest.approx(20.0 * 0.2 * (1 + 3), rel=1e-6)

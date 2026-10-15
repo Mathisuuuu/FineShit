@@ -458,6 +458,46 @@ Ce qui tient :
 - Sharpe corrigé de Bonferroni sur 178 essais : 0,59 ;
 - la même pause de 5 h 10 placée ailleurs fait moins bien (p = 0,009).
 
+### Prop firms (`nexus/prop.py`)
+
+La plupart des prop firms de futures imposent d'être à plat avant leur heure limite (16:10 New York chez
+Topstep, MyFundedFutures et FundedNext ; 16:45 à 16:59 ailleurs) et interdisent le week-end. Règles relevées
+le 2026-10-15 ; elles changent souvent, à revérifier. Variantes testées, fixées avant le calcul :
+
+| Version | Sharpe |
+|---|---|
+| Règle publiée, contrat GC | 1,11 |
+| Règle publiée, micro MGC (coûts environ 3 fois plus élevés par once) | 0,96 |
+| Sans week-end, MGC (nuit permise, week-end interdit) | 0,56 |
+| CFD XAUUSD avec financement de 5 / 20 / 45 $ par 100 onces et par nuit | 1,02 / 0,77 / 0,35 |
+| Intraday, à plat à 16:10, sans la jambe du soir les jours de FOMC : GC / MGC | 0,45 / 0,14 |
+
+Variantes intraday tirées des articles (Sharpe, coûts GC) :
+
+| Variante | Source | Sharpe |
+|---|---|---|
+| Après une séance COMEX faible | Boyarchenko, Larsen et Whelan 2023 | 0,53 |
+| Asie seule, 18:00-3:00 | Donati et Jung 2019 | 0,38 |
+| Ouverture européenne, 3:00-8:20 | Bondarenko et Muravyev 2023 | 0,14 |
+| Vente 8:20-11:00 | Berkman et al. 2012 | −0,18 |
+| Achat 11:00-16:10 | Krohn, Mueller et Whelan 2024 | −0,27 |
+| Achat 2:00-4:00 | — | −0,02 |
+
+Aucune ne rend la version intraday viable.
+
+Challenges simulés (un départ à chaque séance 2016-2026, chemin minute réel, micros MGC) :
+- **Elite Trader Funding Diamond Hands 100K** (nuit et week-end permis), règle publiée : 41 % de réussite
+  à 50 000 $ de notionnel (environ 3 MGC), en 76 séances en médiane.
+- **Topstep 50K**, version intraday : 14 à 17 % de réussite.
+
+Repère : une stratégie sans avantage ni frais, avec une perte max fixe, réussirait environ 40 %.
+
+Conclusion :
+- l'avantage est dans la nuit **et** dans les fermetures (pause quotidienne, week-end) ;
+- la version intraday ne tient pas, surtout en micros ;
+- pour rester conforme, il faut un compte qui permet de garder la nuit et le week-end, ou un CFD dont le
+  financement de nuit reste bas (environ 5 $ par 100 onces).
+
 Statut : **candidate, non validée**. Points faibles :
 - c'est surtout un pari sur la hausse de l'or (bêta 0,56) ;
 - l'écart avec l'or gardé en permanence n'est pas prouvé (+0,31 de Sharpe, p = 0,09) ;

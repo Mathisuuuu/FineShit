@@ -847,6 +847,89 @@ def _heure(minute: int) -> str:
     return f"{h:02d}:{mi:02d}"
 
 
+def _prop_or_nuit(m, cotations, cal, pf, r, sens, log) -> list:
+    """Prop firms : versions conformes (intraday, sans week-end, CFD avec financement), variantes intraday tirees des
+    articles, challenges simules sur l historique reel (micros MGC). Ajoute les Sharpe a `sens`, renvoie les tests."""
+    from . import prop as PR
+    mg, _ = ON.charger(cotations, "MGC")
+    toutes = pd.DatetimeIndex(pd.unique(m["seance"].to_numpy()))
+    hors_fomc = toutes.difference(ON.FOMC)
+    base = [("18:00", "08:20", 1), ("13:30", "17:00", 1, hors_fomc)]
+    faibles, lendemains = ON.seances_comex_faibles(m)
+    pub = pd.Timestamp(ON.PUBLICATION)
+
+    def sh(mm, **kw):
+        if not kw and mm is m:
+            rr = r
+        else:
+            rr = ON.valeur_journaliere(ON.portefeuille(mm, compact=True, **kw), cal).pct_change().fillna(0.0)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return float(_acc(rr).sharpe_ratio()), float(_acc(rr[rr.index >= pub]).sharpe_ratio())
+
+    res = {}
+    for famille, cas in {
+        "Prop firms": [("regle publiee, GC", m, {}), ("regle publiee, micro MGC", mg, {}),
+                       ("sans week-end, MGC", mg, dict(garder_weekend=False, cloture="16:10")),
+                       ("CFD 5 $ / nuit", m, dict(swap_nuit=5.0)), ("CFD 20 $ / nuit", m, dict(swap_nuit=20.0)),
+                       ("CFD 45 $ / nuit", m, dict(swap_nuit=45.0)),
+                       ("intraday 16:10, GC", m, dict(fenetres=base, cloture="16:10")),
+                       ("intraday 16:10, MGC", mg, dict(fenetres=base, cloture="16:10"))],
+        "Articles (intraday)": [
+            ("apres une seance COMEX faible", m, dict(fenetres=[("18:00", "08:20", 1, lendemains),
+                                                                ("13:30", "17:00", 1, faibles.intersection(hors_fomc))], cloture="16:10")),
+            ("Asie 18:00 -> 3:00", m, dict(fenetres=[("18:00", "03:00", 1)])),
+            ("Europe 3:00 -> 8:20", m, dict(fenetres=[("03:00", "08:20", 1)])),
+            ("vente 8:20 -> 11:00", m, dict(fenetres=[("08:20", "11:00", -1)])),
+            ("achat 11:00 -> 16:10", m, dict(fenetres=[("11:00", "17:00", 1)], cloture="16:10")),
+            ("achat 2:00 -> 4:00", m, dict(fenetres=[("02:00", "04:00", 1)]))]}.items():
+        for lab, mm, kw in cas:
+            a, b = sh(mm, **kw)
+            res[lab] = a
+            sens.append(dict(famille=famille, cas=lab, sharpe=_js(a), sharpe_apres=_js(b)))
+    tests = [
+        dict(famille="Prop firms", test="Version intraday a plat a 16:10 (Topstep, MyFundedFutures, FundedNext)",
+             resultat=f"Sharpe {res['intraday 16:10, GC']:.2f} (GC) / {res['intraday 16:10, MGC']:.2f} (MGC)",
+             detail="achat 18:00 -> vente 8:20, achat 13:30 -> vente 16:10 (pas de jambe du soir les jours de FOMC), rien le "
+                    "week-end : perd le rendement des fermetures et paie deux allers-retours par jour ; les micros coutent "
+                    "environ 3 fois plus cher par once", verdict="ok" if res["intraday 16:10, MGC"] >= 0.5 else "alerte"),
+        dict(famille="Prop firms", test="Sans week-end (nuit permise, week-end interdit : The5ers Futures)",
+             resultat=f"Sharpe {res['sans week-end, MGC']:.2f} (MGC)", detail="vendu le vendredi a 16:10, rachete le dimanche a 18:00, vendu le lundi a 8:20",
+             verdict="ok" if res["sans week-end, MGC"] >= 0.5 else "alerte"),
+        dict(famille="Prop firms", test="CFD XAUUSD (FTMO Swing, The5ers, FundedNext, E8) : financement de nuit",
+             resultat=f"Sharpe {res['CFD 5 $ / nuit']:.2f} / {res['CFD 20 $ / nuit']:.2f} / {res['CFD 45 $ / nuit']:.2f}",
+             detail="5 / 20 / 45 $ par 100 onces et par nuit (x 3 du vendredi au lundi), fourchette relevee chez les courtiers ; "
+                    "le financement de l achat d or est negatif partout", verdict="ok" if res["CFD 20 $ / nuit"] >= 0.5 else "alerte"),
+    ]
+    art = [x for x in sens if x["famille"] == "Articles (intraday)"]
+    tests.append(dict(famille="Prop firms", test="Variantes intraday tirees des articles", resultat=f"meilleure : Sharpe {max(x['sharpe'] for x in art):.2f}",
+                      detail=" ; ".join(f"{x['cas']} {x['sharpe']:.2f}" for x in art)
+                             + " (Boyarchenko, Larsen & Whelan 2023 ; Bondarenko & Muravyev 2023 ; Berkman et al. 2012 ; "
+                               "Krohn, Mueller & Whelan 2024 ; Donati & Jung 2019) ; aucune ne rend la version intraday viable",
+                      verdict="info"))
+    log("  prop firms (versions conformes, articles) : ok")
+    brut = mg["brut"].to_numpy(float)
+    for cle, kw, notionnels in (("elite_diamond_100k", {}, (50_000, 100_000, 150_000)),
+                                ("topstep_50k", dict(fenetres=base, cloture="16:10"), (25_000, 50_000, 75_000))):
+        regles = PR.CHALLENGES[cle]
+        lignes = []
+        for notio in notionnels:
+            nb = np.maximum(1, np.round(notio / (ON.SPEC_MGC["multiplicateur"] * brut)))
+            v = ON.valeur(ON.portefeuille(mg, contrats=nb, capital=regles["taille"], **kw))
+            x = PR.resume(PR.simuler(v, mg["seance"].to_numpy(), regles))
+            lignes.append(f"{notio:,.0f} $ (~{np.mean(nb):.1f} MGC) : {x['reussite']:.0%} reussis, {x['echec']:.0%} perdus"
+                          f" (en {x['jours_median_reussite']:.0f} seances en mediane)")
+        hasard = regles["perte_max"] / (regles["perte_max"] + regles["objectif"])
+        tests.append(dict(famille="Prop firms", test=f"Challenge simule : {regles['nom']}",
+                          resultat=lignes[0].split(" : ")[1].split(" (")[0],
+                          detail=f"{'regle publiee' if not kw else 'version intraday 16:10'}, un depart a chaque seance 2016-2026, "
+                                 f"chemin minute reel ; notionnel vise " + " ; ".join(lignes)
+                                 + f". Repere : sans avantage ni frais, avec une perte max fixe, on reussirait environ {hasard:.0%}",
+                          verdict="info"))
+    log("  challenges simules : ok")
+    return tests
+
+
 def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict, pd.Series]:
     from arch.bootstrap import StationaryBootstrap
     m, info = ON.charger(cotations)
@@ -935,6 +1018,7 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
         tests.append(dict(famille="Sensibilite", test=f"{famille} : pire cas ({pire['cas']})", resultat=f"Sharpe {pire['sharpe']:.2f}",
                           detail=" ; ".join(f"{x['cas']} {x['sharpe']:.2f}" for x in cas_), verdict="ok" if pire["sharpe"] >= 0.5 else "alerte"))
     log("  couts, latence : ok")
+    tests += _prop_or_nuit(m, cotations, cal, pf, r, sens, log)
     extra, rmat = {}, None
     ref_lab = "pause_debut=08:20,pause_fin=13:30"
     if grille:
