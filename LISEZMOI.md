@@ -223,3 +223,7 @@ Détails, formats de cotations acceptés et constats sur le code NinjaScript : `
 
 La fiche 16 (Noise Area Intraday Momentum, barres 1 minute, SPY puis ES/NQ) n'existe qu'en Python :
 `python -m nexus backtest -s 16 -d DOSSIER_MINUTE -p symbols=ES --html` (voir `Python/LISEZMOI.md` § 8).
+
+**S1_NoiseAreaNQ** est la version validée (le 2026-10-15) et figée de la fiche 16 sur NQ : sigma 30 séances,
+contrôle 30 min, bande × 1,2. Fichier autonome `Python/S1_NoiseAreaNQ.py`, ou `python -m nexus backtest -s S1`
+dans le moteur. Résultat de référence, tests passés et réserves : `Python/LISEZMOI.md` § 9.

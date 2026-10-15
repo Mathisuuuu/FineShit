@@ -197,9 +197,9 @@ def _tout_intraday(code, klass, args, params, folder) -> list[dict]:
     for sym in todo:
         kw = {**_external_params(klass, args.externes), **_known(klass, params), "symbols": sym}
         kw.setdefault("instance_tag", sym)
-        st = klass(**kw)
-        data = D.load_folder(mfolder, daily=False, only=st.data_symbols())
         try:
+            st = klass(**kw)               # une strategie figee (S1) refuse les parametres modifies
+            data = D.load_folder(mfolder, daily=False, only=st.data_symbols())
             res = st.run(data, start=args.debut, end=args.fin, trade_start=args.debut_trading)
         except ValueError as ex:
             print(f"{code} {sym} ignoree : {ex}")

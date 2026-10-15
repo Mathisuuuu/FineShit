@@ -14,10 +14,11 @@ _MODULES = {
     "13": ("s13_proptrend", "Nexus13PropTrend8"),
     "14": ("s14_strictswing", "Nexus14StrictSwing"),
     "16": ("s16_noisearea", "Nexus16NoiseArea"),
+    "S1": ("s1_noiseareanq", "S1NoiseAreaNQ"),
 }
 
 ALIASES = {"1": "01", "2": "02", "3": "03", "4A": "04A", "4a": "04A", "04a": "04A", "5": "05", "6": "06",
-           "NA": "16", "na": "16", "noise": "16", "NOISE": "16"}
+           "NA": "16", "na": "16", "noise": "16", "NOISE": "16", "s1": "S1"}
 
 
 def available() -> list[str]:

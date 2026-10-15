@@ -1,4 +1,8 @@
-"""Noise Area Intraday Momentum sur NQ (Nasdaq 100 E-mini), meilleur reglage de la grille.
+"""S1_NoiseAreaNQ - Noise Area Intraday Momentum sur NQ (Nasdaq 100 E-mini). STRATEGIE VALIDEE, REGLAGE FIGE.
+
+Validee le 2026-10-15. Les parametres ci-dessous sont figes : ne pas les modifier (pour explorer un autre
+reglage, utiliser la fiche 16 du moteur : python -m nexus grille -s 16 ...). Meme strategie dans le moteur :
+python -m nexus backtest -s S1 (classe S1NoiseAreaNQ, parametres verrouilles).
 
 Fichier autonome : numpy + pandas (+ pyarrow pour le Parquet), aucun import du moteur nexus.
 Zarattini, Aziz & Barbon (2024), SSRN 4824172, porte sur NQ ; reglage retenu sur la grille de
@@ -15,12 +19,17 @@ Regles (seance cash 9:30-16:00, heure de New York) :
   5. taille fixee a l ouverture : capital de la veille x min(2 % / vol journaliere 14 j, 4) / (Open x 20 $) ;
   6. couts : 2,25 $ par contrat + 1/2 tick (0,125 point) par execution.
 
+Resultat de reference (depot Cotations, NQ_v0_1m.parquet, 2016-01-04 -> 2026-08-28, capital 1 M$) :
+  equity finale 5 717 822 $, 1 828 allers-retours, Sharpe 1,32 (avant juin 2024 : 1,42 | apres : 0,95),
+  perte max 13,9 %. Le programme verifie ce resultat a chaque lancement sur ces donnees (ligne "Reference").
+  Identique au moteur nexus (S1) et au rejeu vectorbt des executions. Detail des tests : LISEZMOI.md, S1.
+
 Donnees : barres 1 minute de NQ. Par defaut le Parquet Databento du depot Cotations
 (horodatage UTC, barre datee a son debut, contrats raboutes sans ajustement -> rolls ajustes ici).
 Export NinjaTrader : --fuseau Europe/Paris --horodatage fin --rolls aucun (serie Merge Back Adjusted).
 
-    python noise_area_nq.py --donnees ../../cotations/indices/NQ_v0_1m.parquet
-    python noise_area_nq.py --donnees NQ.Last.txt --fuseau Europe/Paris --horodatage fin --rolls aucun
+    python S1_NoiseAreaNQ.py --donnees ../../cotations/indices/NQ_v0_1m.parquet
+    python S1_NoiseAreaNQ.py --donnees NQ.Last.txt --fuseau Europe/Paris --horodatage fin --rolls aucun
 
 Sorties : resume dans la console, trades et equity journaliere en CSV (--sortie).
 Recherche, pas un conseil d investissement : valider en simulation avant tout compte reel.
@@ -34,7 +43,10 @@ import os
 import numpy as np
 import pandas as pd
 
-# ----------------------------------------------------------------------------- reglage retenu
+NOM = "S1_NoiseAreaNQ"
+VALIDEE_LE = "2026-10-15"
+
+# ----------------------------------------------------------------------------- reglage FIGE (valide)
 SIGMA_SEANCES = 30          # sigma : moyenne sur les N seances precedentes
 CONTROLE_MIN = 30           # un controle toutes les 30 minutes depuis l ouverture (10:00 ... 15:30)
 BANDE = 1.2                 # largeur de la zone de bruit, en sigma
@@ -47,6 +59,9 @@ COMMISSION = 2.25           # $ par contrat et par execution
 GLISSEMENT_TICKS = 0.5      # par execution
 PUBLICATION = "2024-06-01"  # pour le resultat avant / apres publication du papier
 NY = "America/New_York"
+
+# resultat valide : verifie a chaque lancement sur les memes donnees et le meme capital
+REFERENCE = dict(debut="2016-01-04", fin="2026-08-28", capital=1_000_000.0, equity_finale=5_717_821.79, allers_retours=1828)
 
 
 # ----------------------------------------------------------------------------- donnees
@@ -220,7 +235,7 @@ def resume(eq: pd.DataFrame, trades: pd.DataFrame, capital: float, n_rolls: int)
     ans = len(r) / 252
     avant, apres = r[r.index < PUBLICATION], r[r.index >= PUBLICATION]
     lignes = [
-        f"Noise Area NQ - sigma {SIGMA_SEANCES} seances, controle {CONTROLE_MIN} min, bande x{BANDE}",
+        f"{NOM} (valide le {VALIDEE_LE}) - sigma {SIGMA_SEANCES} seances, controle {CONTROLE_MIN} min, bande x{BANDE}",
         f"Periode      {r.index[0]:%Y-%m-%d} -> {r.index[-1]:%Y-%m-%d} ({len(r)} seances, {n_rolls} rolls ajustes)",
         f"Equity       {capital:,.0f} $ -> {eq['equity'].iloc[-1]:,.0f} $   rendement annuel {(eq['equity'].iloc[-1] / capital) ** (1 / ans) - 1:.1%}",
         f"Sharpe       {sharpe(r):.2f}   (avant publication {sharpe(avant):.2f} | apres {sharpe(apres):.2f}, {len(apres)} seances)",
@@ -231,8 +246,21 @@ def resume(eq: pd.DataFrame, trades: pd.DataFrame, capital: float, n_rolls: int)
     return "\n".join(lignes)
 
 
+def controle_reference(eq: pd.DataFrame, trades: pd.DataFrame, capital: float) -> str:
+    """Compare au resultat valide quand la periode et le capital sont ceux de la reference."""
+    ref = REFERENCE
+    meme_essai = (f"{eq.index[0]:%Y-%m-%d}" == ref["debut"] and f"{eq.index[-1]:%Y-%m-%d}" == ref["fin"]
+                  and capital == ref["capital"])
+    if not meme_essai:
+        return (f"Reference    non comparable (periode {eq.index[0]:%Y-%m-%d} -> {eq.index[-1]:%Y-%m-%d}, capital {capital:,.0f} $ ; "
+                f"reference {ref['debut']} -> {ref['fin']}, {ref['capital']:,.0f} $)")
+    ok = abs(eq["equity"].iloc[-1] - ref["equity_finale"]) < 1.0 and len(trades) == ref["allers_retours"]
+    return (f"Reference    {'CONFORME' if ok else 'ECART'} : equity {eq['equity'].iloc[-1]:,.2f} $ (valide {ref['equity_finale']:,.2f} $), "
+            f"{len(trades)} allers-retours (valide {ref['allers_retours']})")
+
+
 def main():
-    ap = argparse.ArgumentParser(description="Noise Area Intraday Momentum sur NQ (meilleur reglage).")
+    ap = argparse.ArgumentParser(description=f"{NOM} : Noise Area Intraday Momentum sur NQ, reglage valide et fige.")
     ap.add_argument("--donnees", required=True, help="barres 1 minute de NQ (Parquet Databento, export NinjaTrader ou CSV)")
     ap.add_argument("--capital", type=float, default=1_000_000.0)
     ap.add_argument("--fuseau", default=NY, help="fuseau des horodatages si le fichier n en porte pas (ex. Europe/Paris)")
@@ -240,7 +268,7 @@ def main():
                     help="barre datee a son debut (Databento) ou a sa fin (NinjaTrader)")
     ap.add_argument("--rolls", choices=("auto", "minuit_utc", "aucun"), default="auto",
                     help="auto : ajustement si le fichier est horodate en UTC (Databento) ; aucun pour une serie deja ajustee")
-    ap.add_argument("--sortie", default="resultats_noise_area_nq", help="dossier des CSV")
+    ap.add_argument("--sortie", default="resultats_S1_NoiseAreaNQ", help="dossier des CSV")
     a = ap.parse_args()
 
     df, en_utc = lire_minutes(a.donnees, a.fuseau, a.horodatage)
@@ -249,6 +277,7 @@ def main():
         df, n_rolls = ajuster_rolls(df)
     eq, trades = backtest(df, a.capital)
     print(resume(eq, trades, a.capital, n_rolls))
+    print(controle_reference(eq, trades, a.capital))
     os.makedirs(a.sortie, exist_ok=True)
     eq.to_csv(os.path.join(a.sortie, "equity.csv"))
     trades.to_csv(os.path.join(a.sortie, "trades.csv"), index=False)

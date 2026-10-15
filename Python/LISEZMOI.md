@@ -22,6 +22,7 @@ comptabilité), aux graphiques et aux grilles de recherche rapides.
 | 13 Trend prop 24/5 | `s13_proptrend.py` | complet sauf veto Claude, webhook et comptes miroirs (temps réel) |
 | 14 Swing strict | `s14_strictswing.py` | complet (spread mesurable seulement en temps réel, comme en C#) |
 | 16 Noise Area (barres 1 min) | `s16_noisearea.py` | Python seulement, voir § 8 |
+| **S1 Noise Area NQ** | `s1_noiseareanq.py` + `S1_NoiseAreaNQ.py` | **validée le 2026-10-15, réglage figé**, voir § 9 |
 | Module A | `regime.py` | HMM 3 états (Baum-Welch compilé numba) + terciles |
 | Module B | `sizing.py` | demi-Kelly, waiver, corrélation, plafonds |
 | Module C | `risk.py`, `validation.py`, `report.py` | disjoncteurs, coûts, Monte Carlo, bootstrap, DSR, PBO, walk-forward |
@@ -272,3 +273,60 @@ doit retrouver l'equity du moteur ; écart affiché dans le titre).
 - Un jour aux données incomplètes est écarté entier (filtre de qualité des données, pas de signal).
 - `--synthetique` produit une marche aléatoire minute : le Sharpe brut doit y être proche de 0 (les
   tests vérifient aussi qu'un momentum intrajournalier planté est bien capté).
+
+## 9. S1_NoiseAreaNQ — stratégie validée (réglage figé)
+
+Noise Area de la fiche 16 sur **NQ seul**, avec le meilleur réglage de la grille, **validée le
+2026-10-15** et figée : sigma sur **30 séances**, contrôle toutes les **30 min**, bande **× 1,2**,
+filtre VWAP, ordre à l'ouverture de la minute suivante, sortie à la clôture, vol cible 2 %/jour
+(vol 14 séances), levier max 4, coûts 2,25 $ par contrat + ½ tick par exécution.
+
+Deux versions qui donnent le même résultat à la séance près :
+
+```
+# fichier autonome (numpy + pandas seulement), verifie le resultat de reference a chaque lancement
+python S1_NoiseAreaNQ.py --donnees ../../cotations/indices/NQ_v0_1m.parquet
+# moteur nexus (rapport, graphique vectorbt) ; les parametres de strategie sont verrouilles
+python -m nexus backtest -s S1 -d ../../cotations/indices -p initial_bankroll=1000000 --html
+```
+
+`-s S1` refuse tout paramètre de stratégie modifié (`band_mult`, `lookback_days`, `symbols`…). Seuls
+les réglages de données (`data_timezone`, `bar_label`, `roll_adjust`, `exchange_calendar`), le capital
+et les dates restent libres. Pour explorer un autre réglage, il faut passer par la fiche 16.
+
+**Référence** : Cotations `NQ_v0_1m.parquet`, 2016-01-04 → 2026-08-28, 1 M$ → equity finale
+**5 717 821,79 $**, **1 828** allers-retours. Le fichier autonome affiche `Reference CONFORME` quand
+il retrouve ce résultat. `tests/test_s1_noiseareanq.py` le vérifie aussi quand les données sont présentes.
+
+### Tests passés (réglage figé, calculs vectorbt / scipy / `nexus.validation`)
+
+| Test | Résultat |
+|---|---|
+| Rejeu vectorbt de la comptabilité | identique (écart relatif max 3,7e-14) |
+| Second programme indépendant (`S1_NoiseAreaNQ.py`, sans nexus) | identique (0 séance différente sur 2 679) |
+| Biais d'anticipation (prix après le 15/06/2022 × 1,25) | aucun (2 182 exécutions antérieures inchangées) |
+| Sharpe (vectorbt) | 1,32 ; avant juin 2024 : 1,42 ; après : 0,95 (562 séances) |
+| Sortino / Calmar / perte max | 2,63 / 1,28 / 13,9 % |
+| Rendement annuel / volatilité | 17,8 % / 13,1 % |
+| Années positives | 10 sur 11 (2026 à −0 % au 28/08) |
+| IC 95 % du Sharpe 2016-2026 (bootstrap BCa scipy) | [0,76 ; 1,85] |
+| IC 95 % du Sharpe après publication | [−0,34 ; 2,07] |
+| Probabilité Sharpe vrai > 0 (PSR) | 100 % ; après publication : 94,2 % (> 0,5 : 77,2 %) |
+| Test des signes (permutation scipy, 20 000 tirages) | p < 0,0001 |
+| Perte max, ordre des trades mélangé (vectorbt) | médiane 15,6 %, 95 % : 22,7 %, 99 % : 27,2 % |
+| Perte max, tirage avec remise | médiane 15,7 %, 95 % : 24,4 %, 99 % : 30,0 % |
+| Glissement 0 / 1 / 2 ticks | Sharpe 1,37 / 1,25 / 1,14 |
+| 1 minute de retard en plus | Sharpe 1,16 ; après publication 0,57 |
+| Walk-forward 3 ans / 6 mois (grille de 48) | Sharpe hors échantillon 0,97 |
+| Plateau de paramètres | 48 réglages NQ entre 1,04 et 1,32 |
+
+### Réserves connues (acceptées à la validation)
+
+- **Choix du réglage** : PBO 81 % sur les 48 réglages et Deflated Sharpe 61,5 % (177 essais comptés).
+  Toute la famille est positive, mais le choix de 30 / 30 / 1,2 plutôt qu'un voisin relève surtout du
+  hasard. Il faut donc attendre plutôt un Sharpe de 1,0 à 1,2 que 1,32.
+- **Dépendance aux meilleures séances** : hors du top 1 % des séances, le Sharpe tombe à 0,50.
+- **Après publication** : l'intervalle de confiance inclut 0 (562 séances seulement).
+- **Latence** : une minute de retard fait passer le Sharpe après publication de 0,95 à 0,57.
+- **Exécution** : barres 1 minute, sans ticks ; marge non modélisée ; remplissages réels à comparer en
+  Sim101 avant tout compte réel.
