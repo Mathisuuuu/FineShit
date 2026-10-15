@@ -305,7 +305,7 @@ function pageTests(f) {
       <div class="panneau"><h3>Monte Carlo : gain total</h3><p class="sous">trades tires avec remise</p><div id="g-gain" class="graph"></div></div>
     </div>
     ${famSens.length ? `<div class="grille-2">${famSens.map((fa, i) => `<div class="panneau"><h3>Sensibilite : ${esc(fa)}</h3><div id="g-sens-${i}" class="graph"></div></div>`).join("")}
-      ${f.placebo ? `<div class="panneau"><h3>Placebo : memes heures, autres jours</h3><div id="g-plac" class="graph"></div></div>` : ""}</div>` : ""}
+      ${f.placebo ? `<div class="panneau"><h3>${esc(f.placebo_titre || "Placebo : memes heures, autres jours")}</h3><div id="g-plac" class="graph"></div></div>` : ""}</div>` : ""}
     ${f.surajustement ? `<div class="grille-2">
       <div class="panneau"><h3>Stabilite dans le temps</h3><p class="sous">Sharpe de chaque sixieme de l'historique, reglage inchange</p><div id="g-blocs" class="graph"></div></div>
       ${f.surajustement.nul ? `<div class="panneau"><h3>Test sur hasard : ${esc(f.surajustement.nul.titre)}</h3><p class="sous">${esc(f.surajustement.nul.detail)} ; p = ${num(f.surajustement.nul.p, 4)}</p><div id="g-nul" class="graph"></div></div>` : ""}

@@ -450,7 +450,7 @@ def main(argv=None):
                    help="dossier des fichiers JSON lus par Dashboard/serveur.js")
     p.add_argument("--simulations", type=int, default=2000, help="tirages Monte Carlo / bootstrap")
     p.add_argument("--sans-grille", dest="sans_grille", action="store_true", help="sans grille de parametres (plus rapide)")
-    p.add_argument("--seulement", help="codes a exporter, ex. S1,G1")
+    p.add_argument("--seulement", help="codes a exporter : S1 (validees), G1 Gotobi, O1 ORB, N1 or hors seance US ; ex. S1,G1")
     p.set_defaults(func=cmd_tableau)
     args = ap.parse_args(argv)
     args.func(args)

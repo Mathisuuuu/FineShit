@@ -1,7 +1,7 @@
 """Export du tableau de bord (Dashboard/, serveur Node.js) : un fichier JSON par strategie.
 
 Strategies exportees : toutes les strategies du registre marquees VALIDATED (ex. S1_NoiseAreaNQ) et les
-candidates a l etude (Gotobi 6J). Tous les chiffres viennent de vectorbt (portefeuilles, statistiques, trades,
+candidates a l etude (Gotobi 6J, ORB NQ, or hors seance de New York). Tous les chiffres viennent de vectorbt (portefeuilles, statistiques, trades,
 drawdowns, rendements, ratios glissants, Sharpe deflate), de scipy (bootstrap BCa, test de permutation) et de
 nexus.validation (Sharpe probabiliste, PBO, decoupage walk-forward). Le code ci-dessous ne fait qu assembler
 et mettre en forme ; il n exporte aucune cotation brute (seulement des resultats).
@@ -24,6 +24,7 @@ from scipy import stats as SS
 from . import data as D
 from . import gotobi as GT
 from . import orb as OR
+from . import or_nuit as ON
 from . import intraday as I
 from . import validation as V
 from . import vbt_bridge as VB
@@ -195,8 +196,12 @@ def bloc_tests_communs(r: pd.Series, t: pd.DataFrame, publication: str, essais: 
         l2 = r[r.index >= r.index[-1] - pd.DateOffset(years=2)]
         sh_l2 = _acc(l2).sharpe_ratio()
     add("Performance", "Sharpe 2016-2026 (vectorbt)", f"{sh:.2f}", f"{len(r)} seances", "ok" if sh >= 1 else ("alerte" if sh < 0.5 else "info"))
-    add("Performance", "Sharpe avant / apres publication", f"{sh_av:.2f} / {sh_ap:.2f}", f"publication {publication}, {len(apres)} seances apres",
-        "ok" if sh_ap >= 0.5 else "alerte")
+    if len(avant) >= 20:
+        add("Performance", "Sharpe avant / apres publication", f"{sh_av:.2f} / {sh_ap:.2f}", f"publication {publication}, {len(apres)} seances apres",
+            "ok" if sh_ap >= 0.5 else "alerte")
+    else:
+        add("Performance", "Sharpe apres publication", f"{sh_ap:.2f}",
+            f"publication {publication}, avant les donnees : tout l historique ({len(apres)} seances) est posterieur", "ok" if sh_ap >= 0.5 else "alerte")
     add("Performance", "Sharpe des 2 dernieres annees", f"{sh_l2:.2f}", f"depuis {l2.index[0]:%Y-%m-%d}", "ok" if sh_l2 >= 0.5 else "alerte")
     ans = (1 + r).groupby(r.index.year).prod() - 1
     add("Performance", "Annees positives", f"{int((ans > 0).sum())}/{len(ans)}", ", ".join(f"{y} {v:+.1%}" for y, v in ans.items()),
@@ -835,8 +840,185 @@ def fiche_orb(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict
 
 
 # =============================================================================
+#  Candidate : or hors seance de New York, intraday (vectorbt direct)
+# =============================================================================
+def _heure(minute: int) -> str:
+    h, mi = divmod((ON.OUVERTURE + int(minute)) % 1440, 60)
+    return f"{h:02d}:{mi:02d}"
+
+
+def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict, pd.Series]:
+    from arch.bootstrap import StationaryBootstrap
+    m, info = ON.charger(cotations)
+    p0 = ON.DEFAULTS
+    cap = p0["capital"]
+    t0 = time.time()
+    pf = ON.portefeuille(m)
+    log(f"  vectorbt : {len(pf.trades.records_readable)} trades ({time.time() - t0:.0f} s)")
+    seance = pd.DatetimeIndex(m["seance"].to_numpy())
+    cal = calendrier(seance[0], seance[-1])
+
+    def run(**kw):
+        p_ = ON.portefeuille(m, compact=True, **kw)      # memes trades et memes valeurs de fin de seance, plus rapide
+        return p_, ON.valeur_journaliere(p_, cal).pct_change().fillna(0.0)
+
+    valeur = ON.valeur_journaliere(pf, cal)
+    r = valeur.pct_change().fillna(0.0)
+    rows, t = bloc_trades(pf, "UTC", "America/New_York", ON.valeur(pf))
+    tests = [dict(famille="Comptabilite", test="Comptabilite vectorbt (heures, fin de seance, taille)", resultat="tests unitaires",
+                  detail="tests/test_or_nuit.py : achats 18:00 et 13:30, ventes 8:20 et cloture de 16:59, 100 % du capital reinvesti, "
+                         "seances raccourcies, mode compact identique, rolls", verdict="ok")]
+    cut = m.index[int(len(m) * 0.6)]
+    m2 = m.copy()
+    m2.loc[m2.index > cut, ["open", "close"]] *= 1.25
+    a = pf.trades.records_readable
+    b = ON.portefeuille(m2).trades.records_readable
+    a, b = a[a["Exit Timestamp"] < cut].reset_index(drop=True), b[b["Exit Timestamp"] < cut].reset_index(drop=True)
+    ok = len(a) == len(b) and np.allclose(a["PnL"], b["PnL"]) and (a["Entry Timestamp"] == b["Entry Timestamp"]).all()
+    tests.append(dict(famille="Comptabilite", test="Biais d anticipation (prix futurs x 1,25)", resultat="aucun" if ok else "PROBLEME",
+                      detail=f"{len(a)} trades avant le {cut:%d/%m/%Y} inchanges", verdict="ok" if ok else "alerte"))
+    tr = pf.trades.records_readable
+    d_e, _ = ON.seances(pd.DatetimeIndex(tr["Entry Timestamp"]))
+    d_s, _ = ON.seances(pd.DatetimeIndex(tr["Exit Timestamp"]))
+    duree = (pd.DatetimeIndex(tr["Exit Timestamp"]) - pd.DatetimeIndex(tr["Entry Timestamp"])).total_seconds() / 3600
+    intra = bool((d_e == d_s).all()) and bool((tr["Status"] == "Closed").all())
+    tests.append(dict(famille="Comptabilite", test="Intraday : chaque position fermee dans sa seance", resultat="oui" if intra else "NON",
+                      detail=f"{len(tr)} trades ; duree max {duree.max():.1f} h ; aucune position pendant la pause 17:00-18:00 ni le week-end",
+                      verdict="ok" if intra else "alerte"))
+    # temoins : chaque jambe, l or achete toute la seance, la seance du COMEX seule, la regle publiee (nuit gardee)
+    plac, temoins = [], {}
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for lab, kw in [("asie + soir (strategie)", {}), ("jambe Asie seule (18:00 -> 8:20)", dict(jambes="asie")),
+                        ("jambe du soir seule (13:30 -> 17:00)", dict(jambes="soir")),
+                        ("or achete toute la seance (18:00 -> 17:00)", dict(jambes="tout")),
+                        ("seance du COMEX seule (8:20 -> 13:30)", dict(jambes="pause")),
+                        ("regle publiee, nuit gardee (13:30 -> 8:20)", dict(jambes="nuit"))]:
+            _, rr = run(**kw) if kw else (pf, r)
+            temoins[lab] = rr
+            plac.append(dict(cas=lab, sharpe=_js(_acc(rr).sharpe_ratio())))
+    sh = {x["cas"]: x["sharpe"] for x in plac}
+    tests.append(dict(famille="Placebo", test="Temoin : la seance du COMEX seule", resultat=f"Sharpe {sh['seance du COMEX seule (8:20 -> 13:30)']:.2f}",
+                      detail="l idee du papier : l or ne gagne rien (ou perd) pendant la seance de jour de New York ; "
+                             + " ; ".join(f"{x['cas']} {x['sharpe']:.2f}" for x in plac),
+                      verdict="ok" if sh["seance du COMEX seule (8:20 -> 13:30)"] < 0 else "alerte"))
+    x_, y_ = r.to_numpy(), temoins["or achete toute la seance (18:00 -> 17:00)"].to_numpy()
+    f_sh = lambda z: z.mean() / z.std(ddof=1) * math.sqrt(252)
+    ecart = f_sh(x_) - f_sh(y_)
+    dist = np.array([f_sh(u) - f_sh(w) for (u, w), _ in StationaryBootstrap(10, x_, y_, seed=7).bootstrap(n_sim)])
+    p_ec = float(np.mean(dist - ecart >= ecart))
+    reg = SS.linregress(y_, x_)
+    tests.append(dict(famille="Placebo", test="Bat-elle l or achete toute la seance ?", resultat=f"{ecart:+.2f} de Sharpe, p = {p_ec:.3f}",
+                      detail=f"bootstrap stationnaire (arch), {n_sim} tirages, IC 95 % [{np.quantile(dist, .025):.2f} ; {np.quantile(dist, .975):.2f}] ; "
+                             f"rendement hors exposition a l or {reg.intercept * 252:+.1%} par an (t = {reg.intercept / reg.intercept_stderr:.2f}), "
+                             f"beta {reg.slope:.2f}", verdict="ok" if p_ec < 0.05 else "alerte"))
+    tests.append(dict(famille="Placebo", test="Cout de la contrainte intraday", resultat=f"Sharpe {sh['asie + soir (strategie)']:.2f} contre "
+                      f"{sh['regle publiee, nuit gardee (13:30 -> 8:20)']:.2f}",
+                      detail="la regle publiee garde l or pendant la pause 17:00-18:00 et le week-end ; la version intraday perd ce "
+                             "rendement et paie deux allers-retours par seance au lieu d un", verdict="info"))
+    log("  temoins : ok")
+    # sensibilite
+    sens = []
+    pub = pd.Timestamp(ON.PUBLICATION)
+    for famille, cas in {"Couts": [("x0", dict(cout_mult=0.0)), ("x1 (reference)", {}), ("x2", dict(cout_mult=2.0)), ("x3", dict(cout_mult=3.0))],
+                         "Latence": [("a l heure (reference)", {}), ("+1 min", dict(delai_min=1)), ("+2 min", dict(delai_min=2)),
+                                     ("+5 min", dict(delai_min=5))]}.items():
+        for lab, kw in cas:
+            _, rr = run(**kw) if kw else (pf, r)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                sens.append(dict(famille=famille, cas=lab, sharpe=_js(_acc(rr).sharpe_ratio()), sharpe_apres=_js(_acc(rr[rr.index >= pub]).sharpe_ratio())))
+    for famille in ("Couts", "Latence"):
+        cas_ = [x for x in sens if x["famille"] == famille]
+        pire = min(cas_, key=lambda x: x["sharpe"])
+        tests.append(dict(famille="Sensibilite", test=f"{famille} : pire cas ({pire['cas']})", resultat=f"Sharpe {pire['sharpe']:.2f}",
+                          detail=" ; ".join(f"{x['cas']} {x['sharpe']:.2f}" for x in cas_), verdict="ok" if pire["sharpe"] >= 0.5 else "alerte"))
+    log("  couts, latence : ok")
+    extra, rmat = {}, None
+    ref_lab = "pause_debut=08:20,pause_fin=13:30"
+    if grille:
+        debuts, fins = ["07:20", "07:50", "08:20", "08:50", "09:20"], ["12:30", "13:00", "13:30", "14:00", "14:30"]
+        rets, pts = {}, []
+        for d_ in debuts:
+            for f_ in fins:
+                _, rr = run(pause_debut=d_, pause_fin=f_)
+                rets[f"pause_debut={d_},pause_fin={f_}"] = rr
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    pts.append(dict(pause_debut=d_, pause_fin=f_, sharpe=_js(_acc(rr).sharpe_ratio())))
+        log(f"  grille : {len(pts)} reglages")
+        rmat = pd.DataFrame(rets)
+        tg, extra = _grille_pbo_wf(rmat, ref_lab)
+        shs = np.array([x["sharpe"] for x in pts], float)
+        tg.insert(0, dict(famille="Sur-ajustement", test="Plateau (vente du matin x achat de l apres-midi)", resultat=f"{shs.min():.2f} a {shs.max():.2f}",
+                          detail=f"{len(shs)} reglages ; {np.mean(shs > 0):.0%} positifs ; reglage du papier 8:20 / 13:30 (heures du COMEX)",
+                          verdict="ok" if np.mean(shs > 0) >= 0.8 else "alerte"))
+        tests += tg
+        extra["grille"] = dict(axes=["pause_debut", "pause_fin"], valeurs=dict(pause_debut=debuts, pause_fin=fins), points=pts,
+                               reference=dict(pause_debut="08:20", pause_fin="13:30"))
+    tc, mc = bloc_tests_communs(r, t, ON.PUBLICATION, ON.ESSAIS, ON.VAR_SHARPE_ESSAIS_ANNUALISE, n_sim)
+    tests = tests[:3] + tc + tests[3:]
+    # hasard : la meme pause de 5 h 10 placee ailleurs dans la seance (memes regles, memes couts)
+    duree_p = ON._minute(p0["pause_fin"]) - ON._minute(p0["pause_debut"])
+    vals = []
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for a_ in range(0, 1380 - duree_p + 1, 10):
+            if a_ == ON._minute(p0["pause_debut"]):
+                continue
+            _, rr = run(pause_debut=_heure(a_), pause_fin=_heure(a_ + duree_p))
+            vals.append(float(_acc(rr).sharpe_ratio()))
+        obs = float(_acc(r).sharpe_ratio())
+    nul = dict(titre="Pause de 5 h 10 placee ailleurs dans la seance", valeurs=np.array(vals), observe=obs,
+               detail=f"{len(vals)} positions de la pause (toutes les 10 min de 18:00 a 11:50), or achete le reste de la seance, memes couts")
+    log("  pauses deplacees : ok")
+    ts, so = bloc_surajustement(r, rmat, ref_lab if rmat is not None else None, ON.ESSAIS, nul=nul, reps=n_sim)
+    tests += ts
+    extra["surajustement"] = so
+    fiche = dict(
+        id="OrNuit_GC", code="N1", titre="Or hors seance US · GC (intraday)", statut="candidate", valide_le=None,
+        resume="Acheter l or quand la seance du COMEX est fermee : de l ouverture asiatique (18:00 New York, minuit a Paris) "
+               "a l ouverture du COMEX (8:20), puis de sa cloture (13:30) a la fin de seance (17:00). Jamais de position "
+               "d une seance a l autre ni le week-end.",
+        fonctionnement=[
+            "Seance Globex de l or : 18:00 -> 17:00 heure de New York (minuit -> 23:00 a Paris), pause d une heure, fermee le week-end.",
+            "18:00 New York (minuit a Paris) : achat de GC a l ouverture de la seance ; 8:20 (14:20 a Paris), ouverture du COMEX : vente.",
+            "13:30 (19:30 a Paris), cloture du COMEX : achat ; vente a la derniere minute de la seance (cloture de 17:00, 23:00 a Paris).",
+            "Pas de position pendant la seance du COMEX (8:20-13:30), la pause 17:00-18:00 et le week-end : environ 17 h 50 en "
+            "position par seance (14 h 20 + 3 h 30), deux allers-retours par jour.",
+            "Seance raccourcie (jour ferie americain) : sortie a sa derniere minute ; heure prevue absente (plus de 10 min de "
+            "retard) : jambe sautee.",
+            f"Taille : 100 % du capital ({cap:,.0f} $, notionnel = capital, sans levier), gains reinvestis. Couts : 2,25 $ par "
+            "contrat et par execution + 1/2 tick (0,10 $).",
+            "Regle publiee : acheteur de 13:30 a 8:20 le lendemain. Version intraday : coupee a 17:00 et reprise a 18:00 ; "
+            "elle perd le rendement des fermetures (voir les temoins).",
+        ],
+        pourquoi="Sur le COMEX de 1985 a 2012, les auteurs trouvent un rendement de nuit significativement positif et un "
+                 "rendement de seance (8:20-13:30) significativement negatif ; l ecart s est reduit avec le temps mais reste "
+                 "present. De 2016 a 2026, la seance du COMEX a encore perdu en moyenne alors que le reste de la journee a "
+                 "porte la hausse de l or.",
+        sources=[dict(titre="Blose & Gondhalekar (2014), Overnight gold returns, Applied Economics Letters 21(18)",
+                      lien="https://ideas.repec.org/a/taf/apeclt/v21y2014i18p1269-1272.html"),
+                 dict(titre="Blose, Gondhalekar & Kort (2018), Overnight versus day returns in gold and gold related assets, "
+                            "Journal of Economics and Finance 42(3)",
+                      lien="https://ideas.repec.org/a/spr/jecfin/v42y2018i3d10.1007_s12197-017-9403-0.html")],
+        parametres={k: _js(v) for k, v in p0.items()},
+        donnees=dict(info, calendrier="seances CME (18:00 -> 17:00, datees du jour de leur fin), reportees sur les seances NYSE"),
+        capital=dict(initial=cap, unite="$", note="100 % du capital, gains reinvestis, sans levier"),
+        fuseau_trades="America/New_York", publication=ON.PUBLICATION,
+        kpi=_kpi(valeur, t), vectorbt=bloc_vectorbt(pf, valeur), series=bloc_series(valeur), trades=rows,
+        tests=tests, monte_carlo=mc, sensibilite=sens, placebo=plac,
+        placebo_titre="Temoins : chaque jambe, l or toute la seance, la seance du COMEX, la regle publiee", **extra)
+    return fiche, r
+
+
+# =============================================================================
 #  Export
 # =============================================================================
+# candidates a l etude : (code pour --seulement, identifiant de la fiche, fonction d export)
+CANDIDATES = [("G1", "Gotobi_6J", fiche_gotobi), ("O1", "ORB_NQ", fiche_orb), ("N1", "OrNuit_GC", fiche_or_nuit)]
+
+
 def strategies_validees() -> list[str]:
     return [c for c in available() if getattr(get(c), "VALIDATED", None)]
 
@@ -846,8 +1028,7 @@ def exporter(cotations: str, sortie: str, n_sim: int = 2000, grille: bool = True
         raise ImportError("vectorbt n est pas installe")
     os.makedirs(sortie, exist_ok=True)
     taches = [(c, lambda c=c: fiche_nexus(c, cotations, n_sim, grille, log)) for c in strategies_validees()]
-    taches.append(("G1", lambda: fiche_gotobi(cotations, n_sim, grille, log)))
-    taches.append(("O1", lambda: fiche_orb(cotations, n_sim, grille, log)))
+    taches += [(code, lambda f=f: f(cotations, n_sim, grille, log)) for code, _, f in CANDIDATES]
     rets, liste = {}, []
     for code, f in taches:
         if seulement and code not in seulement:
@@ -875,8 +1056,10 @@ def exporter(cotations: str, sortie: str, n_sim: int = 2000, grille: bool = True
                 ser = json.load(fh)["series"]
             rets[e["id"]] = pd.Series(ser["rendement"], index=pd.DatetimeIndex(ser["dates"]))
             liste.append(e)
+    rang = {i: k for k, (_, i, _) in enumerate(CANDIDATES)}          # validees d abord, puis candidates dans l ordre d ajout
+    liste.sort(key=lambda e: (e["statut"] != "validee", rang.get(e["id"], -1)))
     # correlations et portefeuille combine (risque egal) sur le calendrier commun
-    R = pd.DataFrame(rets).dropna()
+    R = pd.DataFrame(rets)[[e["id"] for e in liste if e["id"] in rets]].dropna()
     combi = None
     if R.shape[1] >= 2:
         w = 1 / R.std()

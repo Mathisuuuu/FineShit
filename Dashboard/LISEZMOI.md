@@ -12,8 +12,8 @@ la courbe de capital, les pertes, les rendements par année et par mois, **toute
 | Robustesse statistique | IC du Sharpe par bootstrap BCa (scipy), Sharpe probabiliste, Sharpe déflaté (vectorbt), test des signes (permutation scipy) |
 | Monte Carlo | perte max (ordre mélangé, tirage avec remise), gain total, éventail des trajectoires |
 | Sensibilité | coûts ×0 à ×3, latence, jambes de la stratégie |
-| Placebo | mêmes heures, autres jours (Gotobi) |
-| Sur-ajustement | réglage **figé** (rien n'est rechoisi) : stabilité sur 6 sous-périodes et par moitié, plateau de paramètres (carte de chaleur), PBO, walk-forward 3 ans / 6 mois, test SPA de Hansen (`arch`), Sharpe corrigé des essais multiples (Bonferroni, Holm, BHY via `statsmodels`), durée minimale de backtest, prime du choix du réglage, test sur hasard (marchés simulés sans momentum pour S1, faux jours gotobi pour le Gotobi) |
+| Placebo | mêmes heures, autres jours (Gotobi) ; témoins de l'or : chaque jambe seule, or acheté toute la séance, séance du COMEX seule, règle publiée qui garde la nuit |
+| Sur-ajustement | réglage **figé** (rien n'est rechoisi) : stabilité sur 6 sous-périodes et par moitié, plateau de paramètres (carte de chaleur), PBO, walk-forward 3 ans / 6 mois, test SPA de Hansen (`arch`), Sharpe corrigé des essais multiples (Bonferroni, Holm, BHY via `statsmodels`), durée minimale de backtest, prime du choix du réglage, test sur hasard (marchés simulés sans momentum pour S1, faux jours gotobi pour le Gotobi, jours tirés au hasard pour l'ORB, pause du COMEX déplacée dans la séance pour l'or) |
 
 La page **Comparaison** montre toutes les stratégies côte à côte, leurs corrélations (journalières et
 mensuelles) et un portefeuille combiné à risque égal.
@@ -49,7 +49,8 @@ que sur la machine locale (127.0.0.1) ; `HOTE=0.0.0.0` l'ouvre au réseau local.
   `Python/nexus/strategies/s1_noiseareanq.py`). `python -m nexus tableau` l'exporte automatiquement,
   avec ses textes (`TITRE`, `RESUME`, `FONCTIONNEMENT`, `POURQUOI`, `SOURCES`), sa grille (`GRILLE`) et
   ses scénarios de sensibilité (`SENSIBILITE`).
-- **Candidate** : ajoutée à la main dans `Python/nexus/tableau.py` (fonction `exporter`), comme le Gotobi.
+- **Candidate** : une fonction `fiche_...` dans `Python/nexus/tableau.py`, ajoutée à la liste `CANDIDATES`
+  (code pour `--seulement`, identifiant, fonction), comme le Gotobi, l'ORB et l'or.
 
 ## Données et licence
 
