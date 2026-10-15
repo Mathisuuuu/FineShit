@@ -502,3 +502,41 @@ Statut : **candidate, non validée**. Points faibles :
 - c'est surtout un pari sur la hausse de l'or (bêta 0,56) ;
 - l'écart avec l'or gardé en permanence n'est pas prouvé (+0,31 de Sharpe, p = 0,09) ;
 - Sharpe déflaté strict à 0 %.
+
+## 13. Groupe P1 (en cours) : intraday, environ 5 % par an, perte max < 5 % (`nexus/p1.py`)
+
+Critères fixés avant les tests (tous requis) :
+1. à l'échelle de 5 %/an, perte max ≤ 5,5 % sur 2016-2026 ;
+2. Sharpe ≥ 1,2 sur chaque moitié, au moins 5 sous-périodes positives sur 6, 2 dernières années positives ;
+3. Sharpe après publication ≥ 1 ;
+4. coûts × 2 : Sharpe ≥ 1 et perte max ≤ 7,5 % ;
+5. significatif après correction de Bonferroni sur tous les essais du projet ;
+6. corrélation ≤ 0,3 avec les autres P1.
+
+Repère : avec ces critères, S1 échoue de peu (Sharpe après publication 0,95). Gotobi échoue sur ses moitiés et
+après publication.
+
+État au 2026-10-15 : 58 hypothèses testées en 9 lots, **aucune approuvée**. Toutes ont été fixées avant le
+calcul, d'après les articles. Rejetées :
+- pré-FOMC (avec ou sans filtre de volatilité), rallye FOMC 13:55-14:55, retournement FOMC, devises autour du FOMC ;
+- dérive avant l'emploi (NFP) et l'ISM, jour d'annonce, dérive juste avant la publication ;
+- momentum intraday de marché (15:30-16:00), rééquilibrage des ETF à levier, retournement après la clôture,
+  lundi matin, week-end, retournement d'après-midi (0DTE) ;
+- zone de bruit sur ES, YM, GC, CL et les devises, persistance à la même heure, saisonnalité horaire (découverte
+  2016-2020, testée 2021-2026) ;
+- écarts d'ouverture (dimanche soir compris), retournement après une nuit extrême, paires intraday ;
+- EIA (momentum, minute extrême), API, roll GSCI ;
+- chiffres britanniques sur 6B, veille de la BCE (calendrier reconstruit par le volume, trop imprécis),
+  après le déjeuner, ouverture de Shanghai sur l'or ;
+- chiffres ronds : Sharpe 1,66 au premier passage, dû à une anticipation d'une minute ; −0,74 une fois corrigé ;
+- retournement croisé entre les 9 contrats, prévision ridge de la demi-heure suivante.
+
+Les deux recherches d'articles (SSRN, revues, Quantpedia) ne trouvent aucune stratégie intraday publiée sur ces
+contrats avec un Sharpe seul de 1,5 ou plus sur 2016-2026.
+
+Mises en garde publiées :
+- Paz (SSRN 7290621) : la zone de bruit sur SPY tombe à un Sharpe de 0,39 hors échantillon depuis mai 2024 ;
+- Mesfin (arXiv 2605.04004) : l'ORB sur MNQ ne survit pas à 2 points de coût sur 2021-2025.
+
+À l'inverse, le panier S1 + Gotobi + ORB tient déjà l'objectif : Sharpe 1,92, 6 sous-périodes positives sur 6,
+perte max de 3,0 % à 5 %/an.
