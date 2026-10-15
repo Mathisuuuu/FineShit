@@ -99,3 +99,11 @@ def test_rolls_mensuels():
     adj, rolls = N.ajuster_rolls(df)
     assert len(rolls) == 1 and pd.Timestamp(rolls["utc"].iloc[0]) == pd.Timestamp("2024-01-30 00:00")
     assert np.allclose(adj["close"].to_numpy(), 101.0)                     # rendement nul conserve
+
+
+def test_heure_limite_prop_firm():
+    m = _seance("2024-01-08", _escalier)
+    tr = N.portefeuille(m, jambes="asie,soir", cloture="16:10").trades.records_readable
+    s = pd.DatetimeIndex(tr["Exit Timestamp"]).tz_localize("UTC").tz_convert(N.NY).strftime("%H:%M").tolist()
+    assert s == ["08:20", "16:10"]
+    assert tr["Avg Exit Price"].tolist() == pytest.approx([101.0, 102.0])     # ouverture de la barre de 16:10, pas la cloture de 16:59

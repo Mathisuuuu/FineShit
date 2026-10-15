@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover
 NY = "America/New_York"
 SPEC_GC = dict(multiplicateur=100.0, tick=0.1, commission=2.25, glissement_ticks=0.5)
 OUVERTURE = 18 * 60                       # debut de seance Globex : 18:00 New York (minute 0 de la seance)
-DEFAULTS = dict(pause_debut="08:20", pause_fin="13:30", jambes="nuit", capital=1_000_000.0, exposition=1.0,
+DEFAULTS = dict(pause_debut="08:20", pause_fin="13:30", jambes="nuit", cloture="17:00", capital=1_000_000.0, exposition=1.0,
                 cout_mult=1.0, tolerance_min=10, delai_min=0)
 PUBLICATION = "2014-12-01"     # Blose & Gondhalekar, Overnight gold returns, Applied Economics Letters 21(18), dec. 2014
 # Essais comptes pour le Sharpe deflate : 150 hypotheses et variantes avant l ORB, 14 essais de l ORB sur les autres
@@ -140,6 +140,7 @@ def signaux(m: pd.DataFrame, p: dict):
     close = m["close"].to_numpy(float)
     tol, dl = int(p["tolerance_min"]), int(p["delai_min"])
     a, b = _minute(p["pause_debut"]), _minute(p["pause_fin"])
+    cl = _minute(p["cloture"]) if p["cloture"] != "17:00" else 1440     # heure limite des jambes intraday (prop firms)
     jambes = {x.strip() for x in str(p["jambes"]).split(",") if x.strip()}
     inconnues = jambes - {"asie", "soir", "tout", "pause", "nuit", "permanent"}
     if inconnues:
@@ -152,14 +153,19 @@ def signaux(m: pd.DataFrame, p: dict):
         k = i0 + np.searchsorted(minute[i0:i1], lo, side="left")
         return k if k < i1 and minute[k] <= hi else -1
 
+    fin_seance = set((fin - 1).tolist())
+
     def trade(e, s, derniere):
         E[e] = True
         X[s] = True
-        if s == derniere:                       # fin de seance : cloture de la derniere minute
+        if s == derniere and s in fin_seance:   # fin de seance : cloture de la derniere minute
             prix[s] = close[s]
 
     for j, (i0, i1) in enumerate(zip(debut, fin)):
         derniere = i1 - 1
+        if cl < 1440:                           # sortie forcee a l heure limite (ouverture de la barre), sinon fin de seance
+            k = premiere(i0, i1, cl, 10 ** 6)
+            derniere = k if k >= 0 else derniere
         jour = False
         if "asie" in jambes or "tout" in jambes:
             e = premiere(i0, i1, dl, dl + tol)
