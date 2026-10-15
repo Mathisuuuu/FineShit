@@ -1,0 +1,1 @@
+{"version":1,"genere_le":"2026-10-15 09:00","strategies":[{"id":"Exemple_Test","titre":"Exemple","statut":"validee","valide_le":"2026-10-15","resume":"strategie d essai","kpi":{"sharpe":1.2},"alertes":0,"ok":3}],"correlation":{"ids":["Exemple_Test"],"matrice":[[1]]}}

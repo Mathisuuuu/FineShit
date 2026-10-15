@@ -227,3 +227,8 @@ La fiche 16 (Noise Area Intraday Momentum, barres 1 minute, SPY puis ES/NQ) n'ex
 **S1_NoiseAreaNQ** est la version validée (le 2026-10-15) et figée de la fiche 16 sur NQ : sigma 30 séances,
 contrôle 30 min, bande × 1,2. Fichier autonome `Python/S1_NoiseAreaNQ.py`, ou `python -m nexus backtest -s S1`
 dans le moteur. Résultat de référence, tests passés et réserves : `Python/LISEZMOI.md` § 9.
+
+**Tableau de bord** (`Dashboard/`, Node.js) : toutes les stratégies validées et les candidates (Gotobi 6J),
+avec les statistiques vectorbt, les trades, les tests (Monte Carlo, bootstrap, Sharpe déflaté, PBO,
+walk-forward…) et les corrélations. Lancer `python -m nexus tableau --cotations DOSSIER` dans `Python/`, puis
+`node serveur.js` dans `Dashboard/` (voir `Dashboard/LISEZMOI.md`).

@@ -53,6 +53,37 @@ class S1NoiseAreaNQ(Nexus16NoiseArea):
     TOUT_SYMBOLS = ("NQ",)
     VALIDATED = "2026-10-15"
     DEFAULTS = dict(FROZEN)
+    # --- tableau de bord (python -m nexus tableau) ---
+    TITRE = "S1 · Noise Area NQ"
+    RESUME = ("Suivre le Nasdaq quand il sort franchement de sa zone de bruit habituelle de la journee, "
+              "et tout fermer le soir.")
+    FONCTIONNEMENT = [
+        "Chaque minute de la seance (9:30-16:00 a New York), on connait l ecart moyen entre le prix et l ouverture "
+        "observe a la meme minute sur les 30 seances precedentes : c est la zone de bruit (sigma).",
+        "Bornes du jour : max(ouverture, cloture de la veille) x (1 + 1,2 sigma) en haut, "
+        "min(ouverture, cloture de la veille) x (1 - 1,2 sigma) en bas.",
+        "Toutes les 30 minutes (10:00, 10:30 ... 15:30) : au-dessus de la borne haute ET du VWAP -> acheteur ; "
+        "sous la borne basse ET sous le VWAP -> vendeur ; sinon a plat (stop suiveur).",
+        "Ordre execute a l ouverture de la minute suivante ; tout est ferme a la cloture (16:00, 13:00 les demi-seances).",
+        "Taille : 2 % de risque journalier vise (volatilite des 14 dernieres seances), levier maximum 4.",
+        "Couts : 2,25 $ par contrat et par execution + 1/2 tick de glissement.",
+    ]
+    POURQUOI = ("Quand le marche sort de sa zone de bruit, des acteurs contraints (couverture gamma des teneurs de "
+                "marche, fonds a effet de levier, suiveurs de tendance) achetent ou vendent dans le meme sens : "
+                "le mouvement a tendance a se prolonger jusqu au soir.")
+    SOURCES = [("Zarattini, Aziz & Barbon (2024), Beat the Market: An Effective Intraday Momentum Strategy, SSRN 4824172",
+                "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4824172")]
+    PUBLICATION = "2024-06-01"
+    ESSAIS = 177                      # 3 contrats x 48 reglages + 30 variantes + 3 bases (fiche 16)
+    VAR_SHARPE_ESSAIS_ANNUALISE = 0.206   # variance des Sharpe annualises des 144 reglages ES / NQ / YM (grilles du 2026-10-14)
+    GRILLE_FICHE = "16"
+    GRILLE = dict(lookback_days=[7, 14, 21, 30], check_interval_min=[15, 30, 60], band_mult=[0.8, 1.0, 1.2, 1.5])
+    SENSIBILITE = {
+        "Couts": [("x0", dict(commission_per_unit=0.0, slippage_ticks=0.0)), ("x1 (reference)", {}),
+                  ("x2", dict(commission_per_unit=4.5, slippage_ticks=1.0)), ("x3", dict(commission_per_unit=6.75, slippage_ticks=1.5))],
+        "Latence": [("prix du controle (sans delai)", dict(execution="cloture")), ("ouverture de la minute suivante (reference)", {}),
+                    ("1 minute de plus", dict(execution="cloture_suivante"))],
+    }
 
     def __init__(self, **params):
         changed = {k: v for k, v in params.items() if k in FROZEN and v != FROZEN[k]}

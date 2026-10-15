@@ -390,6 +390,18 @@ def cmd_recherche(args):
     print("Rappel : grille vectorbt SIGNAL SEUL (sans module B ni stops) - pour explorer, pas pour valider.")
 
 
+def cmd_tableau(args):
+    from .tableau import exporter
+    seul = [x.strip() for x in args.seulement.split(",")] if args.seulement else None
+    t = time.time()
+    idx = exporter(args.cotations, args.sortie, n_sim=args.simulations, grille=not args.sans_grille, seulement=seul)
+    for s in idx["strategies"]:
+        k = s["kpi"]
+        print(f"  {s['id']:<20} {s['statut']:<10} Sharpe {k['sharpe']:.2f}  tests ok {s['ok']}  alertes {s['alertes']}")
+    print(f"[nexus] tableau de bord : {len(idx['strategies'])} strategie(s) dans {args.sortie} ({time.time() - t:.0f} s)")
+    print("        lancer ensuite : node Dashboard/serveur.js  puis ouvrir http://localhost:3000")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m nexus", description="Backtests Nexus en Python (vectorbt).")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -432,6 +444,14 @@ def main(argv=None):
     p.add_argument("--type", choices=("tsmom", "xsmom"), default="tsmom")
     p.add_argument("--symboles")
     p.set_defaults(func=cmd_recherche)
+    p = sub.add_parser("tableau", help="export du tableau de bord Node.js (strategies validees + candidates, vectorbt)")
+    p.add_argument("--cotations", "-d", required=True, help="dossier racine des barres 1 minute (depot Cotations)")
+    p.add_argument("--sortie", default=os.path.join(os.path.dirname(__file__), "..", "..", "Dashboard", "donnees"),
+                   help="dossier des fichiers JSON lus par Dashboard/serveur.js")
+    p.add_argument("--simulations", type=int, default=2000, help="tirages Monte Carlo / bootstrap")
+    p.add_argument("--sans-grille", dest="sans_grille", action="store_true", help="sans grille de parametres (plus rapide)")
+    p.add_argument("--seulement", help="codes a exporter, ex. S1,G1")
+    p.set_defaults(func=cmd_tableau)
     args = ap.parse_args(argv)
     args.func(args)
 

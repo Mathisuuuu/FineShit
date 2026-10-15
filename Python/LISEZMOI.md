@@ -23,6 +23,7 @@ comptabilité), aux graphiques et aux grilles de recherche rapides.
 | 14 Swing strict | `s14_strictswing.py` | complet (spread mesurable seulement en temps réel, comme en C#) |
 | 16 Noise Area (barres 1 min) | `s16_noisearea.py` | Python seulement, voir § 8 |
 | **S1 Noise Area NQ** | `s1_noiseareanq.py` + `S1_NoiseAreaNQ.py` | **validée le 2026-10-15, réglage figé**, voir § 9 |
+| Gotobi 6J (candidate) | `gotobi.py` (vectorbt direct) | à l'étude, voir § 10 |
 | Module A | `regime.py` | HMM 3 états (Baum-Welch compilé numba) + terciles |
 | Module B | `sizing.py` | demi-Kelly, waiver, corrélation, plafonds |
 | Module C | `risk.py`, `validation.py`, `report.py` | disjoncteurs, coûts, Monte Carlo, bootstrap, DSR, PBO, walk-forward |
@@ -330,3 +331,52 @@ il retrouve ce résultat. `tests/test_s1_noiseareanq.py` le vérifie aussi quand
 - **Latence** : une minute de retard fait passer le Sharpe après publication de 0,95 à 0,57.
 - **Exécution** : barres 1 minute, sans ticks ; marge non modélisée ; remplissages réels à comparer en
   Sim101 avant tout compte réel.
+
+## 10. Gotobi 6J (candidate) et tableau de bord
+
+### Gotobi sur le yen (`nexus/gotobi.py`)
+
+Les jours de règlement japonais (5, 10, 15, 20, 25 et fin de mois), les importateurs achètent leurs
+dollars au cours du fixing de 9:55 à Tokyo. Les banques les achètent sur le marché juste avant : le dollar
+monte, puis redescend après le fixing.
+
+| Heure de Tokyo | Ordre (6J = yen en dollars) |
+|---|---|
+| 08:00 | vente de 6J (achat de dollars) |
+| 09:55 | retournement : achat de 6J (vente de dollars) |
+| 11:00 | sortie |
+
+Jour gotobi férié au Japon ou tombant un week-end : jour ouvré précédent. Le calendrier japonais est
+calculé dans le module : fériés, jours de remplacement, jours entre deux fériés, années 2019-2021, 2 et
+3 janvier, 31 décembre. Le backtest est écrit directement dans vectorbt (`Portfolio.from_signals`, une
+colonne, retournement à 9:55). Les ordres partent à l'ouverture de la première barre 1 minute de l'heure
+prévue.
+
+Coûts : 2,25 $ par contrat et par côté + ½ tick. Taille : notionnel fixe de 95 000 $ pour 100 000 $ de
+capital. Données : `forex/6J_v0_1m.parquet` du dépôt Cotations (Databento, 2016-2026, 3 684 259 barres,
+36 rolls ajustés). Tests : `tests/test_gotobi.py`.
+
+Statut : **candidate, non validée**. Les tests (tableau de bord) montrent un effet net et spécifique aux
+jours gotobi (placebos négatifs), mais très sensible :
+- aux coûts (Sharpe 0,62 à 2 fois les coûts) ;
+- à une minute de retard au fixing (0,62) ;
+- au nombre d'hypothèses essayées avant de le retenir (Sharpe déflaté strict 0,1 %).
+
+### Tableau de bord (`python -m nexus tableau`)
+
+```
+python -m nexus tableau --cotations ../../cotations      # ecrit ../Dashboard/donnees/*.json
+cd ../Dashboard && node serveur.js                       # http://localhost:3000
+```
+
+Exporte chaque stratégie marquée `VALIDATED` dans le registre (S1...) et les candidates (Gotobi). Pour
+chacune :
+- les statistiques vectorbt complètes et les courbes ;
+- les trades ;
+- la batterie de tests : rejeu vectorbt, anticipation, bootstrap BCa, Sharpe probabiliste et déflaté,
+  permutation, Monte Carlo, coûts, latence, placebo, plateau, PBO, walk-forward ;
+- les corrélations entre stratégies.
+
+Options : `--simulations 2000`, `--sans-grille` (plus rapide), `--seulement S1,G1`.
+Détails de l'interface : `Dashboard/LISEZMOI.md`. Les fichiers exportés restent hors du dépôt (licence des
+données).
