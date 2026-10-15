@@ -24,6 +24,7 @@ comptabilité), aux graphiques et aux grilles de recherche rapides.
 | 16 Noise Area (barres 1 min) | `s16_noisearea.py` | Python seulement, voir § 8 |
 | **S1 Noise Area NQ** | `s1_noiseareanq.py` + `S1_NoiseAreaNQ.py` | **validée le 2026-10-15, réglage figé**, voir § 9 |
 | Gotobi 6J (candidate) | `gotobi.py` (vectorbt direct) | à l'étude, voir § 10 |
+| ORB 5 min NQ (candidate) | `orb.py` (vectorbt direct) | à l'étude, voir § 11 |
 | Module A | `regime.py` | HMM 3 états (Baum-Welch compilé numba) + terciles |
 | Module B | `sizing.py` | demi-Kelly, waiver, corrélation, plafonds |
 | Module C | `risk.py`, `validation.py`, `report.py` | disjoncteurs, coûts, Monte Carlo, bootstrap, DSR, PBO, walk-forward |
@@ -388,3 +389,33 @@ Tests de sur-ajustement (le réglage de chaque stratégie reste figé, rien n'es
 Options : `--simulations 2000`, `--sans-grille` (plus rapide), `--seulement S1,G1`.
 Détails de l'interface : `Dashboard/LISEZMOI.md`. Les fichiers exportés restent hors du dépôt (licence des
 données).
+
+## 11. ORB 5 minutes sur NQ (candidate, `nexus/orb.py`)
+
+Règles du papier « Stocks in Play » (Zarattini, Barbon et Aziz 2024, SSRN 4729284), appliquées telles
+quelles au Nasdaq 100 E-mini :
+
+1. La bougie 9:30-9:35 doit avoir un volume au moins égal à la moyenne des bougies 9:30-9:35 des
+   14 séances précédentes.
+2. Bougie haussière : ordre stop d'achat à son plus haut. Bougie baissière : ordre stop de vente à son
+   plus bas.
+3. Stop de protection à 10 % de l'ATR sur 14 jours, sinon sortie à la clôture.
+4. Taille : 1 % du capital risqué au stop, levier maximum 4.
+
+Le backtest est écrit dans vectorbt (`from_signals` avec `sl_stop`). Le stop est ancré sur le prix
+d'exécution (`stop_entry_price="fillprice"`) ; vectorbt prend par défaut la clôture de la minute
+d'entrée. Tests : `tests/test_orb.py`.
+
+Pourquoi celle-ci : parmi les stratégies SSRN testées sur nos contrats avec les règles des auteurs, c'est
+la seule qui garde son niveau après publication :
+
+| Stratégie | Sharpe avant / après publication |
+|---|---|
+| ORB 2024 avec filtre de volume (NQ) | 0,94 / 0,99 |
+| ORB 2024 sans filtre (NQ) | 1,12 / 0,66 |
+| ORB 2023 (NQ) | 1,09 / 0,42 |
+| VWAP (NQ) | 0,21 / 0,26 |
+| Première → dernière demi-heure | négatif |
+| Toutes ces stratégies sur ES | nulles ou négatives |
+
+Statut : **candidate, non validée**. La batterie complète de tests est dans le tableau de bord.

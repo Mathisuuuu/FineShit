@@ -23,6 +23,7 @@ from scipy import stats as SS
 
 from . import data as D
 from . import gotobi as GT
+from . import orb as OR
 from . import intraday as I
 from . import validation as V
 from . import vbt_bridge as VB
@@ -705,6 +706,135 @@ def fiche_gotobi(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[d
 
 
 # =============================================================================
+#  Candidate : ORB 5 minutes NQ (vectorbt direct)
+# =============================================================================
+def fiche_orb(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict, pd.Series]:
+    m, info = OR.charger(cotations, "NQ")
+    cap = OR.DEFAULTS["capital"]
+    t0 = time.time()
+    pf = OR.portefeuille(m)
+    log(f"  vectorbt : {len(pf.trades.records_readable)} trades ({time.time() - t0:.0f} s)")
+    cal = calendrier(m.index[0].normalize(), m.index[-1].normalize())
+
+    def run(**kw):
+        p_ = OR.portefeuille(m, **kw)
+        return p_, OR.valeur_journaliere(p_, cal).pct_change().fillna(0.0)
+
+    valeur = OR.valeur_journaliere(pf, cal)
+    r = valeur.pct_change().fillna(0.0)
+    rows, t = bloc_trades(pf, None, "America/New_York", OR.valeur(pf))
+    tests = [dict(famille="Comptabilite", test="Comptabilite vectorbt (ordre stop, stop ATR, taille)", resultat="tests unitaires",
+                  detail="tests/test_orb.py : execution au niveau de la bougie, sortie au stop de 10 % de l ATR, taille 1 % / levier 4, "
+                         "filtre de volume relatif", verdict="ok")]
+    cut = m.index[int(len(m) * 0.6)]
+    m2 = m.copy()
+    m2.loc[m2.index > cut, ["open", "high", "low", "close"]] *= 1.25
+    a = pf.trades.records_readable
+    b = OR.portefeuille(m2).trades.records_readable
+    a, b = a[a["Exit Timestamp"] < cut].reset_index(drop=True), b[b["Exit Timestamp"] < cut].reset_index(drop=True)
+    ok = len(a) == len(b) and np.allclose(a["PnL"], b["PnL"]) and (a["Entry Timestamp"] == b["Entry Timestamp"]).all()
+    tests.append(dict(famille="Comptabilite", test="Biais d anticipation (prix futurs x 1,25)", resultat="aucun" if ok else "PROBLEME",
+                      detail=f"{len(a)} trades avant le {cut:%d/%m/%Y} inchanges", verdict="ok" if ok else "alerte"))
+    # sensibilite
+    sens = []
+    pub = pd.Timestamp(OR.PUBLICATION)
+    for famille, cas in {"Couts": [("x0", dict(cout_mult=0.0)), ("x1 (reference)", {}), ("x2", dict(cout_mult=2.0)), ("x3", dict(cout_mult=3.0))],
+                         "Latence": [("execution au niveau (reference)", {}), ("+1 min", dict(delai_min=1)), ("+2 min", dict(delai_min=2)),
+                                     ("+5 min", dict(delai_min=5))],
+                         "Variantes": [("sans filtre de volume", dict(filtre_volume=False))]}.items():
+        for lab, kw in cas:
+            _, rr = run(**kw) if kw else (pf, r)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                sens.append(dict(famille=famille, cas=lab, sharpe=_js(_acc(rr).sharpe_ratio()), sharpe_apres=_js(_acc(rr[rr.index >= pub]).sharpe_ratio())))
+    for famille in ("Couts", "Latence"):
+        cas_ = [x for x in sens if x["famille"] == famille]
+        pire = min(cas_, key=lambda x: x["sharpe"])
+        tests.append(dict(famille="Sensibilite", test=f"{famille} : pire cas ({pire['cas']})", resultat=f"Sharpe {pire['sharpe']:.2f}",
+                          detail=" ; ".join(f"{x['cas']} {x['sharpe']:.2f} (apres pub. {x['sharpe_apres']:.2f})" for x in cas_),
+                          verdict="ok" if pire["sharpe"] >= 0.5 else "alerte"))
+    log("  couts, latence : ok")
+    extra, rmat = {}, None
+    if grille:
+        axes = dict(minutes_ouverture=[5, 15, 30], stop_atr=[0.05, 0.10, 0.15, 0.20], volume_min=[0.8, 1.0, 1.5])
+        rets, pts = {}, []
+        import itertools
+        for combo in itertools.product(*axes.values()):
+            kw = dict(zip(axes, combo))
+            _, rr = run(**kw)
+            lab = ",".join(f"{k}={v}" for k, v in kw.items())
+            rets[lab] = rr
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                pts.append(dict(kw, sharpe=_js(_acc(rr).sharpe_ratio())))
+        log(f"  grille : {len(pts)} reglages")
+        rmat = pd.DataFrame(rets)
+        ref_lab = "minutes_ouverture=5,stop_atr=0.1,volume_min=1.0"
+        tg, extra = _grille_pbo_wf(rmat, ref_lab)
+        shs = np.array([x["sharpe"] for x in pts], float)
+        tg.insert(0, dict(famille="Sur-ajustement", test="Plateau (bougie x stop x volume)", resultat=f"{shs.min():.2f} a {shs.max():.2f}",
+                          detail=f"{len(shs)} reglages ; {np.mean(shs > 0):.0%} positifs ; reglage du papier 5 min / 10 % ATR / 100 %",
+                          verdict="ok" if np.mean(shs > 0) >= 0.8 else "alerte"))
+        tests += tg
+        extra["grille"] = dict(axes=list(axes), valeurs={k: list(map(_js, v)) for k, v in axes.items()}, points=pts,
+                               reference=dict(minutes_ouverture=5, stop_atr=0.1, volume_min=1.0))
+    tc, mc = bloc_tests_communs(r, t, OR.PUBLICATION, OR.ESSAIS, OR.VAR_SHARPE_ESSAIS_ANNUALISE, n_sim)
+    tests = tests[:2] + tc + tests[2:]
+    # hasard : memes regles sans filtre, puis tirages de jours au hasard en nombre egal aux jours filtres
+    pf_tous = OR.portefeuille(m, filtre_volume=False)
+    tt = pf_tous.trades.records_readable
+    par_jour = pd.Series(tt["PnL"].to_numpy() / cap, index=pd.DatetimeIndex(tt["Exit Timestamp"]).normalize()).groupby(level=0).sum()
+    x = par_jour.reindex(cal).fillna(0.0)
+    choisis = pd.DatetimeIndex(pd.DatetimeIndex(pf.trades.records_readable["Exit Timestamp"]).normalize().unique())
+    pool = np.flatnonzero(np.asarray(x.index.isin(par_jour.index)))
+    rng = np.random.default_rng(13)
+    M = np.zeros((len(x), n_sim))
+    for k in range(n_sim):
+        pick = rng.choice(pool, size=min(len(choisis), len(pool)), replace=False)
+        M[pick, k] = x.to_numpy()[pick]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        vals = pd.DataFrame(M, index=x.index).vbt.returns(freq="1D", year_freq=ANNEE).sharpe_ratio().to_numpy()
+        obs = float(pd.Series(np.where(x.index.isin(choisis), x.to_numpy(), 0.0), index=x.index).vbt.returns(freq="1D", year_freq=ANNEE).sharpe_ratio())
+    nul = dict(titre="Jours tires au hasard au lieu du filtre de volume", valeurs=vals, observe=obs,
+               detail=f"{n_sim} tirages de {len(choisis)} jours parmi les {len(pool)} jours ou la cassure a lieu (memes regles, sans filtre)")
+    log("  jours au hasard : ok")
+    ts, so = bloc_surajustement(r, rmat, "minutes_ouverture=5,stop_atr=0.1,volume_min=1.0" if rmat is not None else None, OR.ESSAIS,
+                                nul=nul, reps=n_sim)
+    tests += ts
+    extra["surajustement"] = so
+    p = OR.DEFAULTS
+    fiche = dict(
+        id="ORB_NQ", code="O1", titre="ORB 5 min · NQ", statut="candidate", valide_le=None,
+        resume="Suivre la cassure de la premiere bougie de 5 minutes du Nasdaq, seulement les jours ou l ouverture est "
+               "anormalement active, avec un stop serre et une sortie le soir.",
+        fonctionnement=[
+            "9:30-9:35 a New York : on regarde la premiere bougie de 5 minutes du NQ (sens, plus haut, plus bas, volume).",
+            "Filtre : son volume doit etre au moins egal a la moyenne des bougies 9:30-9:35 des 14 seances precedentes "
+            "(marche « en jeu », comme les « stocks in play » du papier).",
+            "Bougie haussiere : ordre d achat au-dessus de son plus haut ; baissiere : ordre de vente sous son plus bas. "
+            "Si le niveau n est jamais atteint, pas de trade.",
+            "Stop de protection a 10 % de l ATR 14 jours du prix d achat ; sinon sortie a la cloture (16:00). Un trade par jour au plus.",
+            "Taille : la perte au stop vaut 1 % du capital, levier maximum 4 (environ 10 contrats NQ pour 1 M$).",
+            "Couts : 2,25 $ par contrat et par execution + 1/2 tick de glissement, stops compris.",
+        ],
+        pourquoi="Une ouverture tres active signale une information nouvelle que le marche n a pas fini d integrer : la "
+                 "cassure de la premiere bougie dans ce contexte a tendance a se prolonger, et le stop serre limite les "
+                 "fausses cassures.",
+        sources=[dict(titre="Zarattini, Barbon & Aziz (2024), A Profitable Day Trading Strategy for the U.S. Equity Market, SSRN 4729284",
+                      lien="https://papers.ssrn.com/abstract=4729284"),
+                 dict(titre="Zarattini & Aziz (2023), Can Day Trading Really Be Profitable?, SSRN 4416622",
+                      lien="https://papers.ssrn.com/abstract=4416622")],
+        parametres={k: _js(v) for k, v in p.items() if k not in ("jours_hasard",)},
+        donnees=dict(info, calendrier="seances NYSE (feries exclus)"),
+        capital=dict(initial=cap, unite="$", note="capital fixe, taille au risque (1 % au stop), levier max 4"),
+        fuseau_trades="America/New_York", publication=OR.PUBLICATION,
+        kpi=_kpi(valeur, t), vectorbt=bloc_vectorbt(pf, valeur), series=bloc_series(valeur), trades=rows,
+        tests=tests, monte_carlo=mc, sensibilite=sens, **extra)
+    return fiche, r
+
+
+# =============================================================================
 #  Export
 # =============================================================================
 def strategies_validees() -> list[str]:
@@ -717,6 +847,7 @@ def exporter(cotations: str, sortie: str, n_sim: int = 2000, grille: bool = True
     os.makedirs(sortie, exist_ok=True)
     taches = [(c, lambda c=c: fiche_nexus(c, cotations, n_sim, grille, log)) for c in strategies_validees()]
     taches.append(("G1", lambda: fiche_gotobi(cotations, n_sim, grille, log)))
+    taches.append(("O1", lambda: fiche_orb(cotations, n_sim, grille, log)))
     rets, liste = {}, []
     for code, f in taches:
         if seulement and code not in seulement:
@@ -733,6 +864,17 @@ def exporter(cotations: str, sortie: str, n_sim: int = 2000, grille: bool = True
                           alertes=sum(1 for x in fiche["tests"] if x["verdict"] == "alerte"),
                           ok=sum(1 for x in fiche["tests"] if x["verdict"] == "ok")))
         log(f"[tableau] {code} ecrit ({time.time() - t0:.0f} s)")
+    if seulement and os.path.exists(os.path.join(sortie, "index.json")):     # export partiel : garder les autres fiches
+        with open(os.path.join(sortie, "index.json"), encoding="utf-8") as fh:
+            ancien = json.load(fh)
+        for e in ancien.get("strategies", []):
+            f_ = os.path.join(sortie, f"{e['id']}.json")
+            if e["id"] in rets or not os.path.exists(f_):
+                continue
+            with open(f_, encoding="utf-8") as fh:
+                ser = json.load(fh)["series"]
+            rets[e["id"]] = pd.Series(ser["rendement"], index=pd.DatetimeIndex(ser["dates"]))
+            liste.append(e)
     # correlations et portefeuille combine (risque egal) sur le calendrier commun
     R = pd.DataFrame(rets).dropna()
     combi = None
