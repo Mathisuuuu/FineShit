@@ -12,7 +12,7 @@ la courbe de capital, les pertes, les rendements par année et par mois, **toute
 | Robustesse statistique | IC du Sharpe par bootstrap BCa (scipy), Sharpe probabiliste, Sharpe déflaté (vectorbt), test des signes (permutation scipy) |
 | Monte Carlo | perte max (ordre mélangé, tirage avec remise), gain total, éventail des trajectoires |
 | Sensibilité | coûts ×0 à ×3, latence, jambes de la stratégie |
-| Placebo | mêmes heures, autres jours (Gotobi) ; témoins de l'or : chaque jambe seule, or acheté toute la séance, séance du COMEX seule, règle publiée qui garde la nuit |
+| Placebo | mêmes heures, autres jours (Gotobi) ; témoins de l'or : or gardé en permanence, séance du COMEX seule, version intraday |
 | Sur-ajustement | réglage **figé** (rien n'est rechoisi) : stabilité sur 6 sous-périodes et par moitié, plateau de paramètres (carte de chaleur), PBO, walk-forward 3 ans / 6 mois, test SPA de Hansen (`arch`), Sharpe corrigé des essais multiples (Bonferroni, Holm, BHY via `statsmodels`), durée minimale de backtest, prime du choix du réglage, test sur hasard (marchés simulés sans momentum pour S1, faux jours gotobi pour le Gotobi, jours tirés au hasard pour l'ORB, pause du COMEX déplacée dans la séance pour l'or) |
 
 La page **Comparaison** montre toutes les stratégies côte à côte, leurs corrélations (journalières et

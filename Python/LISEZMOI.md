@@ -387,7 +387,7 @@ Tests de sur-ajustement (le réglage de chaque stratégie reste figé, rien n'es
 - test sur hasard : marchés minute simulés sans momentum pour S1, faux jours gotobi tirés au hasard pour le Gotobi.
 
 Options : `--simulations 2000`, `--sans-grille` (plus rapide), `--seulement S1,G1` (codes : S1, G1 Gotobi,
-O1 ORB, N1 or hors séance US).
+O1 ORB, N1 or la nuit).
 Détails de l'interface : `Dashboard/LISEZMOI.md`. Les fichiers exportés restent hors du dépôt (licence des
 données).
 
@@ -421,23 +421,20 @@ la seule qui garde son niveau après publication :
 
 Statut : **candidate, non validée**. La batterie complète de tests est dans le tableau de bord.
 
-## 12. Or hors séance de New York, intraday (candidate, `nexus/or_nuit.py`)
+## 12. Or la nuit (candidate, `nexus/or_nuit.py`)
 
 Source : Blose et Gondhalekar (2014), *Overnight gold returns*, Applied Economics Letters 21(18). Sur le
 COMEX de 1985 à 2012, le rendement de l'or est positif hors de la séance de jour (8:20-13:30 à New York) et
-négatif pendant. La règle publiée garde l'or de 13:30 à 8:20 le lendemain. La version retenue ici est
-**intraday** : la même exposition, mais fermée à chaque fin de séance Globex. Elle a été fixée avant le
-test.
+négatif pendant. La règle des auteurs est appliquée telle quelle. C'est la toute première version testée
+sur l'or (G1a).
 
 | Heure de New York (Paris) | Ordre (GC) |
 |---|---|
-| 18:00 (minuit), ouverture de la séance | achat |
-| 8:20 (14:20), ouverture du COMEX | vente |
 | 13:30 (19:30), clôture du COMEX | achat |
-| 17:00 (23:00), fin de séance | vente à la clôture de la dernière minute |
+| 8:20 (14:20) à la séance suivante, ouverture du COMEX | vente |
 
-Aucune position pendant la séance du COMEX, la pause 17:00-18:00 et le week-end. Une séance raccourcie
-(jour férié) est soldée à sa dernière minute.
+La position traverse la pause 17:00-18:00. Le vendredi, elle est gardée tout le week-end. S'il n'y a pas
+de barre à 13:30 (séance raccourcie), il n'y a pas d'achat ce jour-là.
 
 Taille : 100 % du capital, réinvesti, sans levier. Coûts : 2,25 $ par contrat et par exécution + ½ tick.
 Les rolls de GC (souvent en fin de mois) sont ajustés au saut dominant de chaque mois à minuit UTC
@@ -445,21 +442,23 @@ Les rolls de GC (souvent en fin de mois) sont ajustés au saut dominant de chaqu
 `compact=True` ne donne à vectorbt que les barres d'ordres et de fin de séance : il produit les mêmes
 résultats, plus vite, pour les grilles et les tirages. Tests : `tests/test_or_nuit.py`.
 
-Résultats (GC.v.0, 2016-2026) :
+Résultats (GC.v.0, 2016-2026, tout l'historique est postérieur à la publication) :
 
 | Version | Sharpe |
 |---|---|
-| Intraday (stratégie) | 0,65 |
-| Règle publiée, nuit gardée | 1,11 |
-| Or acheté toute la séance, intraday | 0,48 |
+| Nuit 13:30 → 8:20 (stratégie) | 1,11 |
+| Or gardé en permanence | 0,80 |
 | Séance du COMEX seule | −0,42 |
+| Version intraday (fermée à 17:00, reprise à 18:00) | 0,65 |
 
-La séance du COMEX perd sur les 6 sous-périodes. Placer la même pause de 5 h 10 ailleurs dans la séance
-fait moins bien (p = 0,009). La contrainte intraday coûte la hausse de l'or pendant les fermetures
-(environ 3,6 % par an de 2016 à 2026), plus un aller-retour de plus par jour.
+Ce qui tient :
+- 6 sous-périodes positives sur 6 ;
+- coûts ×3 : Sharpe 0,76 ; latence +5 min : 0,99 ;
+- les 25 horaires voisins vont de 0,86 à 1,11 ; PBO 35 % ; walk-forward 1,14 ; SPA p = 0,002 ;
+- Sharpe corrigé de Bonferroni sur 178 essais : 0,59 ;
+- la même pause de 5 h 10 placée ailleurs fait moins bien (p = 0,009).
 
 Statut : **candidate, non validée**. Points faibles :
-- elle ne bat pas nettement l'or acheté toute la séance (+0,17 de Sharpe, p = 0,23) ;
-- elle est très sensible aux coûts (Sharpe −0,06 à 3 fois les coûts) ;
-- seulement 3 sous-périodes positives sur 6 ;
-- Sharpe déflaté strict à 0 % (178 essais comptés).
+- c'est surtout un pari sur la hausse de l'or (bêta 0,56) ;
+- l'écart avec l'or gardé en permanence n'est pas prouvé (+0,31 de Sharpe, p = 0,09) ;
+- Sharpe déflaté strict à 0 %.

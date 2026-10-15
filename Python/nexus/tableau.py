@@ -1,7 +1,7 @@
 """Export du tableau de bord (Dashboard/, serveur Node.js) : un fichier JSON par strategie.
 
 Strategies exportees : toutes les strategies du registre marquees VALIDATED (ex. S1_NoiseAreaNQ) et les
-candidates a l etude (Gotobi 6J, ORB NQ, or hors seance de New York). Tous les chiffres viennent de vectorbt (portefeuilles, statistiques, trades,
+candidates a l etude (Gotobi 6J, ORB NQ, or la nuit). Tous les chiffres viennent de vectorbt (portefeuilles, statistiques, trades,
 drawdowns, rendements, ratios glissants, Sharpe deflate), de scipy (bootstrap BCa, test de permutation) et de
 nexus.validation (Sharpe probabiliste, PBO, decoupage walk-forward). Le code ci-dessous ne fait qu assembler
 et mettre en forme ; il n exporte aucune cotation brute (seulement des resultats).
@@ -840,7 +840,7 @@ def fiche_orb(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict
 
 
 # =============================================================================
-#  Candidate : or hors seance de New York, intraday (vectorbt direct)
+#  Candidate : or la nuit, regle publiee (vectorbt direct)
 # =============================================================================
 def _heure(minute: int) -> str:
     h, mi = divmod((ON.OUVERTURE + int(minute)) % 1440, 60)
@@ -865,9 +865,9 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
     valeur = ON.valeur_journaliere(pf, cal)
     r = valeur.pct_change().fillna(0.0)
     rows, t = bloc_trades(pf, "UTC", "America/New_York", ON.valeur(pf))
-    tests = [dict(famille="Comptabilite", test="Comptabilite vectorbt (heures, fin de seance, taille)", resultat="tests unitaires",
-                  detail="tests/test_or_nuit.py : achats 18:00 et 13:30, ventes 8:20 et cloture de 16:59, 100 % du capital reinvesti, "
-                         "seances raccourcies, mode compact identique, rolls", verdict="ok")]
+    tests = [dict(famille="Comptabilite", test="Comptabilite vectorbt (heures, week-end, taille)", resultat="tests unitaires",
+                  detail="tests/test_or_nuit.py : achat 13:30, vente 8:20 a la seance suivante (lundi apres un vendredi), 100 % du "
+                         "capital reinvesti, version intraday et seances raccourcies, mode compact identique, rolls", verdict="ok")]
     cut = m.index[int(len(m) * 0.6)]
     m2 = m.copy()
     m2.loc[m2.index > cut, ["open", "close"]] *= 1.25
@@ -878,22 +878,23 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
     tests.append(dict(famille="Comptabilite", test="Biais d anticipation (prix futurs x 1,25)", resultat="aucun" if ok else "PROBLEME",
                       detail=f"{len(a)} trades avant le {cut:%d/%m/%Y} inchanges", verdict="ok" if ok else "alerte"))
     tr = pf.trades.records_readable
-    d_e, _ = ON.seances(pd.DatetimeIndex(tr["Entry Timestamp"]))
-    d_s, _ = ON.seances(pd.DatetimeIndex(tr["Exit Timestamp"]))
-    duree = (pd.DatetimeIndex(tr["Exit Timestamp"]) - pd.DatetimeIndex(tr["Entry Timestamp"])).total_seconds() / 3600
-    intra = bool((d_e == d_s).all()) and bool((tr["Status"] == "Closed").all())
-    tests.append(dict(famille="Comptabilite", test="Intraday : chaque position fermee dans sa seance", resultat="oui" if intra else "NON",
-                      detail=f"{len(tr)} trades ; duree max {duree.max():.1f} h ; aucune position pendant la pause 17:00-18:00 ni le week-end",
-                      verdict="ok" if intra else "alerte"))
-    # temoins : chaque jambe, l or achete toute la seance, la seance du COMEX seule, la regle publiee (nuit gardee)
+    loc = lambda c: pd.DatetimeIndex(tr[c]).tz_localize("UTC").tz_convert(ON.NY).tz_localize(None)
+    he, hs = loc("Entry Timestamp"), loc("Exit Timestamp")
+    mn_e, mn_s = he.hour * 60 + he.minute, hs.hour * 60 + hs.minute
+    ok_e, ok_s = np.mean((mn_e >= 810) & (mn_e <= 820)), np.mean((mn_s >= 500) & (mn_s <= 510))
+    duree = (hs - he).total_seconds() / 3600
+    tests.append(dict(famille="Comptabilite", test="Heures d execution (New York)", resultat=f"{ok_e:.1%} des achats a 13:30, {ok_s:.1%} des ventes a 8:20",
+                      detail=f"{len(tr)} trades (au plus 10 min de retard) ; les autres ventes : derniere minute d une seance sans 8:20 ; "
+                             f"duree mediane {np.median(duree):.1f} h, max {duree.max():.0f} h (week-end prolonge)",
+                      verdict="ok" if ok_e > 0.99 and ok_s > 0.99 else "alerte"))
+    # temoins : l or garde en permanence, la seance du COMEX seule, la version intraday
     plac, temoins = [], {}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        for lab, kw in [("asie + soir (strategie)", {}), ("jambe Asie seule (18:00 -> 8:20)", dict(jambes="asie")),
-                        ("jambe du soir seule (13:30 -> 17:00)", dict(jambes="soir")),
-                        ("or achete toute la seance (18:00 -> 17:00)", dict(jambes="tout")),
+        for lab, kw in [("nuit 13:30 -> 8:20 (strategie)", {}), ("or garde en permanence", dict(jambes="permanent")),
                         ("seance du COMEX seule (8:20 -> 13:30)", dict(jambes="pause")),
-                        ("regle publiee, nuit gardee (13:30 -> 8:20)", dict(jambes="nuit"))]:
+                        ("version intraday (18:00 -> 8:20 + 13:30 -> 17:00)", dict(jambes="asie,soir")),
+                        ("or achete toute la seance, intraday (18:00 -> 17:00)", dict(jambes="tout"))]:
             _, rr = run(**kw) if kw else (pf, r)
             temoins[lab] = rr
             plac.append(dict(cas=lab, sharpe=_js(_acc(rr).sharpe_ratio())))
@@ -902,20 +903,20 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
                       detail="l idee du papier : l or ne gagne rien (ou perd) pendant la seance de jour de New York ; "
                              + " ; ".join(f"{x['cas']} {x['sharpe']:.2f}" for x in plac),
                       verdict="ok" if sh["seance du COMEX seule (8:20 -> 13:30)"] < 0 else "alerte"))
-    x_, y_ = r.to_numpy(), temoins["or achete toute la seance (18:00 -> 17:00)"].to_numpy()
+    x_, y_ = r.to_numpy(), temoins["or garde en permanence"].to_numpy()
     f_sh = lambda z: z.mean() / z.std(ddof=1) * math.sqrt(252)
     ecart = f_sh(x_) - f_sh(y_)
     dist = np.array([f_sh(u) - f_sh(w) for (u, w), _ in StationaryBootstrap(10, x_, y_, seed=7).bootstrap(n_sim)])
     p_ec = float(np.mean(dist - ecart >= ecart))
     reg = SS.linregress(y_, x_)
-    tests.append(dict(famille="Placebo", test="Bat-elle l or achete toute la seance ?", resultat=f"{ecart:+.2f} de Sharpe, p = {p_ec:.3f}",
+    tests.append(dict(famille="Placebo", test="Bat-elle l or garde en permanence ?", resultat=f"{ecart:+.2f} de Sharpe, p = {p_ec:.3f}",
                       detail=f"bootstrap stationnaire (arch), {n_sim} tirages, IC 95 % [{np.quantile(dist, .025):.2f} ; {np.quantile(dist, .975):.2f}] ; "
                              f"rendement hors exposition a l or {reg.intercept * 252:+.1%} par an (t = {reg.intercept / reg.intercept_stderr:.2f}), "
                              f"beta {reg.slope:.2f}", verdict="ok" if p_ec < 0.05 else "alerte"))
-    tests.append(dict(famille="Placebo", test="Cout de la contrainte intraday", resultat=f"Sharpe {sh['asie + soir (strategie)']:.2f} contre "
-                      f"{sh['regle publiee, nuit gardee (13:30 -> 8:20)']:.2f}",
-                      detail="la regle publiee garde l or pendant la pause 17:00-18:00 et le week-end ; la version intraday perd ce "
-                             "rendement et paie deux allers-retours par seance au lieu d un", verdict="info"))
+    tests.append(dict(famille="Placebo", test="Version intraday (fermee a 17:00, reprise a 18:00)",
+                      resultat=f"Sharpe {sh['version intraday (18:00 -> 8:20 + 13:30 -> 17:00)']:.2f} contre {sh['nuit 13:30 -> 8:20 (strategie)']:.2f}",
+                      detail="sans la pause 17:00-18:00 ni le week-end, et avec deux allers-retours par seance au lieu d un : "
+                             "une grande partie du rendement disparait", verdict="info"))
     log("  temoins : ok")
     # sensibilite
     sens = []
@@ -969,34 +970,36 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
             _, rr = run(pause_debut=_heure(a_), pause_fin=_heure(a_ + duree_p))
             vals.append(float(_acc(rr).sharpe_ratio()))
         obs = float(_acc(r).sharpe_ratio())
-    nul = dict(titre="Pause de 5 h 10 placee ailleurs dans la seance", valeurs=np.array(vals), observe=obs,
-               detail=f"{len(vals)} positions de la pause (toutes les 10 min de 18:00 a 11:50), or achete le reste de la seance, memes couts")
+    vals = np.array(vals)
+    vals = vals[np.isfinite(vals)]
+    nul = dict(titre="Pause de 5 h 10 placee ailleurs dans la journee", valeurs=vals, observe=obs,
+               detail=f"{len(vals)} positions de la pause (toutes les 10 min, de 18:00 a 11:40), or garde le reste du temps "
+                      "(pause 17:00-18:00 et week-end compris), memes couts")
     log("  pauses deplacees : ok")
     ts, so = bloc_surajustement(r, rmat, ref_lab if rmat is not None else None, ON.ESSAIS, nul=nul, reps=n_sim)
     tests += ts
     extra["surajustement"] = so
     fiche = dict(
-        id="OrNuit_GC", code="N1", titre="Or hors seance US · GC (intraday)", statut="candidate", valide_le=None,
-        resume="Acheter l or quand la seance du COMEX est fermee : de l ouverture asiatique (18:00 New York, minuit a Paris) "
-               "a l ouverture du COMEX (8:20), puis de sa cloture (13:30) a la fin de seance (17:00). Jamais de position "
-               "d une seance a l autre ni le week-end.",
+        id="OrNuit_GC", code="N1", titre="Or la nuit · GC", statut="candidate", valide_le=None,
+        resume="Acheter l or a la cloture du COMEX (13:30 a New York, 19:30 a Paris) et le revendre a son ouverture "
+               "suivante (8:20, 14:20 a Paris) : garde la nuit et le week-end, jamais pendant la seance de New York.",
         fonctionnement=[
-            "Seance Globex de l or : 18:00 -> 17:00 heure de New York (minuit -> 23:00 a Paris), pause d une heure, fermee le week-end.",
-            "18:00 New York (minuit a Paris) : achat de GC a l ouverture de la seance ; 8:20 (14:20 a Paris), ouverture du COMEX : vente.",
-            "13:30 (19:30 a Paris), cloture du COMEX : achat ; vente a la derniere minute de la seance (cloture de 17:00, 23:00 a Paris).",
-            "Pas de position pendant la seance du COMEX (8:20-13:30), la pause 17:00-18:00 et le week-end : environ 17 h 50 en "
-            "position par seance (14 h 20 + 3 h 30), deux allers-retours par jour.",
-            "Seance raccourcie (jour ferie americain) : sortie a sa derniere minute ; heure prevue absente (plus de 10 min de "
-            "retard) : jambe sautee.",
+            "13:30 New York (19:30 a Paris), cloture de la seance du COMEX : achat de GC.",
+            "8:20 New York (14:20 a Paris) a la seance suivante, ouverture du COMEX : vente. Le vendredi, la position est "
+            "gardee tout le week-end et vendue le lundi a 8:20.",
+            "En position environ 18 h 50 par jour (pause de 17:00-18:00 comprise), environ 2,5 jours le week-end ; jamais "
+            "pendant la seance du COMEX (8:20-13:30). Un aller-retour par jour.",
+            "Pas de barre a 13:30 (seance raccourcie, plus de 10 min de retard) : pas d achat ce jour-la ; seance suivante "
+            "sans 8:20 : vente a sa derniere minute.",
             f"Taille : 100 % du capital ({cap:,.0f} $, notionnel = capital, sans levier), gains reinvestis. Couts : 2,25 $ par "
             "contrat et par execution + 1/2 tick (0,10 $).",
-            "Regle publiee : acheteur de 13:30 a 8:20 le lendemain. Version intraday : coupee a 17:00 et reprise a 18:00 ; "
-            "elle perd le rendement des fermetures (voir les temoins).",
+            "Regle des auteurs appliquee telle quelle (la toute premiere version testee, G1a). La version intraday (fermee a "
+            "17:00, reprise a 18:00) est dans les temoins.",
         ],
         pourquoi="Sur le COMEX de 1985 a 2012, les auteurs trouvent un rendement de nuit significativement positif et un "
                  "rendement de seance (8:20-13:30) significativement negatif ; l ecart s est reduit avec le temps mais reste "
-                 "present. De 2016 a 2026, la seance du COMEX a encore perdu en moyenne alors que le reste de la journee a "
-                 "porte la hausse de l or.",
+                 "present. De 2016 a 2026, la seance du COMEX a encore perdu en moyenne alors que le reste du temps a porte "
+                 "la hausse de l or.",
         sources=[dict(titre="Blose & Gondhalekar (2014), Overnight gold returns, Applied Economics Letters 21(18)",
                       lien="https://ideas.repec.org/a/taf/apeclt/v21y2014i18p1269-1272.html"),
                  dict(titre="Blose, Gondhalekar & Kort (2018), Overnight versus day returns in gold and gold related assets, "
@@ -1008,7 +1011,7 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
         fuseau_trades="America/New_York", publication=ON.PUBLICATION,
         kpi=_kpi(valeur, t), vectorbt=bloc_vectorbt(pf, valeur), series=bloc_series(valeur), trades=rows,
         tests=tests, monte_carlo=mc, sensibilite=sens, placebo=plac,
-        placebo_titre="Temoins : chaque jambe, l or toute la seance, la seance du COMEX, la regle publiee", **extra)
+        placebo_titre="Temoins : l or garde en permanence, la seance du COMEX, la version intraday", **extra)
     return fiche, r
 
 

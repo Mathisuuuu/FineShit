@@ -1,16 +1,16 @@
-"""Or hors seance de New York, version intraday (GC) : backtest construit directement dans vectorbt.
+"""Or la nuit (GC) : backtest construit directement dans vectorbt.
 
 Source : Blose & Gondhalekar (2014), Overnight gold returns, Applied Economics Letters 21(18) ; Blose, Gondhalekar &
 Kort (2018), Journal of Economics and Finance 42(3) : sur le COMEX (1985-2012), le rendement de l or se fait hors
 de la seance de jour (8:20-13:30 heure de New York) ; pendant cette seance il est negatif en moyenne.
 
-Regle publiee : etre acheteur d or de 13:30 (cloture COMEX) a 8:20 le lendemain (ouverture COMEX). Version
-intraday retenue (fixee avant les tests, 2026-10-15) : la meme exposition, mais fermee a chaque fin de seance
-Globex (17:00 New York, 23:00 Paris) et reprise a la reouverture (18:00 New York, minuit Paris). Aucune position
-pendant la pause quotidienne 17:00-18:00 ni le week-end. Par seance Globex (18:00 la veille -> 17:00) :
-  jambe « asie »  : achat a l ouverture de la seance (18:00), vente a 8:20 (ouverture du COMEX) ;
-  jambe « soir »  : achat a 13:30 (cloture du COMEX), vente a la derniere minute de la seance (cloture 17:00).
-Seance raccourcie (jour ferie) : sortie a sa derniere minute ; heure absente (au plus 10 min de retard) : jambe sautee.
+Regle publiee, appliquee telle quelle (jambes="nuit") : achat de GC a 13:30 (cloture du COMEX), vente a 8:20
+(ouverture du COMEX) a la seance suivante. La position traverse la pause 17:00-18:00 et, le vendredi, le week-end.
+Pas de barre a 13:30 (seance raccourcie, au plus 10 min de retard) : pas d achat ce jour-la ; seance suivante sans
+barre apres 8:20 : vente a sa derniere minute (cloture).
+Variantes et temoins : version intraday (jambes="asie,soir" : achat 18:00 -> vente 8:20, achat 13:30 -> vente a
+la cloture de 17:00, rien pendant la pause ni le week-end), seance entiere intraday ("tout"), seance du COMEX
+seule ("pause"), or garde en permanence ("permanent").
 Ordres a l ouverture de la premiere barre 1 minute de l heure prevue ; sortie de fin de seance a la cloture de la
 derniere barre. Taille : 100 % du capital (notionnel = capital, sans levier), reinvesti. Couts : 2,25 $ par contrat
 et par execution + 1/2 tick (0,10 $), en fraction du notionnel au prix brut du moment.
@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover
 NY = "America/New_York"
 SPEC_GC = dict(multiplicateur=100.0, tick=0.1, commission=2.25, glissement_ticks=0.5)
 OUVERTURE = 18 * 60                       # debut de seance Globex : 18:00 New York (minute 0 de la seance)
-DEFAULTS = dict(pause_debut="08:20", pause_fin="13:30", jambes="asie,soir", capital=1_000_000.0, exposition=1.0,
+DEFAULTS = dict(pause_debut="08:20", pause_fin="13:30", jambes="nuit", capital=1_000_000.0, exposition=1.0,
                 cout_mult=1.0, tolerance_min=10, delai_min=0)
 PUBLICATION = "2014-12-01"     # Blose & Gondhalekar, Overnight gold returns, Applied Economics Letters 21(18), dec. 2014
 # Essais comptes pour le Sharpe deflate : 150 hypotheses et variantes avant l ORB, 14 essais de l ORB sur les autres
@@ -130,9 +130,9 @@ def _seances(m: pd.DataFrame):
 
 def signaux(m: pd.DataFrame, p: dict):
     """Tableaux pour vbt.Portfolio.from_signals (une colonne) : entrees, sorties, prix d execution par barre.
-    jambes : asie (ouverture 18:00 -> pause_debut), soir (pause_fin -> fin de seance) ; temoins : tout (seance
-    entiere), pause (pause_debut -> pause_fin), nuit (regle publiee, garde la nuit : pause_fin -> pause_debut le
-    lendemain)."""
+    jambes : nuit (regle publiee : pause_fin -> pause_debut de la seance suivante) ; version intraday : asie
+    (ouverture 18:00 -> pause_debut) et soir (pause_fin -> fin de seance) ; temoins : tout (seance entiere),
+    pause (pause_debut -> pause_fin), permanent (achat a la premiere barre, vente a la derniere)."""
     date, minute = _seances(m)
     n = len(m)
     E, X = np.zeros(n, bool), np.zeros(n, bool)
@@ -141,7 +141,7 @@ def signaux(m: pd.DataFrame, p: dict):
     tol, dl = int(p["tolerance_min"]), int(p["delai_min"])
     a, b = _minute(p["pause_debut"]), _minute(p["pause_fin"])
     jambes = {x.strip() for x in str(p["jambes"]).split(",") if x.strip()}
-    inconnues = jambes - {"asie", "soir", "tout", "pause", "nuit"}
+    inconnues = jambes - {"asie", "soir", "tout", "pause", "nuit", "permanent"}
     if inconnues:
         raise ValueError(f"jambes inconnues : {sorted(inconnues)}")
     debut = np.r_[0, np.flatnonzero(date[1:] != date[:-1]) + 1]
@@ -188,11 +188,13 @@ def signaux(m: pd.DataFrame, p: dict):
             s = premiere(k0, k1, a + dl, 10 ** 6)
             s = k1 - 1 if s < 0 else s
             if e >= 0:
-                E[e] = True
-                X[s] = True
+                trade(e, s, k1 - 1)
                 jour = True
         if jour:
             plan.append(date[i0])
+    if "permanent" in jambes and n > 1:
+        trade(0, n - 1, n - 1)
+        plan = list(pd.unique(date))
     return E, X, prix, pd.DatetimeIndex(plan)
 
 

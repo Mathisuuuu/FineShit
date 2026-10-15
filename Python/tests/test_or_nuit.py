@@ -1,5 +1,5 @@
-"""Or hors seance de New York, version intraday (GC) : heures d execution, fin de seance, seances raccourcies,
-taille (100 % du capital), mode compact et version publiee (nuit gardee)."""
+"""Or la nuit (GC) : regle publiee (13:30 -> 8:20 la seance suivante, week-end compris), version intraday (heures,
+fin de seance, seances raccourcies), taille (100 % du capital), mode compact et rolls."""
 import numpy as np
 import pandas as pd
 import pytest
@@ -30,7 +30,7 @@ def _escalier(k):
 
 def test_heures_et_pnl():
     m = _seance("2024-01-08", _escalier)                                   # dimanche 18:00 -> lundi 17:00 (hiver, UTC-5)
-    pf = N.portefeuille(m, capital=100_000.0)
+    pf = N.portefeuille(m, capital=100_000.0, jambes="asie,soir")
     tr = pf.trades.records_readable
     assert len(tr) == 2
     e = pd.DatetimeIndex(tr["Entry Timestamp"]).tz_localize("UTC").tz_convert(N.NY).strftime("%a %H:%M").tolist()
@@ -48,7 +48,7 @@ def test_intraday_seances_raccourcies_et_week_end():
     ferie = _seance("2024-01-16", _escalier, minutes=range(0, 1140))       # lundi raccourci : fin a 13:00
     tard = _seance("2024-01-17", _escalier, minutes=range(30, 1380))       # pas de barre avant 18:30
     m = pd.concat([vendredi, ferie, tard])
-    pf = N.portefeuille(m, capital=100_000.0)
+    pf = N.portefeuille(m, capital=100_000.0, jambes="asie,soir")
     tr = pf.trades.records_readable
     ent = pd.DatetimeIndex(tr["Entry Timestamp"])
     sor = pd.DatetimeIndex(tr["Exit Timestamp"])
@@ -66,19 +66,28 @@ def test_mode_compact_identique():
     m = pd.concat([_seance(d, _escalier) for d in ("2024-01-08", "2024-01-09", "2024-01-10")])
     m.loc[m.index[::7], "open"] *= 1.001                                    # du bruit pour que les prix varient
     cal = pd.DatetimeIndex(["2024-01-08", "2024-01-09", "2024-01-10"])
-    for kw in ({}, dict(jambes="tout"), dict(jambes="pause"), dict(jambes="nuit"), dict(delai_min=2)):
+    for kw in ({}, dict(jambes="asie,soir"), dict(jambes="tout"), dict(jambes="pause"), dict(jambes="permanent"), dict(delai_min=2)):
         a = N.valeur_journaliere(N.portefeuille(m, **kw), cal)
         b = N.valeur_journaliere(N.portefeuille(m, compact=True, **kw), cal)
         assert np.allclose(a.to_numpy(), b.to_numpy())
 
 
-def test_version_publiee_garde_la_nuit():
+def test_regle_publiee_nuit_et_week_end():
+    m = pd.concat([_seance(d, _escalier) for d in ("2024-01-11", "2024-01-12", "2024-01-16")])   # jeudi, vendredi, lundi
+    pf = N.portefeuille(m, capital=100_000.0)                                # reglage par defaut = regle publiee
+    tr = pf.trades.records_readable
+    loc = lambda c: pd.DatetimeIndex(tr[c]).tz_localize("UTC").tz_convert(N.NY).strftime("%a %H:%M").tolist()
+    assert loc("Entry Timestamp") == ["Thu 13:30", "Fri 13:30"]
+    assert loc("Exit Timestamp") == ["Fri 08:20", "Tue 08:20"]               # le vendredi : gardee tout le week-end
+    assert tr["Avg Entry Price"].tolist() == pytest.approx([102.0, 102.0])
+    assert tr["Avg Exit Price"].tolist() == pytest.approx([101.0, 101.0])
+    assert tr["Size"].iloc[0] == pytest.approx(100_000.0 / 102.0)
+
+
+def test_or_garde_en_permanence():
     m = pd.concat([_seance(d, _escalier) for d in ("2024-01-08", "2024-01-09")])
-    tr = N.portefeuille(m, jambes="nuit").trades.records_readable
-    assert len(tr) == 1
-    e = pd.Timestamp(tr["Entry Timestamp"].iloc[0]).tz_localize("UTC").tz_convert(N.NY)
-    s = pd.Timestamp(tr["Exit Timestamp"].iloc[0]).tz_localize("UTC").tz_convert(N.NY)
-    assert e.strftime("%a %H:%M") == "Mon 13:30" and s.strftime("%a %H:%M") == "Tue 08:20"
+    tr = N.portefeuille(m, jambes="permanent").trades.records_readable
+    assert len(tr) == 1 and tr["Avg Entry Price"].iloc[0] == pytest.approx(100.0) and tr["Avg Exit Price"].iloc[0] == pytest.approx(103.0)
 
 
 def test_rolls_mensuels():
