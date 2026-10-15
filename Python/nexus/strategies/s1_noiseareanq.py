@@ -77,6 +77,7 @@ class S1NoiseAreaNQ(Nexus16NoiseArea):
     ESSAIS = 177                      # 3 contrats x 48 reglages + 30 variantes + 3 bases (fiche 16)
     VAR_SHARPE_ESSAIS_ANNUALISE = 0.206   # variance des Sharpe annualises des 144 reglages ES / NQ / YM (grilles du 2026-10-14)
     GRILLE_FICHE = "16"
+    REGLAGE_PUBLIE = dict(lookback_days=14, check_interval_min=30, band_mult=1.0)   # papier : 14 jours, 30 min, bande x1
     GRILLE = dict(lookback_days=[7, 14, 21, 30], check_interval_min=[15, 30, 60], band_mult=[0.8, 1.0, 1.2, 1.5])
     SENSIBILITE = {
         "Couts": [("x0", dict(commission_per_unit=0.0, slippage_ticks=0.0)), ("x1 (reference)", {}),

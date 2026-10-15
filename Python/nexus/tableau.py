@@ -285,6 +285,94 @@ def _grille_pbo_wf(rmat: pd.DataFrame, meilleure: str, train=756, test=126) -> t
     return tests, dict(pbo=_js(pbo), walk_forward=wf)
 
 
+def bloc_surajustement(r: pd.Series, rmat: pd.DataFrame | None, reference: str | None, essais: int, nul: dict | None = None,
+                       publie: tuple[str, str] | None = None, n_blocs: int = 6, reps: int = 2000, seed: int = 7) -> tuple[list, dict]:
+    """Tests de sur-ajustement d une strategie FIGEE (aucun parametre n est rechoisi ici) :
+    stabilite par sous-periodes, test SPA de Hansen (arch) sur la famille de reglages, Sharpe corrige des essais
+    multiples (statsmodels : Holm, BHY ; Bonferroni sur tous les essais), duree minimale de backtest
+    (Bailey, Borwein, Lopez de Prado, Zhu), prime du choix du reglage et test sur hasard."""
+    from scipy.stats import norm
+    tests, out = [], {}
+
+    def add(test, res, det, verdict):
+        tests.append(dict(famille="Sur-ajustement", test=test, resultat=res, detail=det, verdict=verdict))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sr = float(_acc(r).sharpe_ratio())
+        blocs = []
+        for b in np.array_split(np.arange(len(r)), n_blocs):
+            x = r.iloc[b]
+            blocs.append(dict(debut=_js(x.index[0]), fin=_js(x.index[-1]), sharpe=_js(_acc(x).sharpe_ratio())))
+        h = len(r) // 2
+        s1, s2 = float(_acc(r.iloc[:h]).sharpe_ratio()), float(_acc(r.iloc[h:]).sharpe_ratio())
+    v = np.array([b["sharpe"] for b in blocs], float)
+    add(f"Stabilite : {n_blocs} sous-periodes egales", f"{int((v > 0).sum())}/{n_blocs} positives",
+        "Sharpe " + " ; ".join(f"{b['debut'][:7]} -> {b['fin'][:7]} : {b['sharpe']:.2f}" for b in blocs), "ok" if (v > 0).all() else "alerte")
+    add("Stabilite : premiere / seconde moitie", f"{s1:.2f} / {s2:.2f}", f"coupure au {r.index[h]:%d/%m/%Y}",
+        "ok" if s2 > 0 and s2 >= 0.5 * s1 else "alerte")
+    out["blocs"] = blocs
+    T = len(r) / 252.0
+    if rmat is not None and rmat.shape[1] >= 2 and reference in rmat:
+        from arch.bootstrap import SPA
+        from statsmodels.stats.multitest import multipletests
+        R = rmat.fillna(0.0)
+        spa = SPA(np.zeros(len(R)), -R.to_numpy(), block_size=10, reps=reps, bootstrap="stationary", seed=seed)
+        spa.compute()
+        p_spa = float(spa.pvalues["consistent"])
+        add("Test SPA de Hansen (arch)", f"p = {p_spa:.4f}",
+            f"{R.shape[1]} reglages de la famille contre 'ne rien faire', bootstrap stationnaire, {reps} tirages : "
+            "le meilleur reglage bat-il zero une fois toute la famille prise en compte ?", "ok" if p_spa < 0.05 else "alerte")
+        pv = np.array([SS.ttest_1samp(R[c].to_numpy(), 0.0, alternative="greater").pvalue for c in R])
+        i = list(R.columns).index(reference)
+
+        def coupe(pa):      # p-valeur -> Sharpe annualise equivalent
+            return float(norm.ppf(1 - min(max(pa, 1e-16), 1 - 1e-16)) / math.sqrt(T))
+        holm = multipletests(pv, method="holm")[1][i]
+        bhy = multipletests(pv, method="fdr_by")[1][i]
+        bonf = min(1.0, pv[i] * max(1, essais))
+        add("Sharpe corrige des essais multiples (Harvey et Liu)", f"{coupe(bonf):.2f} (Bonferroni, {essais} essais)",
+            f"Sharpe brut {sr:.2f} ; corrige sur la famille : Holm {coupe(holm):.2f}, BHY {coupe(bhy):.2f} (p brute {pv[i]:.1e})",
+            "ok" if coupe(bonf) >= 0.5 else "alerte")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            shs = pd.Series({c: float(_acc(rmat[c]).sharpe_ratio()) for c in rmat})
+        med = float(shs.median())
+        det = f"reglage retenu {shs[reference]:.2f} ; mediane des {len(shs)} reglages {med:.2f}"
+        if publie and publie[0] in shs:
+            det += f" ; reglage publie par les auteurs ({publie[1]}) {shs[publie[0]]:.2f}"
+        add("Prime du choix du reglage", f"{shs[reference] - med:+.2f} de Sharpe", det, "ok" if shs[reference] - med <= 0.3 else "alerte")
+        out["spa"] = _js(p_spa)
+    g = 0.5772156649
+    N = max(2, int(essais))
+    emax = (1 - g) * norm.ppf(1 - 1 / N) + g * norm.ppf(1 - 1 / (N * math.e))
+    minbtl = (emax / sr) ** 2 if sr > 0 else float("inf")
+    add("Duree minimale de backtest", f"{minbtl:.1f} ans",
+        f"{N} essais, Sharpe {sr:.2f} : sous {minbtl:.1f} ans, le meilleur de {N} essais au hasard ferait aussi bien ; historique {T:.1f} ans",
+        "ok" if minbtl <= T else "alerte")
+    if nul is not None:
+        v = np.asarray(nul["valeurs"], float)
+        v = v[np.isfinite(v)]
+        p = float((np.sum(v >= nul["observe"]) + 1) / (len(v) + 1))
+        add(nul["titre"], f"p = {p:.4f}", f"{nul['detail']} ; Sharpe observe {nul['observe']:.2f}, 95e centile du hasard {np.quantile(v, .95):.2f}",
+            "ok" if p < 0.05 else "alerte")
+        out["nul"] = dict(titre=nul["titre"], detail=nul["detail"], valeurs=_round(v, 4), observe=_js(nul["observe"]), p=_js(p))
+    return tests, out
+
+
+def _nul_synthetique(klass, sym: str, n: int, log=print) -> dict:
+    """Strategie figee lancee sur n marches minute aleatoires sans momentum (meme volatilite que NQ)."""
+    vals = []
+    for k in range(n):
+        s = I.synthetic_minutes("2016-01-04", "2026-08-28", seed=1000 + k, momentum=0.0, price0=4500.0, daily_vol=0.013)
+        rr = klass(initial_bankroll=1e6).run({sym: s}, report=False).returns
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            vals.append(float(_acc(rr).sharpe_ratio()))
+    log(f"  hasard : {n} marches aleatoires")
+    return vals
+
+
 # =============================================================================
 #  Strategies du moteur nexus marquees VALIDATED (S1...)
 # =============================================================================
@@ -364,6 +452,7 @@ def fiche_nexus(code: str, cotations: str, n_sim: int, grille: bool, log=print) 
                           verdict="ok"))
     extra = {}
     var_ann = 0.5
+    rmat, meilleure = None, None
     base = get(getattr(klass, "GRILLE_FICHE", code))
     frozen = {k: v for k, v in st.params.items() if k in klass.DEFAULTS}
     if grille and getattr(klass, "GRILLE", None):
@@ -410,6 +499,19 @@ def fiche_nexus(code: str, cotations: str, n_sim: int, grille: bool, log=print) 
     var_ann = getattr(klass, "VAR_SHARPE_ESSAIS_ANNUALISE", var_ann)
     tc, mc = bloc_tests_communs(r, t, getattr(klass, "PUBLICATION", "2024-06-01"), getattr(klass, "ESSAIS", 1), var_ann, n_sim)
     tests = tests[:3] + tc + tests[3:]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        obs = float(_acc(r).sharpe_ratio())
+    vals = _nul_synthetique(klass, sym[0], max(20, n_sim // 20), log)
+    nul = dict(titre="Marches aleatoires sans momentum", valeurs=vals, observe=obs,
+               detail=f"meme strategie figee sur {len(vals)} historiques minute simules (10,6 ans, volatilite proche de NQ, aucune tendance)")
+    pub = getattr(klass, "REGLAGE_PUBLIE", None)
+    pub_lab = (",".join(f"{k}={pub[k]}" for k in klass.GRILLE), "papier") if pub and getattr(klass, "GRILLE", None) else None
+    ts, so = bloc_surajustement(r, rmat if (grille and getattr(klass, "GRILLE", None)) else None,
+                                meilleure if (grille and getattr(klass, "GRILLE", None)) else None,
+                                getattr(klass, "ESSAIS", 1), nul=nul, publie=pub_lab, reps=n_sim)
+    tests += ts
+    extra["surajustement"] = so
     fiche = dict(
         id=klass.NAME, code=code, titre=getattr(klass, "TITRE", klass.NAME), statut="validee", valide_le=klass.VALIDATED,
         resume=getattr(klass, "RESUME", klass.DESCRIPTION), fonctionnement=getattr(klass, "FONCTIONNEMENT", []),
@@ -429,6 +531,8 @@ def fiche_nexus(code: str, cotations: str, n_sim: int, grille: bool, log=print) 
 def _kpi(valeur: pd.Series, t: pd.DataFrame) -> dict:
     r = valeur.pct_change().dropna()
     acc = _acc(r)
+    dur = (t["sortie"] - t["entree"]).dt.total_seconds() / 60
+    ans = (valeur.index[-1] - valeur.index[0]).days / 365.25
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return dict(sharpe=_js(acc.sharpe_ratio()), sortino=_js(acc.sortino_ratio()), calmar=_js(acc.calmar_ratio()),
@@ -436,6 +540,9 @@ def _kpi(valeur: pd.Series, t: pd.DataFrame) -> dict:
                     perte_max=_js(-acc.max_drawdown()), rendement_total=_js(valeur.iloc[-1] / valeur.iloc[0] - 1),
                     trades=int(len(t)), gagnants=_js(float((t["PnL"] > 0).mean())), bp_par_trade=_js(float(t["net_notionnel"].mean() * 1e4)),
                     bp_capital_par_trade=_js(float(t["net"].mean() * 1e4)),
+                    duree_moyenne_min=_js(float(dur.mean())), heures_par_an=_js(float(dur.sum() / 60 / ans)),
+                    part_du_temps=_js(float(dur.sum() / (ans * 365.25 * 24 * 60))),
+                    jours_trades_par_an=_js(float(t["entree"].dt.normalize().nunique() / ans)),
                     debut=_js(valeur.index[0]), fin=_js(valeur.index[-1]))
 
 
@@ -443,6 +550,7 @@ def _kpi(valeur: pd.Series, t: pd.DataFrame) -> dict:
 #  Candidate : Gotobi 6J (vectorbt direct)
 # =============================================================================
 def fiche_gotobi(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict, pd.Series]:
+    rmat = None
     m, info = GT.charger_6j(cotations)
     t0 = time.time()
     pf = GT.portefeuille(m)
@@ -537,6 +645,31 @@ def fiche_gotobi(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[d
                                reference=dict(entree="08:00", sortie="11:00"))
     tc, mc = bloc_tests_communs(r, t, GT.PUBLICATION, GT.ESSAIS, GT.VAR_SHARPE_ESSAIS_ANNUALISE, n_sim)
     tests = tests[:2] + tc + tests[2:]
+    # calendrier aleatoire : memes regles tous les jours ouvres japonais, puis tirages de faux jours gotobi
+    pf_tous = GT.portefeuille(m, jours="tous")
+    tt = pf_tous.trades.records_readable
+    jt = pd.DatetimeIndex(tt["Entry Timestamp"]).tz_localize("UTC").tz_convert(GT.TOKYO).tz_localize(None).normalize()
+    par_jour = pd.Series(tt["PnL"].to_numpy() / capital, index=jt).groupby(level=0).sum()
+    ouv = GT.jours_ouvres_japon(par_jour.index[0], par_jour.index[-1])
+    x = par_jour.reindex(ouv).fillna(0.0)
+    est_g = np.asarray(ouv.isin(GT.jours_gotobi(ouv[0], ouv[-1])))
+    rng = np.random.default_rng(11)
+    pool = np.flatnonzero(~est_g)
+    M = np.zeros((len(x), n_sim))
+    for k in range(n_sim):
+        pick = rng.choice(pool, size=int(est_g.sum()), replace=False)
+        M[pick, k] = x.to_numpy()[pick]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        vals = pd.DataFrame(M, index=ouv).vbt.returns(freq="1D", year_freq=ANNEE).sharpe_ratio().to_numpy()
+        obs = float(pd.Series(np.where(est_g, x.to_numpy(), 0.0), index=ouv).vbt.returns(freq="1D", year_freq=ANNEE).sharpe_ratio())
+    nul = dict(titre="Calendrier aleatoire (faux jours gotobi)", valeurs=vals, observe=obs,
+               detail=f"{n_sim} tirages de {int(est_g.sum())} jours ordinaires, memes heures et memes regles (Sharpe sur les jours ouvres japonais)")
+    log("  calendrier aleatoire : ok")
+    ts, so = bloc_surajustement(r, rmat if grille else None, "entree=08:00,sortie=11:00" if grille else None, GT.ESSAIS,
+                                nul=nul, reps=n_sim)
+    tests += ts
+    extra["surajustement"] = so
     fiche = dict(
         id="Gotobi_6J", code="G1", titre="Gotobi · yen (6J)", statut="candidate", valide_le=None,
         resume="Les jours de paiement japonais, acheter du dollar contre le yen avant le fixing de 9:55 a Tokyo, "
@@ -546,7 +679,9 @@ def fiche_gotobi(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[d
             "ou un week-end reporte au jour ouvre precedent (71 jours par an environ).",
             "8:00 a Tokyo (minuit ou 1:00 a Paris) : vente du future 6J (= achat de dollars contre yens).",
             "9:55 pile (fixing de Tokyo) : retournement, achat de 6J (= vente de dollars).",
-            "11:00 a Tokyo : sortie. Aucune position le reste du temps.",
+            "11:00 a Tokyo : sortie. Aucune position le reste du temps : 3 heures par jour gotobi (1 h 55 vendeur puis "
+            "1 h 05 acheteur), environ 70 jours par an, soit environ 210 heures par an (2,4 % du temps), jamais la nuit "
+            "ni le week-end.",
             "Ordres a l ouverture de la premiere barre 1 minute de l heure prevue (au plus 10 min apres, sinon le jour est saute).",
             f"Taille : notionnel fixe de {capital * GT.DEFAULTS['exposition']:,.0f} $ pour {capital:,.0f} $ de capital (pas de levier). "
             "Couts : 2,25 $ par contrat et par cote + 1/2 tick (0,0000005) de glissement.",

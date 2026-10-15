@@ -13,14 +13,15 @@ la courbe de capital, les pertes, les rendements par année et par mois, **toute
 | Monte Carlo | perte max (ordre mélangé, tirage avec remise), gain total, éventail des trajectoires |
 | Sensibilité | coûts ×0 à ×3, latence, jambes de la stratégie |
 | Placebo | mêmes heures, autres jours (Gotobi) |
-| Sur-ajustement | plateau de paramètres (carte de chaleur), PBO, walk-forward 3 ans / 6 mois |
+| Sur-ajustement | réglage **figé** (rien n'est rechoisi) : stabilité sur 6 sous-périodes et par moitié, plateau de paramètres (carte de chaleur), PBO, walk-forward 3 ans / 6 mois, test SPA de Hansen (`arch`), Sharpe corrigé des essais multiples (Bonferroni, Holm, BHY via `statsmodels`), durée minimale de backtest, prime du choix du réglage, test sur hasard (marchés simulés sans momentum pour S1, faux jours gotobi pour le Gotobi) |
 
 La page **Comparaison** montre toutes les stratégies côte à côte, leurs corrélations (journalières et
 mensuelles) et un portefeuille combiné à risque égal.
 
 ## Lancer
 
-Node.js 18 ou plus récent, aucune dépendance à installer.
+Node.js 18 ou plus récent, aucune dépendance à installer. Côté Python, l'export utilise en plus `arch` et
+`statsmodels` (`pip install -r requirements.txt`).
 
 ```
 # 1. calculer les resultats (depuis le dossier Python/, plusieurs minutes)

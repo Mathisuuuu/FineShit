@@ -169,8 +169,10 @@ def jours_trades(m: pd.DataFrame, p: dict) -> pd.DatetimeIndex:
         j = jours_gotobi(debut, fin, p["feries_japon"])
     elif p["jours"] == "autres":
         j = jours_ouvres_japon(debut, fin, p["feries_japon"]).difference(jours_gotobi(debut, fin, p["feries_japon"]))
+    elif p["jours"] == "tous":
+        j = jours_ouvres_japon(debut, fin, p["feries_japon"])
     else:
-        raise ValueError("jours : gotobi | autres")
+        raise ValueError("jours : gotobi | autres | tous")
     if p["decalage_jours"]:
         ouv = jours_ouvres_japon(debut - pd.Timedelta(days=15), fin + pd.Timedelta(days=15), p["feries_japon"])
         i = ouv.get_indexer(j) + int(p["decalage_jours"])

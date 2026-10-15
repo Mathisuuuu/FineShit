@@ -377,6 +377,14 @@ chacune :
   permutation, Monte Carlo, coûts, latence, placebo, plateau, PBO, walk-forward ;
 - les corrélations entre stratégies.
 
+Tests de sur-ajustement (le réglage de chaque stratégie reste figé, rien n'est réoptimisé) :
+- stabilité sur 6 sous-périodes et par moitié ;
+- test SPA de Hansen (`arch`) sur la famille de réglages voisins ;
+- Sharpe corrigé des essais multiples (Bonferroni sur tous les essais, Holm et BHY sur la famille, `statsmodels`) ;
+- durée minimale de backtest ;
+- prime du choix du réglage, comparée au réglage publié par les auteurs pour S1 ;
+- test sur hasard : marchés minute simulés sans momentum pour S1, faux jours gotobi tirés au hasard pour le Gotobi.
+
 Options : `--simulations 2000`, `--sans-grille` (plus rapide), `--seulement S1,G1`.
 Détails de l'interface : `Dashboard/LISEZMOI.md`. Les fichiers exportés restent hors du dépôt (licence des
 données).

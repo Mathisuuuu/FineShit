@@ -5,3 +5,5 @@ numba>=0.59
 plotly>=5.18
 pytest>=8.0
 pyarrow>=15.0
+arch>=7.0          # tableau de bord : test SPA de Hansen (sur-ajustement)
+statsmodels>=0.14  # tableau de bord : p-valeurs corrigees (Holm, BHY)

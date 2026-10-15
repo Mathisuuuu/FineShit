@@ -149,8 +149,10 @@ function kpis(k, cap) {
     ["Volatilite annuelle", pct(k.volatilite)], ["Perte maximale", pct(k.perte_max)], ["Rendement total", pct(k.rendement_total, 0)],
     ["Trades", num(k.trades, 0)], ["Trades gagnants", pct(k.gagnants, 0)], ["Gain net par trade (notionnel)", `${num(k.bp_par_trade)} bp`],
     ["Gain net par trade (capital)", `${num(k.bp_capital_par_trade)} bp`],
+    ["Temps en position", `${num(k.heures_par_an, 0)} h/an`, `${pct(k.part_du_temps, 1)} du temps`],
+    ["Duree moyenne d'un trade", `${num(k.duree_moyenne_min, 0)} min`, `${num(k.jours_trades_par_an, 0)} jours trades par an`],
   ];
-  return `<div class="kpis">${items.map(([l, v]) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("")}</div>
+  return `<div class="kpis">${items.map(([l, v, d]) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}${d ? `<br><span class="discret">${d}</span>` : ""}</div></div>`).join("")}</div>
     <p class="discret">Capital de depart ${num(cap.initial, 0)} ${esc(cap.unite)} (${esc(cap.note)}). Periode ${esc(k.debut)} → ${esc(k.fin)}.</p>`;
 }
 
@@ -304,6 +306,10 @@ function pageTests(f) {
     </div>
     ${famSens.length ? `<div class="grille-2">${famSens.map((fa, i) => `<div class="panneau"><h3>Sensibilite : ${esc(fa)}</h3><div id="g-sens-${i}" class="graph"></div></div>`).join("")}
       ${f.placebo ? `<div class="panneau"><h3>Placebo : memes heures, autres jours</h3><div id="g-plac" class="graph"></div></div>` : ""}</div>` : ""}
+    ${f.surajustement ? `<div class="grille-2">
+      <div class="panneau"><h3>Stabilite dans le temps</h3><p class="sous">Sharpe de chaque sixieme de l'historique, reglage inchange</p><div id="g-blocs" class="graph"></div></div>
+      ${f.surajustement.nul ? `<div class="panneau"><h3>Test sur hasard : ${esc(f.surajustement.nul.titre)}</h3><p class="sous">${esc(f.surajustement.nul.detail)} ; p = ${num(f.surajustement.nul.p, 4)}</p><div id="g-nul" class="graph"></div></div>` : ""}
+    </div>` : ""}
     ${f.grille ? `<div class="panneau"><h3>Plateau de parametres (Sharpe)</h3><div class="outils" id="grille-outils"></div><div id="g-grille" class="graph haut"></div></div>` : ""}
     ${f.walk_forward ? `<div class="panneau"><h3>Walk-forward : performance hors echantillon</h3><p class="sous">a chaque fenetre, le meilleur reglage des 3 annees precedentes est applique aux 6 mois suivants</p><div id="g-wf" class="graph"></div></div>` : ""}`;
   const c = couleurs();
@@ -331,6 +337,13 @@ function pageTests(f) {
     trace($("#g-plac"), [{ x: f.placebo.map((x) => x.cas), y: f.placebo.map((x) => x.sharpe), type: "bar",
       marker: { color: f.placebo.map((x, i) => (i === 0 ? c.accent : x.sharpe >= 0 ? c.vert : c.rouge)) } }],
     { hovermode: "closest", margin: { l: 48, r: 8, t: 10, b: 20 }, xaxis: { automargin: true, tickangle: -25 } });
+  }
+  if (f.surajustement) {
+    const b = f.surajustement.blocs;
+    trace($("#g-blocs"), [{ x: b.map((x) => `${x.debut.slice(0, 7)} → ${x.fin.slice(0, 7)}`), y: b.map((x) => x.sharpe), type: "bar",
+      marker: { color: b.map((x) => (x.sharpe >= 0 ? c.vert : c.rouge)) }, text: b.map((x) => num(x.sharpe)), textposition: "outside" }],
+    { hovermode: "closest", xaxis: { automargin: true, tickangle: -20 }, margin: { l: 48, r: 8, t: 16, b: 20 } });
+    if (f.surajustement.nul) histo($("#g-nul"), [f.surajustement.nul.valeurs], { observe: f.surajustement.nul.observe, fmt: ".1f", titre: "Sharpe" });
   }
   if (f.grille) rendreGrille(f);
   if (f.walk_forward) {
