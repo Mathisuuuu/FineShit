@@ -503,7 +503,7 @@ Statut : **candidate, non validée**. Points faibles :
 - l'écart avec l'or gardé en permanence n'est pas prouvé (+0,31 de Sharpe, p = 0,09) ;
 - Sharpe déflaté strict à 0 %.
 
-## 13. Groupe P1 (en cours) : intraday, environ 5 % par an, perte max < 5 % (`nexus/p1.py`)
+## 13. Groupe P1 (en cours) : intraday, Sharpe ≥ 1 avant et après publication (`nexus/p1.py`)
 
 Critères fixés avant les tests (tous requis) :
 1. à l'échelle de 5 %/an, perte max ≤ 5,5 % sur 2016-2026 ;
@@ -540,3 +540,26 @@ Mises en garde publiées :
 
 À l'inverse, le panier S1 + Gotobi + ORB tient déjà l'objectif : Sharpe 1,92, 6 sous-périodes positives sur 6,
 perte max de 3,0 % à 5 %/an.
+
+**Critères révisés le 2026-10-16 (version 2, celle qui décide) :**
+- l'objectif de 5 %/an et la perte max sont abandonnés ;
+- Sharpe ≥ 1 avant la publication (si au moins 1 an de données avant) **et** ≥ 1 après (au moins 1 an) ;
+- toujours intraday, sur les actifs du dépôt, avec une corrélation ≤ 0,3 entre P1 ;
+- coûts × 2 et Bonferroni sont affichés pour information.
+
+Les 58 hypothèses repassées avec ces critères : aucune approuvée. La meilleure est la zone de bruit sur ES
+(0,89 avant publication, 0,16 après).
+
+Familles de découverte, réglées sur 2016-2020 et jugées sur 2021-2026 (la fin 2020 tient lieu de date de
+publication) :
+
+| Famille | Réglages | Résultat |
+|---|---|---|
+| Zone de bruit par actif | 36 à 72 par actif | ES et CL atteignent 1 sur 2016-2020, puis 0,79 et −0,57 sur 2021-2026 |
+| Momentum ou retournement intraday | 20 par actif | aucun actif ≥ 1 sur 2016-2020 (le meilleur : 0,45) |
+| Cassure du range d'ouverture | 8 par actif | aucun actif ≥ 1 (le meilleur : 0,48) |
+| Retour vers le VWAP | 3 par actif | aucun actif ≥ 1 (le meilleur : 0,47) |
+
+Avec ces critères, parmi les stratégies existantes, seule « or la nuit » passe (1,11 sur un historique tout entier
+postérieur à la publication), mais elle n'est pas intraday. S1 (0,95 après publication), Gotobi (0,89) et ORB
+(0,92 avant publication) échouent de peu.

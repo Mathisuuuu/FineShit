@@ -14,6 +14,13 @@ Cadre commun (fixe le 2026-10-15, avant les tests) :
       6. (ajoute le 2026-10-15 a la demande, avant tout resultat P1 approuve) correlation des rendements journaliers
          avec chacune des autres strategies P1 approuvees <= 0,3 en valeur absolue (CORR_MAX).
 Couts : commission par contrat et par execution + 1/2 tick, en fraction du notionnel au prix brut.
+
+Criteres revises le 2026-10-16 a la demande (version 2, celle qui decide desormais) :
+  - abandon de l objectif 5 %/an et de la perte maximale ;
+  - Sharpe >= 1 AVANT la publication (si au moins 1 an de donnees avant) ET >= 1 APRES (au moins 1 an apres ; tout
+    l historique si la publication est anterieure aux donnees) ;
+  - intraday, actifs du depot, correlation <= 0,3 entre strategies P1 (inchanges) ;
+  - couts x 2, Bonferroni, perte maximale, moities : calcules et affiches pour information.
 """
 from __future__ import annotations
 
@@ -34,6 +41,7 @@ SPECS = {"ES": (50.0, 0.25, "indices", True), "NQ": (20.0, 0.25, "indices", True
 COMMISSION = 2.25
 ACTIFS = list(SPECS)
 CIBLE, DD_MAX, DD_MAX_COUTS, CORR_MAX = 0.05, 0.055, 0.075, 0.30
+SHARPE_MIN = 1.0          # criteres version 2 : Sharpe avant et apres publication
 # essais comptes avant le groupe P1 (criblages du 2026-10-15 jusqu a l etude prop firms de l or)
 ESSAIS_AVANT_P1 = 186
 
@@ -110,7 +118,9 @@ def evaluer(r: pd.Series, publication: str | None, essais: int, r_couts2: pd.Ser
     out["blocs_pos"] = int(np.sum(np.array(blocs) > 0))
     out["sharpe_2ans"] = float(_acc(r[r.index >= r.index[-1] - pd.DateOffset(years=2)]).sharpe_ratio())
     apres = r[r.index >= pd.Timestamp(publication)] if publication else r
-    out["sharpe_apres_pub"] = float(_acc(apres).sharpe_ratio()) if len(apres) > 120 else np.nan
+    avant = r[r.index < pd.Timestamp(publication)] if publication else r.iloc[:0]
+    out["sharpe_apres_pub"] = float(_acc(apres).sharpe_ratio()) if len(apres) >= 252 else np.nan
+    out["sharpe_avant_pub"] = float(_acc(avant).sharpe_ratio()) if len(avant) >= 252 else np.nan
     p = SS.ttest_1samp(r, 0.0, alternative="greater").pvalue
     out["p_bonferroni"] = float(min(1.0, p * essais))
     if r_couts2 is not None:
@@ -123,8 +133,12 @@ def evaluer(r: pd.Series, publication: str | None, essais: int, r_couts2: pd.Ser
           (out["sharpe_apres_pub"] if np.isfinite(out["sharpe_apres_pub"]) else out["sharpe"]) >= 1.0,
           r_couts2 is None or (out["sharpe_couts2"] >= 1.0 and np.isfinite(out["dd_5pct_couts2"]) and out["dd_5pct_couts2"] <= DD_MAX_COUTS),
           out["p_bonferroni"] < 0.05]
-    out["criteres"] = "".join("V" if x else "x" for x in ok)
-    out["approuvee"] = bool(all(ok))
+    out["criteres_v1"] = "".join("V" if x else "x" for x in ok)
+    av, ap = out["sharpe_avant_pub"], out["sharpe_apres_pub"]
+    c_av = "-" if not np.isfinite(av) else ("V" if av >= SHARPE_MIN else "x")
+    c_ap = "V" if (np.isfinite(ap) and ap >= SHARPE_MIN) else "x"
+    out["criteres"] = c_av + c_ap
+    out["approuvee"] = c_av != "x" and c_ap == "V"
     return out
 
 
