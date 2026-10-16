@@ -573,3 +573,18 @@ Deux autres familles, réglées sur 2016-2020 :
 Aucune n'atteint 1 sur 2016-2020. Avec des signaux de prix intraday sur ces 9 contrats, les pistes sont épuisées.
 Étape suivante : ajouter des contrats (taux, Russell, autres devises, métaux, gaz, grains), avec les mêmes
 critères.
+
+**Microstructure, mono-actif (2026-10-16)** — signaux tirés des barres 1 minute (volume anormal, déséquilibre
+par classification en volume, volatilité réalisée, emballements de prix), règles traduites des articles,
+chaque actif testé seul. Résultat : 66 essais, aucun approuvé.
+
+| Lot | Hypothèses (source) | Essais | Résultat |
+|---|---|---|---|
+| M1 | retournement à fort volume (Campbell, Grossman et Wang 1993 ; Llorente et al. 2002) ; suivre le déséquilibre (Chordia et Subrahmanyam 2004) ; fournir la liquidité quand la volatilité est haute (Nagel 2012) | 3 × 9 actifs = 27 | aucun approuvé ; meilleur : Nagel sur 6E, 0,42 |
+| M2 | contre-pied des emballements de prix (Christensen, Oomen et Renò 2022) ; régression volume × rendement sur 15 min ; dérive de nuit conditionnelle (Boyarchenko, Larsen et Whelan 2023) ; déséquilibre sur 5 min | 39 | aucun approuvé ; meilleur : emballements sur YM, 0,48 (0,42 après publication) |
+
+Ce qu'on observe :
+- les rendements accompagnés d'un fort volume se prolongent (ils ne se retournent pas) sur les 9 actifs, mais
+  trop peu pour couvrir les coûts ;
+- sur 5 minutes, le déséquilibre se retourne fortement avant coûts sur les devises : c'est le rebond entre
+  achat et vente, impossible à exploiter après coûts.
