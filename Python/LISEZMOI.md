@@ -563,3 +563,13 @@ publication) :
 Avec ces critères, parmi les stratégies existantes, seule « or la nuit » passe (1,11 sur un historique tout entier
 postérieur à la publication), mais elle n'est pas intraday. S1 (0,95 après publication), Gotobi (0,89) et ORB
 (0,92 avant publication) échouent de peu.
+
+Deux autres familles, réglées sur 2016-2020 :
+- enchaînement des sessions dans une même séance (Asie vers Europe, nuit vers New York) : le meilleur actif
+  plafonne à 0,48 ;
+- signal croisé (le matin d'un contrat annonce l'après-midi d'un autre, 72 couples) : le meilleur couple plafonne
+  à 0,62.
+
+Aucune n'atteint 1 sur 2016-2020. Avec des signaux de prix intraday sur ces 9 contrats, les pistes sont épuisées.
+Étape suivante : ajouter des contrats (taux, Russell, autres devises, métaux, gaz, grains), avec les mêmes
+critères.
