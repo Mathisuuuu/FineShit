@@ -206,3 +206,65 @@ def noise_area(m: pd.DataFrame, debut: str, fin: str, lookback: int = 14, bande:
     taille = pd.Series(np.where(ok_j, capital * lev / (mult * O), 0.0), index=jours)
     contrats = taille.reindex(pd.DatetimeIndex(m["seance"].to_numpy())).fillna(0.0).to_numpy()
     return fen, contrats
+
+
+# =============================================================================
+#  Microstructure : mesures par intervalle a partir des barres 1 minute (OHLCV)
+# =============================================================================
+def grille(m: pd.DataFrame, debut: str, fin: str):
+    """Seance [debut, fin[ (New York) en matrices seances x minutes ; idx = position de chaque barre dans m (-1 absente)."""
+    a, b = ON._minute(debut), ON._minute(fin)
+    mn = m["minute"].to_numpy()
+    sel = np.flatnonzero((mn >= a) & (mn < b))
+    jours, code = np.unique(m["seance"].to_numpy()[sel], return_inverse=True)
+    idx = np.full((len(jours), b - a), -1, np.int64)
+    idx[code, mn[sel] - a] = sel
+    mat = {k: np.where(idx >= 0, m[k].to_numpy(float)[np.maximum(idx, 0)], np.nan)
+           for k in ("open", "high", "low", "close", "volume")}
+    return pd.DatetimeIndex(jours), idx, mat
+
+
+def intervalles(m: pd.DataFrame, debut: str, fin: str, pas: int = 30, memoire: int = 20) -> dict:
+    """Mesures par intervalle de `pas` minutes (seances x intervalles), calculees sur les barres de l intervalle :
+    ret (log, ouverture -> cloture), vol (volume), vol_anorm (volume / moyenne des `memoire` seances precedentes au meme
+    intervalle), oi (desequilibre acheteurs - vendeurs par classification en volume, Easley, Lopez de Prado & O Hara 2012 :
+    chaque minute, part acheteuse = Phi(dP / sigma), sigma = ecart-type des dP de la seance precedente), amihud
+    (|ret| / volume en dollars), rv (volatilite realisee des rendements minute). Aucune mesure n utilise de donnee
+    posterieure a la fin de son intervalle."""
+    from scipy.stats import norm
+    jours, idx, mat = grille(m, debut, fin)
+    O, C, V = mat["open"], mat["close"], np.nan_to_num(mat["volume"])
+    D, S = C.shape
+    K = S // pas
+    dP = np.diff(np.concatenate([O[:, :1], C], axis=1), axis=1)
+    sig = pd.Series(np.nanstd(dP, axis=1)).shift(1).to_numpy()[:, None]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        achat = norm.cdf(dP / sig)
+        rmin = np.log(C / np.concatenate([O[:, :1], C[:, :-1]], axis=1))
+    out = {k: np.full((D, K), np.nan) for k in ("ret", "vol", "oi", "amihud", "rv")}
+    for k in range(K):
+        sl = slice(k * pas, (k + 1) * pas)
+        o0 = O[:, k * pas]
+        c1 = C[:, (k + 1) * pas - 1]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            out["ret"][:, k] = np.log(c1 / o0)
+            v = V[:, sl].sum(axis=1)
+            out["vol"][:, k] = v
+            out["oi"][:, k] = np.nansum(V[:, sl] * (2 * achat[:, sl] - 1), axis=1) / v
+            out["amihud"][:, k] = np.abs(out["ret"][:, k]) / (v * c1)
+            out["rv"][:, k] = np.sqrt(np.nansum(rmin[:, sl] ** 2, axis=1))
+    out["vol_anorm"] = out["vol"] / pd.DataFrame(out["vol"]).rolling(memoire, min_periods=memoire).mean().shift(1).to_numpy()
+    a = ON._minute(debut)
+    out["heures"] = [_heure(a + k * pas) for k in range(K)] + [_heure(a + K * pas) if a + K * pas < 1380 else "17:00"]
+    out["jours"] = jours
+    return out
+
+
+def fenetres_positions(mes: dict, pos: np.ndarray) -> list:
+    """pos[d, k] : position (+1, -1, 0) tenue pendant l intervalle k de la seance d -> fenetres pour or_nuit.portefeuille.
+    La decision de l intervalle k ne doit utiliser que les mesures des intervalles < k (a la charge de l appelant)."""
+    jours, hs = mes["jours"], mes["heures"]
+    fen = []
+    for k in range(pos.shape[1]):
+        fen += [(hs[k], hs[k + 1], 1, jours[pos[:, k] > 0]), (hs[k], hs[k + 1], -1, jours[pos[:, k] < 0])]
+    return fen

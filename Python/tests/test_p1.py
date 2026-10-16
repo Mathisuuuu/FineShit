@@ -46,3 +46,22 @@ def test_criteres_v2_avant_et_apres_publication():
     assert e2["criteres"] == "VV" and e2["approuvee"]
     e3 = P.evaluer(pd.Series(bon, index=j), "2026-06-01", 10)               # moins d un an apres publication
     assert not e3["approuvee"]
+
+
+def test_intervalles_desequilibre_et_volume():
+    from nexus import or_nuit as ON
+    rows = []
+    for j, jour in enumerate(pd.bdate_range("2024-01-02", periods=25)):
+        t0 = (pd.Timestamp(jour) + pd.Timedelta(hours=9, minutes=30)).tz_localize(ON.NY).tz_convert("UTC").tz_localize(None)
+        for k in range(60):                                   # 9:30-10:30 ; montee reguliere la 2e demi-heure
+            p = 100.0 + (0.01 * (k - 29) if k >= 30 else 0.001 * ((-1) ** k))
+            rows.append((t0 + pd.Timedelta(minutes=k), p, p, p, p, 10.0 if k < 30 else (50.0 if j == 24 else 10.0)))
+    df = pd.DataFrame(rows, columns=["t", "open", "high", "low", "close", "volume"]).set_index("t")
+    df["seance"], df["minute"] = ON.seances(df.index)
+    mes = P.intervalles(df, "09:30", "10:30", pas=30)
+    assert mes["heures"] == ["09:30", "10:00", "10:30"]
+    assert mes["oi"][-1, 1] > 0.5                              # montee reguliere : desequilibre acheteur
+    assert abs(mes["vol_anorm"][-1, 1] - 5.0) < 1e-9           # volume 5 fois la moyenne des 20 seances precedentes
+    pos = np.zeros((25, 2)); pos[-1, 1] = 1
+    fen = P.fenetres_positions(mes, pos)
+    assert fen[2][:3] == ("10:00", "10:30", 1) and list(fen[2][3]) == [mes["jours"][-1]]
