@@ -588,3 +588,30 @@ Ce qu'on observe :
   trop peu pour couvrir les coûts ;
 - sur 5 minutes, le déséquilibre se retourne fortement avant coûts sur les devises : c'est le rebond entre
   achat et vente, impossible à exploiter après coûts.
+
+## 14. Catalogue des articles SSRN au moins intraday (`outils/ssrn_intraday.py`)
+
+```
+cd Python
+python outils/ssrn_intraday.py --sortie ssrn_intraday     # -> ssrn_intraday.csv et ssrn_intraday.html
+```
+
+L'outil interroge **OpenAlex** et **Crossref**, deux index publics, gratuits et sans clé, qui couvrent les
+articles SSRN dotés d'un DOI (préfixe 10.2139). SSRN n'a pas d'API et interdit qu'on aspire son site.
+
+Fonctionnement :
+- environ 50 requêtes par mot-clé (intraday, haute fréquence, nuit/séance, ouverture/clôture, microstructure,
+  fixings…), avec toutes les pages de résultats ;
+- fusion des résultats par numéro SSRN ;
+- on ne garde que les articles dont le titre ou le résumé contient un terme d'horizon intraday ou plus court.
+
+Chaque article reçoit des étiquettes :
+- horizon ;
+- actifs, dont « nos actifs » : futures sur indices, or, pétrole, devises ;
+- règle de trading ou prédictibilité ;
+- nombre de citations ;
+- statut « déjà testé » pour les articles passés dans ce dépôt.
+
+La page HTML est autonome : recherche, filtres et tri. Chaque lien peut recevoir un statut (à lire, à tester,
+testé, rejeté, retenu) et une note. Ils sont gardés dans le navigateur et s'exportent en CSV. Le script
+n'utilise que la bibliothèque standard de Python. Tests : `tests/test_ssrn_intraday.py` (API simulées).
