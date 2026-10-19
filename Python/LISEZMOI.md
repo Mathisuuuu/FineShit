@@ -979,6 +979,20 @@ clôture de 15h29, entrée à l'ouverture de 15h30, sortie à 16h00 ; variantes 
 gamma < 0), V2 (version continue réestimée en fenêtre expansive), V3 (retournement si gamma > 0) ; R² hors échantillon
 avec le test de Clark-West, correction de Holm. V4 (filtre LETF) non testée faute de données.
 
+`python -m nexus.perso.fin_de_mois` → `recherche/resultats_fin_de_mois.txt` (2026-10-19). Lignée « tour de mois »
+lue jusqu'à ses mises à jour : Ariel 1987, Lakonishok-Smidt 1988, Maberly-Waggoner 2000 (disparition dans les futures
+S&P), McConnell-Xu 2008, Etula et al. 2020 (« dash for cash » : vente forcée jusqu'à la date limite du
+règlement-livraison, puis rebond), Graziani 2024, Harvey-Mazzoleni-Melone 2026 (rééquilibrage des 60/40). Le
+règlement américain passe de 3 jours à 2 (05/09/2017) puis à 1 (28/05/2024) : les fenêtres d'Etula sont décalées en
+conséquence. Résultats sur ES 2016-2026 : pas de creux de vente forcée, corrélation vente → rebond −0,05 (−0,38
+publié), décalage par le règlement non confirmé ; coefficient « Calendar × dernière semaine » de HMM −0,07 (t −0,6)
+au lieu de −0,27, positif après leur échantillon ; stratégie V (partie fin de mois de HMM, ES) Sharpe 0,21, t 0,7,
+Sharpe déflaté 0,01 (372 essais) → **rejetée**. La stratégie exacte de HMM (ES − IEF) fait 0,54 sur 2016-2026 mais 0,09
+après mars 2023 et −0,38 après publication. Jambe obligataire : IEF (Yahoo, coupons compris) moins le T-bill.
+Lignées pré-FOMC (Pan & Peng 2026 : dérive des obligations à 10 ans la veille, environ 5 pb de prix par réunion) et
+Halloween (Jacobsen & Zhang : +4,5 %/an, données jusqu'en 2011) lues mais non testées : trop peu de puissance sur
+10 ans, et le pré-FOMC actions a déjà échoué trois fois chez nous.
+
 Calendrier des annonces américaines de 08:30 ET (`nexus/perso/annonces_us.csv`, sources officielles, vérifié sur le
 pic de volume de 08:30) : NFP et CPI (archives du BLS), PCE (BEA, dates ALFRED de la Fed de Saint-Louis), ventes au
 détail (Census Bureau, dates ALFRED sans les révisions annuelles, calendrier officiel pour 2025-2026). Jours fériés

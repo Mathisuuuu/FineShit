@@ -624,3 +624,51 @@ def test_bdlm_conditionnel_outils():
     assert abs(fh[600] - y[:600].mean()) < 1e-12                             # moyenne historique sans la valeur du jour
     r2, cw = clark_west(y, fm, fh)
     assert r2 > 0.1 and cw > 3
+
+
+def test_fin_de_mois_calendrier_et_reglement():
+    from nexus.perso.fin_de_mois import calendrier, fenetres
+    jours = pd.bdate_range("2017-07-03", "2017-10-31")
+    cal = calendrier(jours)
+    t_aout, t_sept = pd.Timestamp("2017-08-31"), pd.Timestamp("2017-09-29")
+    assert cal.loc[t_aout, "k_av"] == 0 and cal.loc[t_sept, "fin"]
+    assert cal.loc[t_aout, "s"] == 3 and cal.loc[t_sept, "s"] == 2          # T+2 des le 05/09/2017 (D = T-3 = 26/09)
+    lab = fenetres(cal)
+    # aout (T+3) : vente T-8..T-4, retour T-3..T-1 ; septembre (T+2) : vente T-7..T-3, retour T-2..T-1
+    assert lab.loc["2017-08-21":"2017-08-25"].eq("vente").all() and lab.loc["2017-08-28":"2017-08-30"].eq("retour").all()
+    assert lab.loc["2017-09-20":"2017-09-26"].eq("vente").all() and lab.loc["2017-09-27":"2017-09-28"].eq("retour").all()
+    assert lab.loc[t_aout] == "achat" and lab.loc["2017-09-01":"2017-09-05"].eq("achat").all()   # T..T+3 (jours ouvres)
+    assert lab.loc["2017-09-06":"2017-09-12"].eq("retour_neg").all() and lab.loc["2017-09-19"] == "autre"
+    fixe = fenetres(cal, fixe=True)
+    assert fixe.loc["2017-09-19":"2017-09-25"].eq("vente").all()            # horaire fixe : T-8..T-4
+    j24 = pd.bdate_range("2024-04-01", "2024-06-28")
+    assert calendrier(j24).loc["2024-05-31", "s"] == 1                        # T+1 : D = T-2 = 29/05 >= 28/05/2024
+
+
+def test_fin_de_mois_signaux_hmm():
+    from nexus.perso.fin_de_mois import calendar_modifie, calendrier, signaux
+    jours = pd.bdate_range("2021-01-01", "2021-03-31")
+    cal = calendrier(jours)
+    re = pd.Series(0.0, jours)
+    rb = pd.Series(0.0, jours)
+    re.loc["2021-01-05"] = 0.10                                               # actions +10 %, obligations stables
+    sig = signaux(re, rb, cal["fin"])
+    assert abs(sig.loc["2021-01-05", "calendar"] - (0.66 / 1.06 - 0.6)) < 1e-12   # 62,26 % - 60 % (exemple du papier)
+    assert sig.loc["2021-01-29", "calendar"] > 0.02 and sig.loc["2021-02-01", "calendar"] == 0.0   # remis a 60 % fin janvier
+    assert abs(sig.loc["2021-01-05", "threshold"] - (0.66 / 1.06 - 0.6)) < 1e-12  # tous les seuils <= 2,26 % : meme ecart
+    assert sig.loc["2021-01-06", "threshold"] > 0 and sig.loc["2021-01-06", "threshold"] < 0.0226   # delta = 0 remis a zero
+    w = calendar_modifie(sig, cal)
+    assert w.loc["2021-01-25":"2021-01-29"].eq(-1.0).all() and w.loc["2021-01-22"] == 0.0   # 5 derniers jours : vendre
+    assert w.loc["2021-02-01"] == 1.0 and w.loc["2021-02-02"] == 0.0         # 1er jour : signe du Calendar en T-4
+    wt = calendar_modifie(sig, cal, decalage=-10)
+    assert wt.loc["2021-01-11":"2021-01-15"].eq(-1.0).all() and wt.loc["2021-01-18"] == 1.0   # temoin : 10 seances plus tot
+
+
+def test_fin_de_mois_strategie_couts():
+    from nexus.perso.fin_de_mois import strategie
+    idx = pd.bdate_range("2022-01-03", periods=6)
+    w = pd.Series([0, 1, 1, 0, 0, 0], idx, dtype=float)
+    r = pd.Series([0, 0, 0.01, 0.02, 0.03, 0], idx, dtype=float)
+    net, brut, cout = strategie(w, r, pd.Series(0.001, idx))
+    assert list(brut.fillna(0).round(6)) == [0, 0, 0.01, 0.02, 0, 0]       # position du 2e jour : rendements des 3e et 4e
+    assert list(cout.round(6)) == [0, 0, 0.001, 0, 0.001, 0]                # entree et sortie imputees le lendemain de l ordre

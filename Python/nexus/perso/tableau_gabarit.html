@@ -1399,7 +1399,8 @@ td .rq { color: var(--ink-2); font-size: 12px; max-width: 46ch; }
     }
     // strategies construites sur papiers au format commun (titre, sous, lignes, echecs, retenue)
     var gen = document.getElementById("p-generiques");
-    ["tendance", "carry_fx", "saisonnalite", "momentum_transversal", "rachat_baisse", "gamma_intraday", "bdlm_conditionnel"].forEach(function (cle) {
+    ["tendance", "carry_fx", "saisonnalite", "momentum_transversal", "rachat_baisse", "gamma_intraday", "bdlm_conditionnel",
+     "fin_de_mois"].forEach(function (cle) {
       var g = R60[cle];
       if (!g || !g.lignes) return;
       var p = el("div", "panneau");

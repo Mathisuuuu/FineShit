@@ -29,6 +29,7 @@ ont leurs résultats dans `../../Dashboard/donnees/` ; l'archive de toutes les s
 | `resultats_rachat_baisse.txt` | `nexus.perso.rachat_baisse` | rachat après baisse (MAC(5)) |
 | `resultats_gamma_intraday.txt` | `nexus.perso.gamma_intraday` | momentum de fin de séance conditionné au gamma des dealers |
 | `resultats_bdlm_conditionnel.txt` | `nexus.perso.bdlm_conditionnel` | BDLM 2021 conditionné au gamma (spécification de l'arbre) |
+| `resultats_fin_de_mois.txt` | `nexus.perso.fin_de_mois` | fin de mois : ventes forcées (Etula 2020) et rééquilibrage 60/40 (Harvey et al. 2026) |
 
 Les sessions cloud ont leur propre suivi dans `../LISEZMOI.md` (§ 8 à 15 : fiche 16, S1, Gotobi, ORB, or la nuit,
 fiche 15 LETF, groupe P1, catalogue SSRN).

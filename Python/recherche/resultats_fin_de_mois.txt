@@ -1,0 +1,52 @@
+======================================================================================================================
+ FIN DE MOIS : VENTES FORCEES (ETULA ET AL. 2020) ET REEQUILIBRAGE 60/40 (HARVEY, MAZZOLENI & MELONE 2026) SUR ES
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/fin_de_mois.py (ecrit avant le calcul). Rendements en pb par jour.
+
+ETAPE 1 - A1 : fenetres de Etula et al., decalees selon le reglement (T+3 -> T+2 le 05/09/2017 -> T+1 le 28/05/2024)
+  decalees   vente       (attendu < 0) :  +2.70 pb/j contre +2.02 (Welch +0.11) | 2016-2020  +1.70 (W -0.05) | 2021-2026  +3.58 (W +0.25) | n 640
+  decalees   retour      (attendu > 0) : +11.25 pb/j contre +2.02 (Welch +1.14) | 2016-2020  +6.57 (W +0.36) | 2021-2026 +17.32 (W +1.33) | n 248
+  decalees   achat       (attendu > 0) :  +6.40 pb/j contre +2.02 (Welch +0.65) | 2016-2020  +9.68 (W +0.66) | 2021-2026  +3.55 (W +0.21) | n 509
+  decalees   retour_neg  (attendu < 0) :  +8.00 pb/j contre +2.02 (Welch +0.89) | 2016-2020 +10.32 (W +0.73) | 2021-2026  +5.97 (W +0.50) | n 635
+  decalees   correlation (vente, retour) par mois : -0.05 (pente -0.029, t NW -0.32, 128 mois ; ERSV20 : -0,38) ; T vendredi : +0.11 (55 mois), autres : -0.17
+    regime T+3 (2016 -> 09/2017)    : vente  +7.26 pb/j (n 100), retour +10.62 pb/j (n 60)
+    regime T+2 (09/2017 -> 05/2024) : vente  -0.03 pb/j (n 400), retour +14.47 pb/j (n 160)
+    regime T+1 (depuis 05/2024)     : vente  +7.23 pb/j (n 140), retour  -5.75 pb/j (n 28)
+
+A2 : memes fenetres a l horaire FIXE du papier (T-8..T-4, T-3..T-1), apres le 05/09/2017 seulement
+  fixes T+3  vente       (attendu < 0) :  -1.80 pb/j contre +4.57 (Welch -0.79) | 2016-2020 -11.86 (W -0.92) | 2021-2026  +4.11 (W -0.13) | n 540
+  fixes T+3  retour      (attendu > 0) : +10.55 pb/j contre +4.57 (Welch +0.66) | 2016-2020 +20.20 (W +0.88) | 2021-2026  +4.87 (W -0.03) | n 324
+  fixes T+3  achat       (attendu > 0) :  +6.51 pb/j contre +4.57 (Welch +0.23) | 2016-2020 +11.61 (W +0.45) | 2021-2026  +3.55 (W -0.18) | n 431
+  fixes T+3  retour_neg  (attendu < 0) :  +8.51 pb/j contre +4.57 (Welch +0.46) | 2016-2020 +12.80 (W +0.53) | 2021-2026  +5.97 (W +0.10) | n 540
+  fixes T+3  correlation (vente, retour) par mois : -0.08 (pente -0.063, t NW -0.46, 108 mois ; ERSV20 : -0,38) ; T vendredi : +0.25 (47 mois), autres : -0.27
+
+ETAPE 1 - A3 : regressions de HMM26 sur le rendement du LENDEMAIN (coefficient x 1 ; HC1)
+  ES        2016-2026      n 2634 | Calendar x 5 derniers j -0.071 (t -0.59) | Calendar -0.003 (t -0.02) | Threshold -0.165 (t -0.83) | Momentum +2.8 pb (t +0.34)
+  ES        2016-2020      n 1218 | Calendar x 5 derniers j -0.151 (t -0.83) | Calendar +0.050 (t +0.28) | Threshold -0.168 (t -0.53) | Momentum +6.2 pb (t +0.52)
+  ES        2021-2026      n 1416 | Calendar x 5 derniers j +0.049 (t +0.46) | Calendar -0.089 (t -0.89) | Threshold -0.003 (t -0.01) | Momentum -6.7 pb (t -0.66)
+  ES        apres 03/2023  n  862 | Calendar x 5 derniers j +0.101 (t +0.69) | Calendar -0.116 (t -0.76) | Threshold +0.323 (t +1.01) | Momentum -16.0 pb (t -1.42)
+  ES - IEF  2016-2026      n 2634 | Calendar x 5 derniers j -0.038 (t -0.29) | Calendar -0.005 (t -0.04) | Threshold -0.274 (t -1.30) | Momentum +8.0 pb (t +0.90)
+  ES - IEF  2016-2020      n 1218 | Calendar x 5 derniers j -0.107 (t -0.52) | Calendar +0.043 (t +0.22) | Threshold -0.207 (t -0.61) | Momentum +9.5 pb (t +0.73)
+  ES - IEF  2021-2026      n 1416 | Calendar x 5 derniers j +0.065 (t +0.60) | Calendar -0.089 (t -0.87) | Threshold -0.168 (t -0.75) | Momentum +0.3 pb (t +0.03)
+  ES - IEF  apres 03/2023  n  862 | Calendar x 5 derniers j +0.143 (t +0.95) | Calendar -0.166 (t -1.07) | Threshold +0.253 (t +0.74) | Momentum -9.8 pb (t -0.84)
+  HMM26 (1997-2023) : Calendar x semaine 4 -0,27 (ES) / -0,30 (ES - note), t environ -3,5 ; Threshold -0,33 / -0,41.
+
+ETAPE 2 - strategies nettes (ordre 16:10, 1 fois le capital, 1 tick + 2,50 $ par cote)
+  V   HMM26 fin de mois, ES seul                 766 j |  +2.67 pb/j (t +0.71) | Sharpe +0.21 [16-20 +0.18 | 21-26 +0.24 | apres 03/2023 +0.27 | apres pub. -0.24] | total +16.5%
+  V   couts 2 ticks                              766 j |  +2.27 pb/j (t +0.60) | Sharpe +0.16 [16-20 +0.12 | 21-26 +0.20 | apres 03/2023 +0.24 | apres pub. -0.27] | total +11.9%
+  temoin de V (meme regle, 10 seances plus tot)   768 j |  -4.61 pb/j (t -1.09) | Sharpe -0.35 [16-20 -0.57 | 21-26 -0.11 | apres 03/2023 -0.95 | apres pub. -0.82] | total -34.2%
+  R0  ERSV20 : achat de D a T+3 (decale)         757 j |  +7.68 pb/j (t +2.00) | Sharpe +0.60 [16-20 +0.62 | 21-26 +0.59 | apres 03/2023 +0.64 | apres pub. +0.93] | total +69.5%
+  R1  HMM26 exacte (Threshold + Calendar, ES - IEF)  2678 j |  +1.72 pb/j (t +1.76) | Sharpe +0.54 [16-20 +0.67 | 21-26 +0.40 | apres 03/2023 +0.09 | apres pub. -0.38] | total +53.2%
+  controle vectorbt de V (Portfolio.from_orders) : rendement total +16.4 %, Sharpe +0.25, perte max 20.8 %, 464 trades
+  replique de V sur NQ                           766 j |  +2.98 pb/j (t +0.60) | Sharpe +0.18 [16-20 +0.18 | 21-26 +0.18 | apres 03/2023 +0.30 | apres pub. -0.14] | total +16.4%
+  replique de V sur YM                           766 j |  +3.24 pb/j (t +0.90) | Sharpe +0.27 [16-20 +0.35 | 21-26 +0.18 | apres 03/2023 -0.08 | apres pub. -0.33] | total +22.6%
+
+CRITERES (V, 766 jours en position ; cout moyen 0.63 pb par jour) : moyenne brute +3.16 pb (t +0.84) | 2016-2020 +3.03 (t +0.54) | 2021-2026 +3.26 (t +0.65) | temoin -4.12 (Welch +1.29) | net +2.53 | net sans 3 meilleurs +0.67
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur 2016-2020 et 2021-2026
+  [ ] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [x] gain net > 0 sans les 3 meilleurs jours
+  [ ] Sharpe deflate >= 0.95 pour 372 essais : 0.01
+VERDICT : REJETEE
+(calcule en 11 s le 2026-10-19 11:36)
