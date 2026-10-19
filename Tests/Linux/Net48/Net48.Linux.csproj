@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Controle de compilation .NET Framework 4.8 (cible de NinjaTrader 8) hors Windows : socle AddOns + NexusStrategyBase
+       + fiche 15 contre les assemblys de reference net48 (paquet NuGet) et les stubs NinjaScript.
+       Lancer depuis ce dossier :  dotnet build -c Release   -> 0 erreur -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\AddOns\*.cs" />
+    <Compile Include="..\..\..\Strategies\NexusStrategyBase.cs" />
+    <Compile Include="..\..\..\Strategies\Nexus15_LetfRebalancing.cs" />
+    <Compile Include="..\Stubs\*.cs" />
+  </ItemGroup>
+</Project>

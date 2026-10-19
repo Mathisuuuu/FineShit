@@ -1,0 +1,129 @@
+======================================================================================================================
+ FICHES DU FIL ES/NQ « 6 MOIS DE SIMULATION » - backtest Databento 1 minute, ES et NQ (micros MES / MNQ)
+======================================================================================================================
+Periode 2016-01-03 -> 2026-08-28. 1R = 250 $ (compte simule de 25 000 $ comme le post)  taille = plancher(R / risque du stop) en micros.
+Couts : 2 ticks de glissement sur les ordres marche et stop (base du post), commission 0,60 $ par micro et par cote ;
+stress : 4 ticks. Limites remplies seulement si le prix les traverse (module B, point 2).
+Parametres principaux = ceux des fiches, figes AVANT le test. Les grilles ne servent qu a mesurer la robustesse.
+
+=== FICHE 1 - retournement apres un choc de prix et de volume ===
+Choc : rendement 5 min >= 4 ecarts-types du meme creneau (20 seances) ET volume >= 2 x la moyenne du creneau ;
+achat apres une chute, vente apres une hausse en demi-taille ; limite au prix de cloture du choc (1 minute) ;
+objectif 25 % du choc, stop au-dela de l extreme + 2 ticks, sortie au bout de 5 min ; pas d entree +-15 min
+autour de 08:30 / 10:00 ET (jours ouvres) et du FOMC.
+
+Le phenomene existe-t-il ici, AVANT execution et couts ? Rendement des 5 min suivant un choc >= 4 sigma (points de base) :
+  ES (cout d un aller-retour avec 2 ticks a la sortie et commissions : ~1.0 pb) :
+    chute  volume >= 2x    US 09:30-16:00     969 chocs | choc moyen   -24.6 pb | 5 min suivantes  +0.66 pb | retour 51%
+    chute  volume >= 2x    nuit              2914 chocs | choc moyen   -14.6 pb | 5 min suivantes  +0.25 pb | retour 53%
+    chute  volume normal   US 09:30-16:00     328 chocs | choc moyen   -27.1 pb | 5 min suivantes  -1.19 pb | retour 50%
+    chute  volume normal   nuit               517 chocs | choc moyen   -14.8 pb | 5 min suivantes  +0.38 pb | retour 50%
+    hausse volume >= 2x    US 09:30-16:00     739 chocs | choc moyen   +27.8 pb | 5 min suivantes  -0.04 pb | retour 51%
+    hausse volume >= 2x    nuit              2524 chocs | choc moyen   +15.1 pb | 5 min suivantes  -0.30 pb | retour 51%
+    hausse volume normal   US 09:30-16:00     305 chocs | choc moyen   +30.5 pb | 5 min suivantes  -1.37 pb | retour 50%
+    hausse volume normal   nuit               513 chocs | choc moyen   +14.7 pb | 5 min suivantes  -0.37 pb | retour 48%
+  NQ (cout d un aller-retour avec 2 ticks a la sortie et commissions : ~0.4 pb) :
+    chute  volume >= 2x    US 09:30-16:00     876 chocs | choc moyen   -27.9 pb | 5 min suivantes  +0.46 pb | retour 51%
+    chute  volume >= 2x    nuit              3061 chocs | choc moyen   -16.2 pb | 5 min suivantes  -0.11 pb | retour 54%
+    chute  volume normal   US 09:30-16:00     339 chocs | choc moyen   -31.1 pb | 5 min suivantes  -0.41 pb | retour 50%
+    chute  volume normal   nuit               511 chocs | choc moyen   -16.2 pb | 5 min suivantes  +1.14 pb | retour 56%
+    hausse volume >= 2x    US 09:30-16:00     622 chocs | choc moyen   +31.4 pb | 5 min suivantes  +1.68 pb | retour 47%
+    hausse volume >= 2x    nuit              2707 chocs | choc moyen   +16.1 pb | 5 min suivantes  -0.13 pb | retour 52%
+    hausse volume normal   US 09:30-16:00     320 chocs | choc moyen   +35.1 pb | 5 min suivantes  -2.36 pb | retour 54%
+    hausse volume normal   nuit               489 chocs | choc moyen   +16.4 pb | 5 min suivantes  -0.19 pb | retour 54%
+  (papier, ES 2010-2017 : apres une chute moyenne de -37 pb, +8 pb ; +13 pb a fort volume, +5 pb a faible volume.)
+
+  F1 ES+NQ (parametres de la fiche)      12039 trades | reussite 35.9% [35%-37%] | esperance -0.442R [-0.46 ; -0.42] | total  -5316.6R | PF 0.40 | DD 5321.3R | serie de pertes 32 | Sharpe -5.69 | mois positifs 3/128
+    dont achats (apres une chute)         6537 trades | reussite 36.8% [36%-38%] | esperance -0.558R [-0.60 ; -0.52] | total  -3644.6R | PF 0.41 | DD 3648.7R | serie de pertes 20 | Sharpe -4.91 | mois positifs 5/128
+    dont ventes (apres une hausse)        5502 trades | reussite 34.8% [34%-36%] | esperance -0.304R [-0.32 ; -0.28] | total  -1672.0R | PF 0.37 | DD 1673.9R | serie de pertes 23 | Sharpe -5.15 | mois positifs 7/128
+    dont MES                              5764 trades | reussite 37.3% [36%-39%] | esperance -0.491R [-0.52 ; -0.46] | total  -2832.9R | PF 0.34 | DD 2836.2R | serie de pertes 18 | Sharpe -5.66 | mois positifs 3/128
+    dont MNQ                              6275 trades | reussite 34.5% [33%-36%] | esperance -0.396R [-0.43 ; -0.36] | total  -2483.7R | PF 0.46 | DD 2485.3R | serie de pertes 18 | Sharpe -4.73 | mois positifs 11/128
+  F1 avec 4 ticks de glissement          12039 trades | reussite 35.2% [34%-36%] | esperance -0.622R [-0.65 ; -0.60] | total  -7487.3R | PF 0.32 | DD 7491.1R | serie de pertes 32 | Sharpe -6.17 | mois positifs 1/128
+  F1 + filtres fiche 4 (VPIN, annonces)   9673 trades | reussite 35.5% [35%-36%] | esperance -0.452R [-0.48 ; -0.43] | total  -4368.2R | PF 0.39 | DD 4372.8R | serie de pertes 28 | Sharpe -5.67 | mois positifs 4/128
+  diagnostic : F1 sans aucun cout        12039 trades | reussite 37.4% [37%-38%] | esperance -0.078R [-0.10 ; -0.06] | total   -934.5R | PF 0.82 | DD 944.7R | serie de pertes 23 | Sharpe -1.82 | mois positifs 33/128
+  diagnostic : F1 entree au marche       13751 trades | reussite 36.2% [35%-37%] | esperance -0.624R [-0.65 ; -0.60] | total  -8576.9R | PF 0.30 | DD 8580.6R | serie de pertes 29 | Sharpe -6.24 | mois positifs 2/128
+
+Robustesse (grille 4 seuils x 3 volumes x 2 objectifs, ES+NQ, 2 ticks) :
+  k=3.0 vol=1.5 retour=0.25    27421 trades | esperance -0.479R | total -13131.1R | Sharpe -8.61
+  k=3.0 vol=1.5 retour=0.5     27247 trades | esperance -0.486R | total -13250.7R | Sharpe -7.94
+  k=3.0 vol=2.0 retour=0.25    22002 trades | esperance -0.459R | total -10096.8R | Sharpe -7.72
+  k=3.0 vol=2.0 retour=0.5     21843 trades | esperance -0.462R | total -10097.2R | Sharpe -7.02
+  k=3.0 vol=3.0 retour=0.25    12848 trades | esperance -0.418R | total -5365.8R | Sharpe -6.05
+  k=3.0 vol=3.0 retour=0.5     12739 trades | esperance -0.424R | total -5396.8R | Sharpe -5.63
+  k=3.5 vol=1.5 retour=0.25    19142 trades | esperance -0.470R | total -8998.3R | Sharpe -7.38
+  k=3.5 vol=1.5 retour=0.5     19040 trades | esperance -0.478R | total -9102.5R | Sharpe -6.65
+  k=3.5 vol=2.0 retour=0.25    16181 trades | esperance -0.458R | total -7410.6R | Sharpe -6.81
+  k=3.5 vol=2.0 retour=0.5     16083 trades | esperance -0.465R | total -7471.8R | Sharpe -6.08
+  k=3.5 vol=3.0 retour=0.25    10283 trades | esperance -0.418R | total -4299.3R | Sharpe -5.48
+  k=3.5 vol=3.0 retour=0.5     10207 trades | esperance -0.424R | total -4332.3R | Sharpe -5.03
+  k=4.0 vol=1.5 retour=0.25    13632 trades | esperance -0.448R | total -6113.2R | Sharpe -6.12
+  k=4.0 vol=1.5 retour=0.5     13558 trades | esperance -0.455R | total -6174.9R | Sharpe -5.38
+  k=4.0 vol=2.0 retour=0.25    12039 trades | esperance -0.442R | total -5316.6R | Sharpe -5.69
+  k=4.0 vol=2.0 retour=0.5     11966 trades | esperance -0.444R | total -5309.6R | Sharpe -4.90
+  k=4.0 vol=3.0 retour=0.25     8299 trades | esperance -0.410R | total -3405.8R | Sharpe -4.76
+  k=4.0 vol=3.0 retour=0.5      8238 trades | esperance -0.415R | total -3417.9R | Sharpe -4.34
+  k=4.5 vol=1.5 retour=0.25     9908 trades | esperance -0.434R | total -4302.5R | Sharpe -5.13
+  k=4.5 vol=1.5 retour=0.5      9850 trades | esperance -0.445R | total -4382.8R | Sharpe -4.41
+  k=4.5 vol=2.0 retour=0.25     9011 trades | esperance -0.432R | total -3888.6R | Sharpe -4.88
+  k=4.5 vol=2.0 retour=0.5      8954 trades | esperance -0.436R | total -3899.8R | Sharpe -4.09
+  k=4.5 vol=3.0 retour=0.25     6617 trades | esperance -0.403R | total -2667.2R | Sharpe -4.18
+  k=4.5 vol=3.0 retour=0.5      6568 trades | esperance -0.404R | total -2653.2R | Sharpe -3.71
+Probabilite de surajustement (PBO, CSCV 2000 combinaisons) sur la grille : 0% (le PBO mesure la stabilite du
+classement des variantes entre periodes, pas leur rentabilite : un PBO faible avec des variantes toutes negatives ne
+rend pas la strategie rentable)
+
+=== FICHE 3 - retour vers le POC (profil de volume reconstruit sur les minutes) ===
+Seance US 09:30-16:00 ET, profil = volume de chaque minute reparti sur son range ; zone de valeur 70 % ; declencheur :
+cloture 5 min hors zone de valeur, sortie « sans volume » (< 0,8 x creneau, |delta BVC| < 20 %) ; entree au retour
+dans la zone (marche), objectif POC, stop extreme + 2 ticks ; pas avant 10:30 ni apres 15:30 ; sortie a 16:00.
+  F3 ES+NQ (filtre de la fiche)           3297 trades | reussite 40.7% [39%-42%] | esperance -0.424R [-0.47 ; -0.38] | total  -1397.1R | PF 0.45 | DD 1400.9R | serie de pertes 12 | Sharpe -4.73 | mois positifs 12/128
+    dont MES                              1798 trades | reussite 40.0% [38%-42%] | esperance -0.527R [-0.59 ; -0.47] | total   -947.5R | PF 0.38 | DD 951.2R | serie de pertes 15 | Sharpe -4.64 | mois positifs 15/128
+    dont MNQ                              1499 trades | reussite 41.6% [39%-44%] | esperance -0.300R [-0.37 ; -0.23] | total   -449.7R | PF 0.57 | DD 452.5R | serie de pertes 13 | Sharpe -2.47 | mois positifs 33/128
+  F3 avec 4 ticks de glissement           3297 trades | reussite 36.5% [35%-38%] | esperance -0.680R [-0.73 ; -0.63] | total  -2242.6R | PF 0.31 | DD 2244.0R | serie de pertes 19 | Sharpe -6.14 | mois positifs 4/128
+  F3 filtre inverse (sorties AVEC volume)  2979 trades | reussite 45.0% [43%-47%] | esperance -0.252R [-0.30 ; -0.20] | total   -749.4R | PF 0.61 | DD 754.4R | serie de pertes 14 | Sharpe -2.77 | mois positifs 23/128
+  F3 + VPIN (fiche 4)                     3221 trades | reussite 40.8% [39%-42%] | esperance -0.428R [-0.47 ; -0.38] | total  -1379.7R | PF 0.45 | DD 1383.4R | serie de pertes 12 | Sharpe -4.72 | mois positifs 13/128
+  diagnostic : F3 sans aucun cout         3297 trades | reussite 45.5% [44%-47%] | esperance -0.063R [-0.10 ; -0.02] | total   -207.5R | PF 0.88 | DD 225.0R | serie de pertes 11 | Sharpe -0.88 | mois positifs 51/128
+
+=== FICHE 2 - absorption : NON TESTEE ===
+Il faut l OFI aux meilleures limites (taille et prix bid/ask a chaque evenement). Les barres 1 minute n ont ni carnet
+ni cote agresseur ; un delta deduit du prix (BVC) rendrait le residu « prix - OFI » circulaire. Le code (ofi_cont,
+absorption) est pret pour des donnees Databento mbp-1 ou tbbo d ES / NQ.
+
+=== FICHE 4 - filtres ===
+VPIN : teste ci-dessus (lignes « + filtres fiche 4 » et « + VPIN »). Desequilibre du carnet (OBI, 3 niveaux) : non testable
+sans carnet. Execution limite annulee apres 10 s : approchee par une validite d une barre de 1 minute.
+
+=== MODULE A - portefeuille F1 + F3 sur ES et NQ : 2 positions max, perte du jour 3R, seuils d arret ===
+  Portefeuille apres module A             8867 trades | reussite 36.5% [35%-38%] | esperance -0.450R [-0.48 ; -0.42] | total  -3986.1R | PF 0.41 | DD 3990.6R | serie de pertes 21 | Sharpe -9.41 | mois positifs 1/128
+  refus : 1 trades (2 positions deja ouvertes), 6468 (perte du jour >= 3R)
+  seuil d arret 12,6R de drawdown : atteint le 2016-01-28
+  seuil d arret 9 pertes de suite : atteint le 2016-04-13
+
+=== MODULE B - validation ===
+F1 :
+  sans les 5 meilleurs trades : -5420.3R (total -5316.6R) ; sans le meilleur mois : -5325.8R
+  Sharpe deflate (30 essais comptes) : probabilite que le vrai Sharpe soit > 0 = 0%
+    2016-2020 (avant)                     5681 trades | reussite 37.2% [36%-39%] | esperance -0.497R [-0.53 ; -0.46] | total  -2821.0R | PF 0.35 | DD 2821.8R | serie de pertes 32 | Sharpe -5.55 | mois positifs 2/60
+    2021-2026 (apres)                     6358 trades | reussite 34.6% [33%-36%] | esperance -0.393R [-0.43 ; -0.36] | total  -2495.6R | PF 0.44 | DD 2500.3R | serie de pertes 23 | Sharpe -6.06 | mois positifs 1/68
+    periode du post 16/03-28/08/2026       435 trades | reussite 31.3% [27%-36%] | esperance -0.377R [-0.47 ; -0.28] | total   -164.2R | PF 0.40 | DD 168.8R | serie de pertes 19 | Sharpe -6.09 | mois positifs 1/6
+  regimes de volatilite MES : agite 2007 trades -0.390R | calme 1777 trades -0.609R | moyen 1971 trades -0.488R
+  regimes de volatilite MNQ : agite 1992 trades -0.203R | calme 2263 trades -0.588R | moyen 2012 trades -0.370R
+F3 :
+  sans les 5 meilleurs trades : -1439.1R (total -1397.1R) ; sans le meilleur mois : -1406.8R
+  Sharpe deflate (30 essais comptes) : probabilite que le vrai Sharpe soit > 0 = 0%
+    2016-2020 (avant)                     1662 trades | reussite 38.9% [37%-41%] | esperance -0.537R [-0.60 ; -0.47] | total   -893.2R | PF 0.37 | DD 894.3R | serie de pertes 12 | Sharpe -6.15 | mois positifs 4/60
+    2021-2026 (apres)                     1635 trades | reussite 42.5% [40%-45%] | esperance -0.308R [-0.37 ; -0.24] | total   -504.0R | PF 0.56 | DD 507.2R | serie de pertes 10 | Sharpe -3.41 | mois positifs 8/68
+    periode du post 16/03-28/08/2026       145 trades | reussite 50.3% [42%-58%] | esperance -0.116R [-0.31 ; +0.08] | total    -16.8R | PF 0.78 | DD  21.2R | serie de pertes  7 | Sharpe -1.47 | mois positifs 1/6
+  regimes de volatilite MES : agite 634 trades -0.373R | calme 592 trades -0.722R | moyen 568 trades -0.490R
+  regimes de volatilite MNQ : agite 548 trades -0.150R | calme 497 trades -0.525R | moyen 448 trades -0.226R
+Portefeuille :
+  sans les 5 meilleurs trades : -4035.9R (total -3986.1R) ; sans le meilleur mois : -3989.1R
+  Sharpe deflate (30 essais comptes) : probabilite que le vrai Sharpe soit > 0 = 0%
+    2016-2020 (avant)                     4016 trades | reussite 36.5% [35%-38%] | esperance -0.526R [-0.56 ; -0.49] | total  -2112.4R | PF 0.35 | DD 2113.3R | serie de pertes 21 | Sharpe -10.72 | mois positifs 0/60
+    2021-2026 (apres)                     4851 trades | reussite 36.5% [35%-38%] | esperance -0.386R [-0.42 ; -0.35] | total  -1873.8R | PF 0.46 | DD 1877.7R | serie de pertes 21 | Sharpe -8.31 | mois positifs 1/68
+    periode du post 16/03-28/08/2026       405 trades | reussite 40.2% [36%-45%] | esperance -0.249R [-0.35 ; -0.15] | total   -100.8R | PF 0.55 | DD 104.7R | serie de pertes 14 | Sharpe -5.87 | mois positifs 1/6
+Par mois sur la periode du post (portefeuille) : 03/2026 -23.2R | 04/2026 -9.3R | 05/2026 -18.8R | 06/2026 -33.4R | 07/2026 -19.0R | 08/2026 +2.9R
+Post (pour memoire) : 103 trades, 53,4 % de reussite, +0,59R par trade, +60,8R, 7 mois positifs sur 7 (auto-declare).
+
+Calcul en 70 s.
+Trades : C:\Users\Mathis\Documents\FichesEtCode\Python\resultats\orderflow_20261009_145003

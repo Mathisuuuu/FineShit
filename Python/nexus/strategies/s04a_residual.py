@@ -99,7 +99,7 @@ class Nexus04AResidualMeanReversion(NexusStrategy):
                 continue
             if ou.half_life >= p.max_half_life_days or score >= p.entry_s:
                 continue
-            q, det = self.size_qty(s, p.max_trade_pct / 100.0, s.last_price)
+            q, det = self.size_qty(s, self.kelly_native_fraction(), s.last_price)
             stop = S.long_stop(s.last_price, s.hist.atr, p.atr_multiplier, p.stop_min_pct / 100, p.stop_max_pct / 100)
             self.set_target(s, q, stop, f"s-score {score:.2f} < {p.entry_s:.2f}, demi-vie {ou.half_life:.1f} j")
             if q > 0:
@@ -148,7 +148,7 @@ class Nexus04AResidualMeanReversion(NexusStrategy):
                 + ", ".join(f"{x} {std_resid[x]:.2f}" for x in losers))
         for s in self.traded_syms:
             if s.name in losers:
-                q, _ = self.size_qty(s, p.max_trade_pct / 100.0, s.last_price)
+                q, _ = self.size_qty(s, self.kelly_native_fraction(), s.last_price)
                 stop = S.long_stop(s.last_price, s.hist.atr, p.atr_multiplier, p.stop_min_pct / 100, p.stop_max_pct / 100)
                 self.set_target(s, q, stop, f"residu mensuel standardise {std_resid[s.name]:.2f}")
                 self.entry_scores.append(std_resid[s.name])

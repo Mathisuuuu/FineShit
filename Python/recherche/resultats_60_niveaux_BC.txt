@@ -1,0 +1,148 @@
+======================================================================================================================
+ 60 STRATEGIES INTRADAY - ETAPE 2 : ANOMALIES BRUTES DES NIVEAUX B ET C (sans regles, stop ni taille)
+======================================================================================================================
+Onglets par actif non fournis : definitions = ma lecture des papiers (signe seul ; 2 sigma quand la fiche parle de choc).
+Criteres identiques a l etape 1, fixes avant le test : t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ;
+Welch >= 2 contre le temoin ; gain moyen net de couts > 0 ; > 0 sans les 3 meilleurs jours. Rares (< 60) : t >= 2, net > 0
+>= 65 % des annees. Calendriers officiels : nexus/perso/calendriers.py (BCE, BoE, BoJ, RBA, NBS, SEC EDGAR, BLS, ALFRED).
+
+######################################################################################################################
+# 1. FAMILLES : l actif le mieux place d abord ; s il echoue, la famille entiere est eliminee
+######################################################################################################################
+
+[Derive avant une publication] actif teste en premier : ES 2 ; membres : NQ 5, CL 5, 6E 5, 6A 5
+--- ES 2 : signal r(9:30 -> 9:59 ET), position 9:59 -> 10:30 dans son sens, jours d ISM manufacturier (1er jour ouvre), d ISM services (3e) et du Conference Board (dernier mardi, hors decembre) ; temoin : autres jours
+    sens prevu : signe de la derive 9:30 -> 9:59 | 373 cas | moyenne +0.37 pb (t +0.3) | 2016-2020 +1.89 (t +1.1) | 2021-2026 -0.96 (t -0.5)
+    temoin -0.60 pb, Welch +0.7 | cout aller-retour 0.86 pb -> net -0.49 pb, sans les 3 meilleurs jours -1.20 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+    -> famille eliminee : NQ 5, CL 5, 6E 5, 6A 5
+
+[Retard d un actif sur un autre] actif teste en premier : IWM 2 ; membres : DAX 3, GC 2, GC 4, GC 5, 6A 2, 6B 5
+--- IWM 2 : barre SPY de 15 min > 2 sigma (fin 9:45-15:30 ET) -> IWM 30 min dans le sens du choc ; temoin : le SPY lui-meme sur les memes 30 min
+    sens prevu : sens du choc du SPY | 1774 cas | moyenne -1.92 pb (t -1.7) | 2016-2020 -2.68 (t -1.6) | 2021-2026 -1.33 (t -0.9)
+    temoin -1.47 pb, Welch -0.3 | cout aller-retour 0.89 pb -> net -2.81 pb, sans les 3 meilleurs jours -3.12 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+    -> famille eliminee : DAX 3, GC 2, GC 4, GC 5, 6A 2, 6B 5
+
+[Pression d enchere] actif teste en premier : ES 3 ; membres : SPY 4, DAX 5
+--- ES 3 : signal r(15:45 avant 2019, 15:50 depuis -> 16:00 ET), position contraire 16:00 -> 16:14 ; temoin : meme structure 14:45/50 -> 15:00, position 15:00 -> 15:14
+    sens prevu : contre les 10-15 dernieres minutes | 2657 cas | moyenne +0.28 pb (t +1.4) | 2016-2020 +0.08 (t +0.3) | 2021-2026 +0.46 (t +1.7)
+    temoin +0.02 pb, Welch +0.9 | cout aller-retour 1.58 pb -> net -1.30 pb, sans les 3 meilleurs jours -1.38 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+    -> famille eliminee : SPY 4, DAX 5
+
+[Ecarts entre actifs lies] actif teste en premier : YM 2 ; membres : 6B 1
+--- YM 2 : ecart r_YM - r_ES depuis 9:30 > 2 sigma (10:00-15:00 ET) -> paire contraire 90 min ; temoin : paire prise a 10:00 les jours sans ecart > 2 sigma
+    sens prevu : convergence de l ecart | 542 cas | moyenne -0.54 pb (t -0.9) | 2016-2020 -0.17 (t -0.2) | 2021-2026 -0.90 (t -1.0)
+    temoin +1.55 pb, Welch -3.1 | cout aller-retour 1.48 pb -> net -2.03 pb, sans les 3 meilleurs jours -2.36 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+    -> famille eliminee : 6B 1
+
+######################################################################################################################
+# 2. DERIVE APRES UNE BANQUE CENTRALE : DAX 2 (actif le mieux place) attend les minutes du DAX ; membres testes
+#    un par un en attendant. Si DAX 2 echoue, la famille sera eliminee quels que soient ces resultats.
+######################################################################################################################
+
+--- 6E 3 : signal r(C -> C+60), position C+60 -> 17:30 Francfort, jours de BCE ; temoin : autres jeudis
+    sens prevu : sens de la reaction a la conference | 85 cas | moyenne +3.21 pb (t +1.0) | 2016-2020 +3.38 (t +0.6) | 2021-2026 +3.06 (t +1.0)
+    temoin +0.05 pb, Welch +1.0 | cout aller-retour 1.19 pb -> net +2.02 pb, sans les 3 meilleurs jours -0.90 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6B 3 : signal r(11:59 -> 12:45 Londres), position 12:45 -> 13:25, jours de MPC ; temoin : autres jeudis
+    sens prevu : sens de la reaction a 12:00 | 88 cas | moyenne -0.02 pb (t -0.0) | 2016-2020 +1.66 (t +0.6) | 2021-2026 -1.63 (t -0.8)
+    temoin -0.78 pb, Welch +0.4 | cout aller-retour 2.09 pb -> net -2.11 pb, sans les 3 meilleurs jours -3.33 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6J 4 : T = pic de volume du 6J (11:00-14:30 Tokyo, 77 reunions datees) ; signal r(T-1 -> T+15), position T+15 -> 15:25 Tokyo ; temoin : autres jours avec T = 12:00
+    sens prevu : sens de la reaction a la BoJ | 77 cas | moyenne +2.99 pb (t +1.3) | 2016-2020 +3.14 (t +1.0) | 2021-2026 +2.86 (t +0.9)
+    temoin -0.28 pb, Welch +1.5 | cout aller-retour 5.15 pb -> net -2.16 pb, sans les 3 meilleurs jours -4.24 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6A 4 : signal r(14:29 -> 15:15 Sydney), position 15:15 -> 16:45, jours de RBA ; temoin : autres mardis
+    sens prevu : sens de la reaction a 14:30 | 109 cas | moyenne +1.80 pb (t +1.0) | 2016-2020 +0.68 (t +0.3) | 2021-2026 +2.94 (t +1.0)
+    temoin +1.37 pb, Welch +0.2 | cout aller-retour 5.29 pb -> net -3.50 pb, sans les 3 meilleurs jours -4.73 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+######################################################################################################################
+# 3. FICHES ISOLEES (hors familles)
+######################################################################################################################
+
+--- NQ 1 : T = 1er 8-K de resultats (16:00-16:44 ET) ; signal r(16:00 -> T+15), position T+15 -> T+45 (<= 16:59) ; temoin : autres jours, T = 16:05
+    sens prevu : sens de la reaction aux resultats | 162 cas | moyenne +3.98 pb (t +2.8) | 2016-2020 +2.44 (t +2.0) | 2021-2026 +5.12 (t +2.2)
+    temoin -0.50 pb, Welch +3.0 | cout aller-retour 0.68 pb -> net +3.30 pb, sans les 3 meilleurs jours +2.11 pb
+    VERDICT : ECHOUE (t >= 3)
+
+--- NQ 2 : achat 14:00 -> 16:00 ET les jours de resultats apres cloture (AAPL, MSFT, AMZN, GOOGL, META, NVDA) ; temoin : autres jours
+    sens prevu : +1 (achat) | 191 cas | moyenne +0.38 pb (t +0.1) | 2016-2020 -1.01 (t -0.3) | 2021-2026 +1.73 (t +0.4)
+    temoin +0.30 pb, Welch +0.0 | cout aller-retour 0.29 pb -> net +0.09 pb, sans les 3 meilleurs jours -2.00 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours)
+
+--- YM 4 : signal r(9:30 -> 9:45 ET), position contraire 9:45 -> 11:00, 3es vendredis trimestriels ; temoin : 3es vendredis mensuels
+    sens prevu : contre le premier quart d heure | 42 cas | moyenne +6.91 pb (t +1.0) | 2016-2020 +2.05 (t +0.2) | 2021-2026 +11.32 (t +1.4)
+    temoin +1.01 pb, Welch +0.8 | cout aller-retour 0.62 pb -> net +6.29 pb, sans les 3 meilleurs jours -2.77 pb | annees nettes positives 55%
+    VERDICT : ECHOUE (t >= 2 (evenement rare) ; gain net positif >= 65 % des annees ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours)
+
+--- YM 5 : barre de 15 min > 2 sigma (10:00-15:00 ET) -> contraire 60 min, forte volatilite ; temoin : faible
+    sens prevu : contre le choc | 852 cas | moyenne +0.44 pb (t +0.3) | 2016-2020 +1.37 (t +0.6) | 2021-2026 -0.35 (t -0.2)
+    temoin -0.22 pb, Welch +0.4 | cout aller-retour 0.62 pb -> net -0.19 pb, sans les 3 meilleurs jours -1.05 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- SPY 1 : position vers le dollar rond le plus proche, 14:30 -> 15:55 ET, 3es vendredis ; temoin : mardis et jeudis avant le 15/11/2022
+    sens prevu : vers le dollar rond le plus proche | 129 cas | moyenne -0.98 pb (t -0.3) | 2016-2020 -5.13 (t -1.0) | 2021-2026 +2.62 (t +0.8)
+    temoin -0.56 pb, Welch -0.1 | cout aller-retour 0.31 pb -> net -1.30 pb, sans les 3 meilleurs jours -3.21 pb
+    tous les vendredis : -2.23 pb (t -1.3, 542 j)
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- SPY 5 : achat 9:45 -> 11:45 ET les jours de NFP, CPI ou FOMC ; temoin : autres jours
+    sens prevu : +1 (achat) | 330 cas | moyenne +0.56 pb (t +0.2) | 2016-2020 +2.17 (t +0.5) | 2021-2026 -0.79 (t -0.2)
+    temoin +1.06 pb, Welch -0.2 | cout aller-retour 0.31 pb -> net +0.25 pb, sans les 3 meilleurs jours -1.77 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours)
+
+--- IWM 1 : position contraire a l ecart 16:00 (veille) -> 9:30, de 9:45 a 11:45 ET ; temoin : signe de l ecart de la veille
+    sens prevu : contre l ecart de nuit | 2694 cas | moyenne +1.19 pb (t +0.8) | 2016-2020 +0.95 (t +0.5) | 2021-2026 +1.40 (t +0.7)
+    temoin +0.17 pb, Welch +0.5 | cout aller-retour 0.89 pb -> net +0.29 pb, sans les 3 meilleurs jours -0.28 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours)
+
+--- CL 2 : API r(mar. 16:30 -> 16:45), EIA r(mer. 10:30 -> 10:32) de signes opposes -> 10:32 -> 12:00 ET dans le sens de l EIA ; temoin : signes concordants
+    sens prevu : sens de la reaction a l EIA | 217 cas | moyenne -5.20 pb (t -0.7) | 2016-2020 -9.64 (t -0.7) | 2021-2026 -1.41 (t -0.2)
+    temoin -7.98 pb, Welch +0.3 | cout aller-retour 11.09 pb -> net -16.29 pb, sans les 3 meilleurs jours -21.17 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- GC 1 : lundi : signal r(sam. 2:30 -> lun. 9:00 Pekin), position 9:00 -> 11:00 dans son sens ; temoin : mardi-vendredi, signal 2:30 -> 9:00
+    sens prevu : sens du mouvement manque par Shanghai | 474 cas | moyenne -1.14 pb (t -1.0) | 2016-2020 +0.96 (t +1.0) | 2021-2026 -2.99 (t -1.5)
+    temoin -1.15 pb, Welch +0.0 | cout aller-retour 1.55 pb -> net -2.69 pb, sans les 3 meilleurs jours -3.18 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6E 2 : position vers le multiple de 0,005 le plus proche (prix reel du future), 9:00 -> 10:00 ET, vendredi ; temoin : lundi-jeudi (des echeances hebdomadaires y existent aussi depuis quelques annees)
+    sens prevu : vers le prix d exercice le plus proche | 537 cas | moyenne +0.16 pb (t +0.3) | 2016-2020 -0.33 (t -0.4) | 2021-2026 +0.60 (t +0.8)
+    temoin +0.48 pb, Welch -0.5 | cout aller-retour 1.19 pb -> net -1.03 pb, sans les 3 meilleurs jours -1.27 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6B 2 : barre de 15 min > 2 sigma de 22:00 a 6:00 Londres -> contraire 60 min ; temoin : 8:00-16:00 Londres
+    sens prevu : contre le choc | 2307 cas | moyenne +0.56 pb (t +2.9) | 2016-2020 +0.38 (t +1.2) | 2021-2026 +0.73 (t +3.4)
+    temoin -0.63 pb, Welch +3.0 | cout aller-retour 5.07 pb -> net -4.50 pb, sans les 3 meilleurs jours -4.65 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6J 2 : barre 6J de 15 min > +3 sigma (24 h) -> achat 60 min ; temoin : < -3 sigma -> vente 60 min
+    sens prevu : +1 apres une hausse brutale du yen | 1641 cas | moyenne +0.46 pb (t +1.2) | 2016-2020 +0.47 (t +1.0) | 2021-2026 +0.45 (t +0.8)
+    temoin +0.64 pb, Welch -0.3 | cout aller-retour 5.15 pb -> net -4.69 pb, sans les 3 meilleurs jours -4.94 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6J 3 : barre de 15 min > 2 sigma de 18:00 a 23:00 Tokyo -> contraire 60 min ; temoin : 9:00-15:00 Tokyo
+    sens prevu : contre le choc | 1970 cas | moyenne -0.16 pb (t -0.6) | 2016-2020 -0.43 (t -1.2) | 2021-2026 +0.07 (t +0.2)
+    temoin -0.56 pb, Welch +1.0 | cout aller-retour 5.15 pb -> net -5.31 pb, sans les 3 meilleurs jours -5.46 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+--- 6A 1 : signal r(T-1 -> T+2), position T+2 -> T+30, T = publication NBS (heure de Pekin) ; temoin : autres jours a 10:00
+    sens prevu : sens de la premiere reaction | 112 cas | moyenne +0.81 pb (t +0.8) | 2016-2020 +1.66 (t +1.0) | 2021-2026 +0.10 (t +0.1)
+    temoin +0.03 pb, Welch +0.8 | cout aller-retour 5.29 pb -> net -4.49 pb, sans les 3 meilleurs jours -5.47 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours)
+
+######################################################################################################################
+# 4. BILAN
+######################################################################################################################
+Testees : 22 ; passent tous les criteres : 0
+Eliminees avec leur famille a cette etape : NQ 5 (ES 2), CL 5 (ES 2), 6E 5 (ES 2), 6A 5 (ES 2), DAX 3 (IWM 2), GC 2 (IWM 2), GC 4 (IWM 2), GC 5 (IWM 2), 6A 2 (IWM 2), 6B 5 (IWM 2), SPY 4 (ES 3), DAX 5 (ES 3), 6B 1 (YM 2)
+Eliminees avec leur famille a l etape 1 : NQ 3 (ES 5), IWM 4 (ES 5), 6B 4 (6J 1), 6A 3 (6J 1), GC 3 (6J 1), YM 3 (YM 1), NQ 4 (YM 1), SPY 3 (YM 1), IWM 3 (YM 1), IWM 5 (YM 1), 6J 5 (YM 1)
+En attente : DAX 1 : minutes DAX (Dukascopy) en telechargement ; DAX 2 : idem (actif le mieux place de la famille banque centrale) ; DAX 4 : idem ; 6E 1 : idem (rendement des actions europeennes) ; CL 3 : contrat qui expire (symbole brut) : non disponible dans nos donnees continues
+Calcul en 25 s.

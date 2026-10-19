@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tableau-de-bord",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["Dashboard/serveur.js"],
+      "port": 3000
+    }
+  ]
+}

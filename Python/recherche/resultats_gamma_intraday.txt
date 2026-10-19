@@ -1,0 +1,29 @@
+======================================================================================================================
+ MOMENTUM DE FIN DE SEANCE CONDITIONNE PAR LE GAMMA DES DEALERS (H2 : BALTUSSEN, DA, LAMMERS & MARTENS 2021) SUR ES
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/gamma_intraday.py. TEST PARTIELLEMENT NON AVEUGLE (H1 deja vu : ES 5).
+
+GEX SqueezeMetrics : 2011-05-02 -> 2026-10-09 (3884 jours).
+
+ETAPE 1 - l anomalie et son mecanisme
+  2016-2020 : 1215 jours, gamma negatif 9%
+      1b. gamma < 0  : pente r_LH / r_ROD +13.86 (x100, t NW +2.78, 106 jours) | 1d. |r_LH| moyen 41.07 pb
+      1b. gamma >= 0 : pente r_LH / r_ROD -2.09 (x100, t NW -1.08, 1109 jours) | 1d. |r_LH| moyen 11.62 pb
+      1c. interaction 1[gamma<0] x r_ROD : +16.11 (x100, t NW +3.22) ; pente de base -2.16 (t -1.14)
+  2021-2026 : 1376 jours, gamma negatif 11%
+      1b. gamma < 0  : pente r_LH / r_ROD +3.74 (x100, t NW +1.91, 158 jours) | 1d. |r_LH| moyen 26.32 pb
+      1b. gamma >= 0 : pente r_LH / r_ROD -1.90 (x100, t NW -1.92, 1218 jours) | 1d. |r_LH| moyen 13.78 pb
+      1c. interaction 1[gamma<0] x r_ROD : +5.61 (x100, t NW +2.64) ; pente de base -1.89 (t -1.79)
+  Critere d invalidation de l arbre (interaction sur 2021-2026, t >= 2 et positive) : non invalidee (t +2.64)
+
+ETAPE 2 - strategies (15h30 -> 16h00, 1 contrat, pb par trade)
+  --- V H2 : momentum si gamma < 0, retournement si gamma > 0 : 2578 trades | brut +1.15 pb (t +2.39) | 2016-2020 t +1.73 | 2021-2026 t +1.65
+      temoin H1 +0.46 pb, Welch +1.02 | cout 0.86 pb -> net +0.29 pb, sans les 3 meilleurs jours -0.00 | Sharpe net 0.19 (stress 2 ticks -0.28) | Sharpe deflate (55 essais) 0.04
+  --- R0 BDLM21 : momentum si gamma < 0, rien sinon : 264 trades | brut +7.89 pb (t +2.56) | 2016-2020 t +2.32 | 2021-2026 t +1.15
+      temoin H1 +0.46 pb, Welch +2.39 | cout 0.86 pb -> net +7.02 pb, sans les 3 meilleurs jours +4.27 | Sharpe net 0.71 (stress 2 ticks 0.64) | Sharpe deflate (55 essais) 0.57
+      temoin H1 (tous les jours) : +0.46 pb brut (t +0.95), net -0.40 pb
+      replication NQ (contexte) : brut +0.69 pb (t +1.35) | 2016-2020 t +0.83 | 2021-2026 t +1.08 | net +0.40 pb
+      replication YM (contexte) : brut +1.24 pb (t +2.59) | 2016-2020 t +2.51 | 2021-2026 t +0.96 | net +0.62 pb
+
+VERDICT (V) : ECHOUE (t >= 3 ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95)
+Calcul en 4 s.

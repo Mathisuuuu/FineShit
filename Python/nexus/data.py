@@ -16,8 +16,8 @@ from __future__ import annotations
 import math
 import os
 import re
-from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -49,7 +49,7 @@ DEFAULT_ALIASES = {
 
 _SUFFIX_TOKENS = {"LAST", "BID", "ASK", "DAILY", "DAY", "JOUR", "JOURNALIER", "D1", "1D", "D", "HIST", "HISTORY",
                   "HISTORIQUE", "DATA", "DONNEES", "OHLC", "OHLCV", "QUOTES", "COTATIONS", "PRICES", "M1", "M15",
-                  "1MIN", "15MIN", "H1", "1H", "60MIN", "MINUTE", "TICK", "TICKS", "US", "USA"}
+                  "1MIN", "15MIN", "H1", "1H", "60MIN", "MINUTE", "TICK", "TICKS", "US", "USA", "1M", "5M", "15M", "30M"}
 
 
 @dataclass
@@ -74,15 +74,24 @@ def is_crypto_name(name: str) -> bool:
     return n in CRYPTO_BASES
 
 
-def classify(name: str, etfs=DEFAULT_ETFS, overrides: dict | None = None) -> Instrument:
-    """Classe d actifs, devise et 7j/7 deduits du nom (surcharges possibles)."""
+def classify(name: str, etfs=DEFAULT_ETFS, overrides: dict | None = None, micro: bool = False,
+             is_future: bool | None = None) -> Instrument:
+    """Classe d actifs, devise et 7j/7 deduits du nom (surcharges possibles).
+    Racine de future connue (ES, NQ, GC, 6E...) -> classe Future, multiplicateur officiel
+    (micro si micro=True et si le contrat micro existe). is_future : False si les cotations viennent d un
+    fichier d actions (ES = Eversource, CL = Colgate...), True/None = reconnaissance par la racine."""
+    from .futures import contract_of
     n = name.strip()
     up = n.upper()
     if overrides and n in overrides:
         o = overrides[n]
         return Instrument(name=n, **o) if isinstance(o, dict) else o
+    ctr = contract_of(up) if is_future is not False else None
+    if ctr is not None:
+        pv = ctr.micro_point_value if micro and ctr.micro_point_value > 0 else ctr.point_value
+        return Instrument(n, "Future", ctr.currency, pv, ctr.tick_size, False)
     if is_crypto_name(up):
-        return Instrument(n, "Crypto", "USD", 1.0, 0.01, True)
+        return Instrument(n, "Crypto", "USD", 1.0, 1e-8, True)
     if len(up) == 6 and up[:3] in FX_CODES and up[3:] in FX_CODES:
         return Instrument(n, "Forex", up[3:], 1.0, 0.0001 if up[3:] != "JPY" else 0.01, False)
     if up in CFD_CURRENCY:
@@ -112,6 +121,9 @@ def clean_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
     lo = df["low"].where(np.isfinite(df["low"]) & (df["low"] > 0) & (df["low"] <= lo_max), lo_max)
     out = pd.DataFrame({"open": o, "high": h, "low": lo, "close": c,
                         "volume": df["volume"].where(np.isfinite(df["volume"]), 0.0)}, index=df.index)
+    for extra in EXTRA_COLUMNS:
+        if extra in df.columns:
+            out[extra] = pd.to_numeric(df[extra], errors="coerce").values
     out = out[~out.index.duplicated(keep="last")].sort_index()
     return out
 
@@ -121,7 +133,7 @@ def clean_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 # =============================================================================
 def symbol_from_filename(path: str, aliases: dict | None = None) -> str:
     base = os.path.basename(path)
-    for ext in (".csv", ".txt", ".tsv", ".dat", ".gz", ".zip"):
+    for ext in (".csv", ".txt", ".tsv", ".dat", ".gz", ".zip", ".parquet"):
         if base.lower().endswith(ext):
             base = base[: -len(ext)]
     stem = base
@@ -134,8 +146,8 @@ def symbol_from_filename(path: str, aliases: dict | None = None) -> str:
         head = up.split(".")[0]
         up = head if head else up
     parts = [p for p in re.split(r"[_\s]+", up) if p]
-    while len(parts) > 1 and parts[-1] in _SUFFIX_TOKENS:
-        parts.pop()
+    while len(parts) > 1 and (parts[-1] in _SUFFIX_TOKENS or parts[-1] == "##-##" or re.fullmatch(r"[VCN]\d", parts[-1])):
+        parts.pop()                      # "ES ##-##" (NinjaTrader), "ES_v0_1m" (Databento ES.v.0) -> "ES"
     up = "".join(parts)
     if up in al:
         return al[up]
@@ -159,6 +171,11 @@ _COLS = {
 }
 
 
+# Colonnes facultatives conservees en plus de OHLCV : flux taker (fiche 4B), spread moyen en % (fiche 14).
+EXTRA_COLUMNS = {"taker_buy_volume": ("taker_buy_volume", "taker_buy_base_volume", "taker_buy_base_asset_volume"),
+                 "spread_pct": ("spread_pct", "spread")}
+
+
 def _match_col(cols: list[str], key: str) -> str | None:
     norm = {c: c.strip().lower() for c in cols}
     for cand in _COLS[key]:
@@ -171,6 +188,8 @@ def _match_col(cols: list[str], key: str) -> str | None:
 def _parse_dates(s: pd.Series) -> pd.DatetimeIndex:
     s = s.astype(str).str.strip()
     sample = s.iloc[0] if len(s) else ""
+    if re.fullmatch(r"\d{16}", sample):
+        return pd.to_datetime(s.astype("int64"), unit="us")
     if re.fullmatch(r"\d{13}", sample):
         return pd.to_datetime(s.astype("int64"), unit="ms")
     if re.fullmatch(r"\d{10}", sample):
@@ -188,8 +207,41 @@ def _parse_dates(s: pd.Series) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(pd.to_datetime(s, errors="coerce", utc=True)).tz_convert(None)
 
 
+def _read_csv(path: str, **kw) -> pd.DataFrame:
+    """Lecteur C de pandas (rapide sur les fichiers minute de plusieurs millions de lignes), lecteur python en repli."""
+    try:
+        return pd.read_csv(path, encoding="utf-8-sig", engine="c", **kw)
+    except (ValueError, pd.errors.ParserError):
+        return pd.read_csv(path, encoding="utf-8-sig", engine="python", **kw)
+
+
+def _read_parquet(path: str) -> pd.DataFrame:
+    """Parquet (ex. Databento) : index ou colonne de dates, colonnes open/high/low/close/volume.
+    Un index avec fuseau est converti en UTC naif et le fuseau note dans attrs["fuseau"]."""
+    df = pd.read_parquet(path)
+    if not isinstance(df.index, pd.DatetimeIndex):
+        cd = _match_col(list(df.columns), "date") or next((c for c in df.columns if "ts_" in str(c).lower()), None)
+        if cd is None:
+            raise ValueError(f"aucune colonne de dates dans {path}")
+        df = df.set_index(pd.DatetimeIndex(pd.to_datetime(df[cd], utc=True)))
+    idx = pd.DatetimeIndex(df.index)
+    tz = None
+    if idx.tz is not None:
+        idx, tz = idx.tz_convert("UTC").tz_localize(None), "UTC"
+    out = pd.DataFrame(index=idx)
+    for k in ("open", "high", "low", "close", "volume"):
+        c = _match_col(list(df.columns), k)
+        out[k] = pd.to_numeric(df[c], errors="coerce").to_numpy() if c is not None else np.nan
+    out = out[~out.index.isna()].sort_index()
+    if tz:
+        out.attrs["fuseau"] = tz
+    return out
+
+
 def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
     """Lit un fichier de cotations et renvoie un DataFrame open/high/low/close/volume indexe par date."""
+    if path.lower().endswith(".parquet"):
+        return _read_parquet(path)
     with open(path, "r", encoding="utf-8-sig", errors="replace") as fh:
         head = [fh.readline() for _ in range(5)]
     first = next((l for l in head if l.strip()), "")
@@ -197,7 +249,7 @@ def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
     has_header = bool(re.search(r"[A-Za-z<]", first.split(sep)[0])) and not re.fullmatch(r"\d{8}( \d{6})?", first.split(sep)[0].strip())
     decimal = "," if sep == ";" and re.search(r"\d,\d", "".join(head)) else "."
     if has_header:
-        df = pd.read_csv(path, sep=sep, decimal=decimal, encoding="utf-8-sig", engine="python")
+        df = _read_csv(path, sep=sep, decimal=decimal)
         cols = list(df.columns)
         cd, ct = _match_col(cols, "date"), _match_col(cols, "time")
         if cd is None:
@@ -210,6 +262,10 @@ def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
         for k in ("open", "high", "low", "close", "volume"):
             c = _match_col(cols, k)
             out[k] = pd.to_numeric(df[c], errors="coerce").values if c is not None else np.nan
+        for extra, names in EXTRA_COLUMNS.items():
+            ce = next((c for c in cols if c.strip().lower() in names), None)
+            if ce is not None:
+                out[extra] = pd.to_numeric(df[ce], errors="coerce").values
         ca = _match_col(cols, "adjclose")
         if use_adjusted and ca is not None:
             adj = pd.to_numeric(df[ca], errors="coerce").values
@@ -217,12 +273,15 @@ def read_quotes_file(path: str, use_adjusted: bool = True) -> pd.DataFrame:
             for k in ("open", "high", "low", "close"):
                 out[k] = out[k].values * ratio
     else:
-        df = pd.read_csv(path, sep=sep, decimal=decimal, header=None, encoding="utf-8-sig", engine="python")
+        df = _read_csv(path, sep=sep, decimal=decimal, header=None)
         idx = pd.DatetimeIndex(_parse_dates(df[0]))
         n = df.shape[1]
         if n >= 6:
             out = pd.DataFrame({"open": df[1].values, "high": df[2].values, "low": df[3].values,
                                 "close": df[4].values, "volume": df[5].values}, index=idx)
+            if n >= 11 and re.fullmatch(r"\d{13}(\d{3})?", str(df[0].iloc[0]).strip()):
+                # klines Binance : 9 = volume de base achete par les preneurs (taker buy)
+                out["taker_buy_volume"] = pd.to_numeric(df[9], errors="coerce").values
         elif n >= 5:
             out = pd.DataFrame({"open": df[1].values, "high": df[2].values, "low": df[3].values,
                                 "close": df[4].values, "volume": 0.0}, index=idx)
@@ -245,8 +304,13 @@ def to_daily(df: pd.DataFrame) -> pd.DataFrame:
         out.index = idx.normalize()
         return out
     g = df.groupby(idx.normalize())
-    return pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
-                         "close": g["close"].last(), "volume": g["volume"].sum()})
+    out = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
+                        "close": g["close"].last(), "volume": g["volume"].sum()})
+    if "taker_buy_volume" in df.columns:
+        out["taker_buy_volume"] = g["taker_buy_volume"].sum()
+    if "spread_pct" in df.columns:
+        out["spread_pct"] = g["spread_pct"].median()
+    return out
 
 
 def resample_bars(df: pd.DataFrame, minutes: int) -> pd.DataFrame:
@@ -254,17 +318,70 @@ def resample_bars(df: pd.DataFrame, minutes: int) -> pd.DataFrame:
     r = df.resample(rule, label="right", closed="right")
     out = pd.DataFrame({"open": r["open"].first(), "high": r["high"].max(), "low": r["low"].min(),
                         "close": r["close"].last(), "volume": r["volume"].sum()})
+    if "taker_buy_volume" in df.columns:
+        out["taker_buy_volume"] = r["taker_buy_volume"].sum(min_count=1)
+    if "spread_pct" in df.columns:
+        out["spread_pct"] = r["spread_pct"].median()
     return out.dropna(subset=["close"])
 
 
-def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, verbose: bool = False) -> dict[str, pd.DataFrame]:
-    """Charge tous les fichiers de cotations d un dossier (recursif). Retourne {symbole: DataFrame}."""
+DEFAULT_CACHE = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".cache"))
+
+
+def read_generic_parquet(path: str) -> pd.DataFrame:
+    """Parquet quelconque (actions, crypto...) : colonnes OHLCV, index ou colonne de dates."""
+    df = pd.read_parquet(path)
+    if not isinstance(df.index, pd.DatetimeIndex):
+        cd = _match_col(list(df.columns), "date")
+        if cd is None:
+            raise ValueError("pas de colonne de dates")
+        df = df.set_index(pd.DatetimeIndex(_parse_dates(df[cd].astype(str))))
+    if df.index.tz is not None:
+        df.index = df.index.tz_convert("UTC").tz_localize(None)
+    cols = list(df.columns)
+    out = pd.DataFrame(index=df.index)
+    for k in ("open", "high", "low", "close", "volume"):
+        c = _match_col(cols, k)
+        out[k] = pd.to_numeric(df[c], errors="coerce").values if c is not None else np.nan
+    tb = next((c for c in cols if c.strip().lower() in ("taker_buy_volume", "taker_buy_base_volume", "taker_buy_base_asset_volume")), None)
+    if tb is not None:
+        out["taker_buy_volume"] = pd.to_numeric(df[tb], errors="coerce").values
+    return out.sort_index()
+
+
+def _is_intraday(idx) -> bool:
+    """Barres intrajournalieres si l ecart median entre horodatages est inferieur a 20 h."""
+    if len(idx) < 3:
+        return False
+    d = np.diff(pd.DatetimeIndex(idx).as_unit("ns").asi8)
+    return float(np.median(d)) < 20 * 3600 * 1e9
+
+
+def list_symbols(folder: str, aliases: dict | None = None) -> set[str]:
+    """Symboles (en majuscules) des fichiers de cotations d un dossier, sans les lire."""
+    out = set()
+    for _, _, files in os.walk(folder):
+        out |= {symbol_from_filename(f, aliases).upper() for f in files if re.search(r"\.(csv|txt|tsv|parquet)$", f, re.I)}
+    return out
+
+
+def _load_folder_brut(folder: str, aliases: dict | None, daily: bool, verbose: bool, only) -> dict[str, pd.DataFrame]:
+    """Fichiers des seuls symboles `only`, barres BRUTES (aucun ajustement de roulement ni barre de seance).
+    Chemin des strategies minute du tableau de bord (fiche 16, S1, Gotobi, ORB, or la nuit, P1), qui
+    ajustent elles-memes les roulements (nexus.intraday) ; un fichier avec fuseau est rendu en UTC naif
+    et le fuseau note dans attrs["fuseau"]."""
     res: dict[str, pd.DataFrame] = {}
+    keep = {x.upper() for x in only}
     for root, _, files in os.walk(folder):
+        if os.path.basename(root).startswith("."):
+            continue
         for f in sorted(files):
-            if not re.search(r"\.(csv|txt|tsv)$", f, re.I):
+            if not re.search(r"\.(csv|txt|tsv|parquet)$", f, re.I):
                 continue
             p = os.path.join(root, f)
+            key = symbol_from_filename(p, aliases).upper()
+            if key not in keep and re.sub(r"\d{2}-\d{2}$", "", key) not in keep:
+                continue
             try:
                 df = read_quotes_file(p)
             except Exception as ex:  # fichier illisible : on continue
@@ -273,6 +390,7 @@ def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, ve
                 continue
             if df.empty:
                 continue
+            tz = df.attrs.get("fuseau")
             if daily:
                 df = to_daily(df)
             df = clean_ohlcv(df)
@@ -280,9 +398,88 @@ def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, ve
             if sym in res:
                 df = pd.concat([res[sym], df])
                 df = df[~df.index.duplicated(keep="last")].sort_index()
+            if tz:
+                df.attrs["fuseau"] = tz          # horodatages en UTC (fichier avec fuseau)
             res[sym] = df
             if verbose:
                 print(f"[data] {sym:<10} {len(df):6d} barres {df.index[0].date()} -> {df.index[-1].date()} ({f})")
+    return res
+
+
+def load_folder(folder: str, aliases: dict | None = None, daily: bool = True, verbose: bool = False,
+                intraday_minutes: int = 0, adjust: str = "proportionnel", cache_dir: str | None = DEFAULT_CACHE,
+                roll_report: list | None = None, only=None) -> dict[str, pd.DataFrame]:
+    """Charge tous les fichiers de cotations d un dossier (recursif). Retourne {symbole: DataFrame}.
+
+    Parquet de futures (Databento, ex. dossier Cotations) : detection des roulements, ajustement des
+    prix (proportionnel | additif | aucun), barres de SEANCE (CME 17:00-16:00 Chicago, Eurex Francfort).
+    daily=False : barres de `intraday_minutes` minutes (futures et fichiers intrajournaliers).
+    only : symboles a lire, en barres BRUTES (voir _load_folder_brut) ; les autres fichiers ne sont pas ouverts.
+    """
+    if only:
+        return _load_folder_brut(folder, aliases, daily, verbose, only)
+    from . import futures as F
+    res: dict[str, pd.DataFrame] = {}
+    generic: dict[str, list] = {}
+    manifest = F.load_manifest(folder)
+    for root, _, files in os.walk(folder):
+        if os.path.basename(root).startswith("."):
+            continue
+        for f in sorted(files):
+            if not re.search(r"\.(csv|txt|tsv|parquet)$", f, re.I):
+                continue
+            p = os.path.join(root, f)
+            try:
+                if f.lower().endswith(".parquet"):
+                    froot = F.root_of(p, None, manifest)
+                    if F.contract_of(froot) is not None:
+                        sym, df, rolls = F.read_futures_parquet(p, 0 if daily else max(1, intraday_minutes), adjust,
+                                                                cache_dir, manifest, roll_report)
+                        df = clean_ohlcv(df)
+                        if sym in res:
+                            df = pd.concat([res[sym], df])
+                            df = df[~df.index.duplicated(keep="last")].sort_index()
+                        df.attrs["future"] = True
+                        res[sym] = df
+                        if verbose:
+                            print(f"[data] {sym:<10} {len(df):6d} barres {df.index[0].date()} -> {df.index[-1].date()} "
+                                  f"({f} ; {len(rolls)} roulements, ajustement {adjust})")
+                        continue
+                    df = read_generic_parquet(p)
+                else:
+                    df = read_quotes_file(p)
+            except Exception as ex:  # fichier illisible : on continue
+                if verbose:
+                    print(f"[data] ignore {p} : {ex}")
+                continue
+            if df.empty:
+                continue
+            sym = symbol_from_filename(p.replace(".parquet", ".csv"), aliases)
+            generic.setdefault(sym, []).append((_is_intraday(df.index), df, f))
+    # Un symbole peut avoir un fichier journalier ET un fichier intrajournalier (ex. BTCUSD telecharge en jour et en
+    # 15 min) : on garde la granularite native adaptee a la demande au lieu de les fusionner.
+    for sym, items in generic.items():
+        intra = [x for x in items if x[0]]
+        day_files = [x for x in items if not x[0]]
+        chosen = (day_files or intra) if daily else (intra or day_files)
+        frames = []
+        for is_intra, df, f in chosen:
+            if daily:
+                df = to_daily(df)
+            elif intraday_minutes and intraday_minutes > 1 and is_intra:
+                df = resample_bars(df, intraday_minutes)
+            frames.append(clean_ohlcv(df))
+        df = pd.concat(frames) if len(frames) > 1 else frames[0]
+        df = df[~df.index.duplicated(keep="last")].sort_index()
+        if sym in res:                       # meme symbole qu un future deja charge : le future prime
+            if verbose:
+                print(f"[data] {sym} ignore ({', '.join(f for _, _, f in chosen)}) : deja charge depuis un future")
+            continue
+        df.attrs["future"] = False
+        res[sym] = df
+        if verbose:
+            print(f"[data] {sym:<10} {len(df):6d} barres {df.index[0].date()} -> {df.index[-1].date()} "
+                  f"({', '.join(f for _, _, f in chosen)}{' ; autre granularite ignoree' if len(chosen) < len(items) else ''})")
     return res
 
 
@@ -304,6 +501,8 @@ class History:
         self.low = df["low"].to_numpy(float)
         self.close = df["close"].to_numpy(float)
         self.volume = df["volume"].to_numpy(float)
+        # colonnes supplementaires (ex. taker_buy_volume des klines Binance pour la fiche 4B)
+        self.extra = {c: df[c].to_numpy(float) for c in df.columns if c not in ("open", "high", "low", "close", "volume")}
         self.n = len(self.close)
         self.count = 0
         c = self.close
@@ -599,6 +798,11 @@ class Earnings:
     def has_data(self, sym: str) -> bool:
         return sym.upper() in self.dates
 
+    def next_date(self, sym: str, day):
+        """Prochaine date de resultats >= day (None si inconnue)."""
+        d0 = pd.Timestamp(day).normalize()
+        return next((d for d in self.dates.get(sym.upper(), []) if d >= d0), None)
+
     def within(self, sym: str, day, business_days: int) -> bool:
         nxt = next((d for d in self.dates.get(sym.upper(), []) if d >= pd.Timestamp(day)), None)
         if nxt is None:
@@ -671,17 +875,17 @@ class MacroEvent:
 
     @property
     def level(self) -> int:
+        """Comme NxMacroEvent.ImpactLevel : high / fort / 3 -> 3 ; medium / moyen / 2 -> 2 ; sinon 1."""
         s = (self.impact or "").strip().lower()
-        if s in ("high", "haut", "fort", "3"):
+        if s.startswith("h") or s.startswith("fort") or s == "3":
             return 3
-        if s in ("medium", "moyen", "2"):
+        if s.startswith("m") or s == "2":
             return 2
-        if s in ("low", "faible", "bas", "1"):
-            return 1
-        try:
-            return int(float(s))
-        except ValueError:
-            return 0
+        return 1
+
+    def __str__(self) -> str:
+        """Meme texte que NxMacroEvent.ToString (consigne du veto Claude de la fiche 13, cles de cache partagees)."""
+        return f"{self.utc:%Y-%m-%d %H:%M}Z {self.currency} [{self.impact}] {self.title}"
 
 
 class MacroCalendar:

@@ -17,6 +17,7 @@ Semantique reproduite :
 """
 from __future__ import annotations
 
+import dataclasses
 import math
 from dataclasses import dataclass
 from types import SimpleNamespace
@@ -38,6 +39,8 @@ BASE_DEFAULTS = dict(
     lot_size=1,
     fx_fallback="EUR=1.08;GBP=1.27;JPY=0.0067;AUD=0.66;CHF=1.12;CAD=0.73;NZD=0.60",
     instrument_overrides=None,          # {symbole: dict(asset_class=..., currency=..., point_value=...)}
+    futures_micro=False,                # futures : multiplicateurs des contrats micro (MES, MNQ, MGC, M6E...)
+    crypto_unit=0.0001,                 # crypto : 1 unite de quantite = 0.0001 piece (quantites entieres du moteur ; 0 = 1 piece, comme NinjaTrader)
     # --- Capital et module B ---
     initial_bankroll=100000.0,
     sizing_mode="demi_kelly",           # natif | demi_kelly | kelly_contraint | min_natif_kelly
@@ -49,12 +52,13 @@ BASE_DEFAULTS = dict(
     prior_strength=30,
     confidence_weight=0.5,
     use_wilson_lower_bound=False,
-    no_edge_fraction_pct=0.0,
+    no_edge_fraction_pct=0.25,          # taille sonde si Kelly <= 0 (0 = blocage definitif)
     rck_alpha=0.70,
     rck_beta=0.10,
     waiver_trades=30,
     waiver_multiplier=0.5,
-    live_resolved_trades=0,             # trades reels deja resolus (Davey waiver) ; 0 en backtest
+    waiver_in_backtest=False,           # Davey waiver : regle du temps reel ; en backtest le compteur de trades reels vaut 0
+    live_resolved_trades=0,             # trades reels deja resolus (Davey waiver)
     max_trade_pct=3.0,
     max_trade_dollars=0.0,
     max_symbol_pct=10.0,
@@ -214,6 +218,10 @@ class NexusStrategy:
     def universe_bars(self) -> str:
         return "day"
 
+    def bar_minutes(self) -> int:
+        """0 = barres journalieres ; N > 0 = barres de N minutes (fiches intrajournalieres)."""
+        return 0
+
     # =========================================================================
     #  Journal
     # =========================================================================
@@ -252,6 +260,7 @@ class NexusStrategy:
             if df is None or df.empty:
                 self.nx(f"instrument introuvable dans les donnees, ignore -> '{name}'")
                 continue
+            is_future = df.attrs.get("future") if isinstance(getattr(df, "attrs", None), dict) else None
             df = df.sort_index()
             if start is not None:
                 df = df[df.index >= pd.Timestamp(start)]
@@ -260,7 +269,9 @@ class NexusStrategy:
             if df.empty:
                 self.nx(f"aucune barre dans la periode pour '{name}', ignore")
                 continue
-            inst = D.classify(name, etfs, p.instrument_overrides)
+            inst = D.classify(name, etfs, p.instrument_overrides, micro=bool(p.futures_micro), is_future=is_future)
+            if inst.asset_class == "Crypto" and p.crypto_unit and p.crypto_unit > 0 and not (p.instrument_overrides and name in p.instrument_overrides):
+                inst = dataclasses.replace(inst, point_value=float(p.crypto_unit))
             s = Sym(name, inst, D.History(name, df), is_traded)
             if not inst.seven_days and len(df) > 1:
                 days = pd.DatetimeIndex(df.index).normalize()
@@ -286,6 +297,7 @@ class NexusStrategy:
             prior_strength=p.prior_strength, confidence_weight=p.confidence_weight,
             use_wilson_lower_bound=p.use_wilson_lower_bound, no_edge_fraction=p.no_edge_fraction_pct / 100.0,
             rck_alpha=p.rck_alpha, rck_beta=p.rck_beta, waiver_trades=p.waiver_trades, waiver_multiplier=p.waiver_multiplier,
+            apply_waiver=bool(p.waiver_in_backtest),
             max_trade_fraction=p.max_trade_pct / 100.0, max_trade_dollars=p.max_trade_dollars,
             max_symbol_fraction=p.max_symbol_pct / 100.0, max_class_fraction=p.max_class_pct / 100.0,
             max_total_fraction=p.max_total_pct / 100.0, use_correlation_divisor=p.use_correlation_divisor)
@@ -302,6 +314,7 @@ class NexusStrategy:
         self.equity_values: list[float] = []
         self.exposure_values: list[float] = []
         self.realized_net = 0.0
+        self.probe_entries = 0
         self.batch_count = 0
         self.last_batch_day = None
         self.now = None
@@ -412,15 +425,23 @@ class NexusStrategy:
                 same += n
         return total, same
 
-    def sum_positive_correlation(self, s: Sym, direction: int) -> float:
+    def sum_positive_correlation(self, s: Sym, direction: int, mode: str | None = None) -> float:
+        """Somme des correlations positives d un NOUVEAU signal avec les positions OUVERTES (module B).
+
+        Seulement pour les signaux dimensionnes par Kelly (signaux independants). Les modes natifs
+        (portefeuilles des fiches 1, 2, 3, 5, 12, 13) dimensionnent deja leurs positions ensemble :
+        y appliquer le diviseur ecrasait l exposition et dependait de l ordre de traitement.
+        Les cibles posees dans le lot en cours ne comptent pas (seules les positions ouvertes)."""
+        if (mode or self.sizing_cfg.mode) == "natif" or s.qty != 0:
+            return 0.0
         tot = 0.0
         for o in self.syms:
-            if not o.traded or o is s or o.target_qty == 0:
+            if not o.traded or o is s or o.qty == 0:
                 continue
             c = D.return_correlation(s.hist, o.hist, self.p.correlation_window)
             if not M.ok(c):
                 continue
-            signed = c * direction * (1 if o.target_qty > 0 else -1)
+            signed = c * direction * (1 if o.qty > 0 else -1)
             if signed > 0:
                 tot += signed
         return tot
@@ -437,11 +458,13 @@ class NexusStrategy:
         if not bank > 0 or not M.ok(price) or price <= 0:
             return 0, "bankroll ou prix invalide"
         tot, cls = self._planned_exposure(s, s.asset_class)
-        corr = self.sum_positive_correlation(s, d) if self.p.use_correlation_divisor else 0.0
+        corr = self.sum_positive_correlation(s, d, mode) if self.p.use_correlation_divisor else 0.0
         cfg = self.sizing_cfg
         if mode is not None and mode != cfg.mode:
             cfg = SizingConfig(**{**cfg.__dict__, "mode": mode})
         r = sizer_size(cfg, self.stats, abs(native_signed_fraction), model_confidence, corr, bank, 0.0, cls / bank, tot / bank)
+        if "sonde" in (r.detail or ""):
+            self.probe_entries += 1
         if r.blocked or r.fraction <= 0:
             return 0, r.detail
         units = r.fraction * bank / (price * self.value_per_point(s))
@@ -449,6 +472,12 @@ class NexusStrategy:
         q = int(math.floor(units / lot)) * lot
         detail = r.detail + (f" | quantite < {lot} (capital insuffisant pour 1 lot)" if q <= 0 else "")
         return d * q, detail
+
+    def kelly_native_fraction(self) -> float:
+        """Fraction native des fiches dimensionnees par Kelly (4A, 4B, 6, 7, 9, 10, 14) : le plafond par trade
+        s il est actif, sinon 100 % (le demi-Kelly et les autres plafonds decident). Un plafond desactive (0)
+        ne doit pas donner une taille nulle."""
+        return self.p.max_trade_pct / 100.0 if self.p.max_trade_pct > 0 else 1.0
 
     def risk_qty(self, s: Sym, risk_fraction: float, stop_distance: float) -> int:
         if not stop_distance > 0 or not risk_fraction > 0:
@@ -761,6 +790,9 @@ class NexusStrategy:
         res.stress = stress_test(open_pos, self.equity, self.p.stress_shock_pct / 100.0, self.p.stress_worst_n)
         if report:
             extras: list[str] = []
+            if self.probe_entries:
+                extras.append(f"Entrees en taille sonde ({self.p.no_edge_fraction_pct:.2f} %) parce que Kelly <= 0 : {self.probe_entries} "
+                              "-> l avantage estime est negatif ; la fiche B recommande de ne pas trader.")
             try:
                 self.report_extras(extras)
             except Exception as ex:  # pragma: no cover

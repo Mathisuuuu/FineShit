@@ -1,13 +1,18 @@
 """FICHE 14 - Swing a conditions strictes (port de Strategies/Nexus14_StrictSwing.cs).
 
 1. 12-1 > 0  2. cloture > MM200  3. repli 5 j dans le decile bas (brut ou residuel)
-4. volume moyen 20 j >= 5 M$  5. pas de regime haute vol (terciles ou HMM)  6. pas de resultats < 3 j.
+4. volume moyen 20 j >= 5 M$ ET spread <= 0.05 % (colonne spread_pct des cotations, par exemple les
+   spreads de cloture Alpaca ; sinon estimateur Abdi-Ranaldo sur demande)
+5. pas de regime haute vol (terciles ou HMM)  6. pas de resultats < 3 j.
 Entree : ordre LIMITE a la cloture de la veille, valable une seance. Sortie : cloture > MM5 ou 10 j.
 Stop ATR x2.5 [2-8 %]. Demi-Kelly, 3 % max.
 """
 from __future__ import annotations
 
+import math
 import os
+
+import numpy as np
 
 from .. import data as D
 from .. import mathx as M
@@ -32,6 +37,8 @@ class Nexus14StrictSwing(NexusStrategy):
         beta_days=60,
         min_dollar_volume=5_000_000.0,
         max_spread_pct=0.05,
+        spread_source="auto",            # auto (colonne spread_pct si presente) | estime (Abdi-Ranaldo, OHLC) | aucun
+        spread_days=20,
         regime_source="terciles",        # aucun | terciles | hmm
         barometer="SPY",
         vix_symbol="",
@@ -60,6 +67,7 @@ class Nexus14StrictSwing(NexusStrategy):
         self.earnings = D.Earnings(p.earnings_file if p.earnings_file and os.path.exists(p.earnings_file) else None)
         self.nx("Resultats : " + self.earnings.message + ("" if self.earnings.loaded else " -> condition 6 IGNOREE (aucun fichier)"))
         self.fail_count = [0] * 7
+        self.spread_rejects = self.spread_unknown = 0
         self.entry_days = []
         self.candidates_seen = self.entries_submitted = self.exits_sma = self.exits_time = self.frequency_alerts = 0
 
@@ -116,7 +124,10 @@ class Nexus14StrictSwing(NexusStrategy):
             elif not pb[s.name] <= threshold:
                 fail = 3
             elif not adv >= p.min_dollar_volume:
-                fail = 4                     # le spread n est mesurable qu en temps reel
+                fail = 4
+            elif not self._spread_ok(h):
+                fail = 4
+                self.spread_rejects += 1
             elif regime == R.STRESS or (p.regime_source != "aucun" and regime == R.INCONNU):
                 fail = 5
             elif self._earnings_block(s, day):
@@ -125,7 +136,7 @@ class Nexus14StrictSwing(NexusStrategy):
             if fail:
                 continue
             limit = self.round_price(s, h.last_close * (1 - p.limit_offset_pct / 100.0))
-            q, det = self.size_qty(s, p.max_trade_pct / 100.0, limit)
+            q, det = self.size_qty(s, self.kelly_native_fraction(), limit)
             stop = S.long_stop(limit, h.atr, p.atr_multiplier, p.stop_min_pct / 100, p.stop_max_pct / 100)
             why = (f"6 conditions : 12-1 {mom:.1%}, > MM{p.sma_long_days}, repli {pb[s.name]:.2%} <= decile {threshold:.2%}, "
                    f"ADV {adv:.0f}, regime {regime}")
@@ -139,6 +150,35 @@ class Nexus14StrictSwing(NexusStrategy):
             self.nx_once("freq" + day.strftime("%Y%m"), f"{day:%Y-%m-%d} {recent} entrees sur 4 semaines (> {p.max_trades_per_week}/semaine) : "
                                                        "conditions PAS ASSEZ STRICTES (fiche 14).")
 
+    def spread_of(self, h) -> float:
+        """Spread moyen (%) sur spread_days : colonne spread_pct, ou estimateur Abdi-Ranaldo (2017) sur OHLC."""
+        p = self.p
+        n = p.spread_days
+        if p.spread_source == "aucun" or h.count < n + 2:
+            return M.NAN
+        col = h.extra.get("spread_pct")
+        if col is not None and p.spread_source in ("auto", "colonne"):
+            v = col[h.count - n:h.count]
+            v = v[np.isfinite(v)]
+            if v.size >= n // 2:
+                return float(np.median(v))
+        if p.spread_source != "estime":
+            return M.NAN
+        k = h.count
+        c = np.log(h.close[k - n - 1:k])
+        eta = 0.5 * (np.log(h.high[k - n - 1:k]) + np.log(h.low[k - n - 1:k]))
+        # s^2 = 4 E[(c_t - eta_t)(c_t - eta_{t+1})] ; moyenne sur la fenetre, negatif -> 0
+        prod = (c[:-1] - eta[:-1]) * (c[:-1] - eta[1:])
+        s2 = 4.0 * float(np.mean(prod))
+        return 100.0 * math.sqrt(s2) if s2 > 0 else 0.0
+
+    def _spread_ok(self, h) -> bool:
+        sp = self.spread_of(h)
+        if not M.ok(sp):
+            self.spread_unknown += 1
+            return True                      # inconnu : condition non verifiable (signale dans le rapport)
+        return sp <= self.p.max_spread_pct
+
     def _earnings_block(self, s, day) -> bool:
         if not self.earnings.loaded or s.asset_class == "Etf":
             return False
@@ -150,8 +190,11 @@ class Nexus14StrictSwing(NexusStrategy):
         p, f = self.p, self.fail_count
         lines.append(f"Repli : {p.pullback_mode} | regime : {p.regime_source} | candidats examines {self.candidates_seen} | entrees soumises "
                      f"{self.entries_submitted} | sorties MM{p.exit_sma_days} {self.exits_sma}, temps {self.exits_time}")
-        lines.append(f"Rejets : 1-tendance {f[1]} | 2-MM200 {f[2]} | 3-repli {f[3]} | 4-liquidite {f[4]} | 5-regime {f[5]} | "
-                     f"6-resultats {f[6]} | acceptes {f[0]}")
+        lines.append(f"Rejets : 1-tendance {f[1]} | 2-MM200 {f[2]} | 3-repli {f[3]} | 4-liquidite {f[4]} (dont spread "
+                     f"> {p.max_spread_pct} % : {self.spread_rejects}) | 5-regime {f[5]} | 6-resultats {f[6]} | acceptes {f[0]}")
+        if self.spread_unknown:
+            lines.append(f"Spread inconnu pour {self.spread_unknown} candidats (pas de colonne spread_pct) : condition 4b non verifiee. "
+                         "Telecharger les spreads de cloture (python -m nexus alpaca --spreads-depuis ...) ou -p spread_source=estime.")
         if len(self.equity_days) > 1:
             weeks = max(1.0, (self.equity_days[-1] - self.equity_days[0]).days / 7.0)
             lines.append(f"Frequence : {self.entries_submitted / weeks:.2f} entrees/semaine (alertes > {p.max_trades_per_week}/sem : {self.frequency_alerts})")

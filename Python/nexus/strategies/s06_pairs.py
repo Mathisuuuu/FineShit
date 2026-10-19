@@ -143,7 +143,7 @@ class Nexus06PairsCointegration(NexusStrategy):
 
     def _open_pair(self, pr, z):
         long_leg, short_leg = (pr.a, pr.b) if z < 0 else (pr.b, pr.a)
-        q_long, det = self.size_qty(long_leg, self.p.max_trade_pct / 100.0, long_leg.last_price)
+        q_long, det = self.size_qty(long_leg, self.kelly_native_fraction(), long_leg.last_price)
         if q_long <= 0:
             return
         why = f"paire {pr.key} z={z:.2f} -> long {long_leg.name}"

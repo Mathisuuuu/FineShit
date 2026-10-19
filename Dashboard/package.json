@@ -1,0 +1,15 @@
+{
+  "name": "nexus-tableau-de-bord",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tableau de bord Nexus : strategies validees et candidates, statistiques et tests calcules avec vectorbt",
+  "main": "serveur.js",
+  "scripts": {
+    "start": "node serveur.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}

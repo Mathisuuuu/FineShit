@@ -1,0 +1,82 @@
+======================================================================================================================
+ OR (futures COMEX GC) - 10 strategies intraday fondees sur des anomalies documentees - Databento 1 minute 2016-2026
+======================================================================================================================
+Etape 1 : effet BRUT de chaque anomalie (points de base, t de Student), annee par annee. Criteres de la fiche :
+t total >= 3 (tests multiples) ET signe stable sur 2024-2026 -> RETENUE.
+Etape 2 : regles de la fiche, parametres FIGES, micro MGC, 1R = 250 $, couts 1 tick (3 au FOMC) + 0,60 $ par cote.
+
+=== ETAPE 1 : EFFETS BRUTS ===
+1. Ouverture US surevaluee (fenetre 08:20 -> 10:20 ET)
+   rendement de la nuit (13:30 -> 08:20 ET) : +4.34 pb (t +3.5) ; fenetre de jour : -0.56 pb (t -0.7)
+   fenetre de jour apres une nuit > +0,5 sigma : -0.63 pb (t -0.4, 799 j) ; autres jours : -1.60 pb (t -1.6)
+   par annee (apres une nuit haute) : 2016 -4.8 (-1.1) | 2017 -0.8 (-0.4) | 2018 +1.5 (+0.5) | 2019 -4.9 (-2.0) | 2020 +5.9 (+1.2) | 2021 -0.7 (-0.1) | 2022 -2.6 (-0.5) | 2023 -3.8 (-0.8) | 2024 +4.4 (+1.1) | 2025 -0.3 (-0.1) | 2026 -4.5 (-0.4)
+   -> le signe attendu est NEGATIF ; verdict : rejetee (t < 2)
+2. Momentum : cloture de la veille -> 10:00 ET predit 15:30 -> 16:00 ET (|signal| > 0,5 sigma)
+   rendement signe de la derniere demi-heure : +0.52 pb (t +2.0, 1576 j)
+   par annee : 2016 +1.2 (+1.6) | 2017 -0.1 (-0.1) | 2018 -1.2 (-3.1) | 2019 -0.5 (-1.1) | 2020 +0.5 (+0.4) | 2021 +1.1 (+1.8) | 2022 +0.6 (+0.9) | 2023 -0.3 (-0.6) | 2024 +1.0 (+1.4) | 2025 -1.0 (-1.1) | 2026 +6.5 (+3.0)
+   pente de regression par annee : 2016 +0.018 | 2017 -0.004 | 2018 -0.034 | 2019 -0.021 | 2020 -0.002 | 2021 +0.019 | 2022 +0.016 | 2023 +0.004 | 2024 +0.017 | 2025 -0.010 | 2026 +0.047
+   verdict : rejetee (t < 2)
+3. Retour apres un mouvement > 2 sigma en 15 min (seance US, hors annonces) ; rendement 60 min dans le sens du retour
+   faible volume : +0.64 pb (t +0.8, 1651) ; fort volume : +0.22 pb (t +0.6, 6625)
+   par annee (faible volume) : 2016 +0.1 (+0.1) | 2017 +1.1 (+1.2) | 2018 +0.5 (+0.5) | 2019 +0.6 (+0.5) | 2020 +2.0 (+1.2) | 2021 -0.7 (-0.4) | 2022 +0.4 (+0.3) | 2023 -1.6 (-0.9) | 2024 +0.9 (+0.6) | 2025 +0.3 (+0.1) | 2026 +0.9 (+0.2)
+   verdict (faible volume) : rejetee (t < 2)
+4. FOMC : surprise entre 13:59 et 14:05 ET mesuree par : SUBSTITUT : dollar contre 6E / 6B / 6J / 6A (z < -1), le future ZT n est pas dans Cotations/taux
+   84 reunions ; accommodantes : 11 ; or 14:05 -> 14:28 : +12.1 pb (t +1.7, positif 8/11) ; -> 15:05 : -1.7 pb (t -0.1)
+   restrictives : 11 ; or 14:05 -> 14:28 : -4.8 pb (t -0.5)
+   verdict : echantillon trop petit pour un t de 3 ; regularite du signe donnee ci-dessus
+5. Chiffres de 08:30 en desaccord : NON TESTABLE (consensus et dispersion des previsions absents). Pour memoire, derive
+   08:32 -> 09:30 dans le sens des 2 premieres minutes (NFP, CPI, PCE, ventes au detail ; toutes dispersions) : -0.19 pb (t -0.1, 478 annonces)
+6. Avant le fixing du matin : 09:30 -> 10:30 Londres contre 08:30 -> 09:30 et 10:30 -> 11:30 (signe attendu negatif)
+   fenetre -0.14 pb (t -0.5) ; temoins +0.32 pb ; ecart -0.45 pb (t -1.3)
+   ecart par annee : 2016 -0.3 (-0.5) | 2017 -0.7 (-1.4) | 2018 +0.4 (+0.7) | 2019 +0.9 (+1.5) | 2020 -0.3 (-0.2) | 2021 -0.5 (-0.5) | 2022 +2.6 (+2.3) | 2023 -1.0 (-1.2) | 2024 +0.4 (+0.4) | 2025 -1.2 (-0.8) | 2026 -7.7 (-2.3) ; verdict (ecart) : rejetee (t < 2)
+7. Apres le fixing de l apres-midi : 15:05 -> 16:35 Londres contre la meme fenetre decalee d une heure (signe attendu +)
+   fenetre +0.95 pb (t +1.7) ; temoin -0.16 pb ; ecart +1.10 pb (t +1.7)
+   ecart par annee : 2016 +0.1 (+0.1) | 2017 +2.3 (+2.5) | 2018 +0.3 (+0.3) | 2019 +1.1 (+0.9) | 2020 +2.1 (+0.9) | 2021 +1.3 (+0.8) | 2022 +2.1 (+1.1) | 2023 -1.2 (-0.8) | 2024 +1.9 (+0.9) | 2025 +3.3 (+1.3) | 2026 -2.5 (-0.4) ; verdict (ecart) : rejetee (t < 2)
+8. Barrieres des chiffres ronds : premier contact du jour avec ralentissement, rendement 60 min dans le sens du rebond
+   multiples de 100 $ : niveaux ronds -2.28 pb (128 contacts) ; niveaux au hasard (+37 $) +1.08 pb (178) ; ecart -3.36 pb (t -1.2)
+   multiples de 50 $ (variante) : niveaux ronds -1.54 pb (301 contacts) ; niveaux au hasard (+37 $) +0.93 pb (319) ; ecart -2.47 pb (t -1.4)
+   verdict : effet barriere seulement si les niveaux ronds font nettement mieux que les niveaux au hasard
+9. Fuite vers l or : ES < -4 sigma en 5 min -> or sur 60 min (signe attendu +)
+   2016-2026 : +1.49 pb (t +2.8, 3660 chocs) ; 2016-2018 : +3.77 pb (t +4.3, 957) ; 2019-2026 : +0.68 pb (t +1.1, 2703)
+   par annee : 2016 +14.9 (+4.1) | 2017 +0.1 (+0.1) | 2018 +0.8 (+1.7) | 2019 +2.8 (+2.5) | 2020 -2.0 (-1.7) | 2021 +0.9 (+0.8) | 2022 +1.4 (+1.2) | 2023 +2.9 (+1.6) | 2024 -2.1 (-1.5) | 2025 +1.2 (+0.7) | 2026 +10.1 (+1.7) ; verdict : a confirmer (t >= 2 mais < 3, ou signe instable)
+10. Momentum des jours agites : strategie 2 separee entre jours agites et calmes
+   jours agites : +1.21 pb (t +2.0, 514 j) ; jours calmes : +0.19 pb (t +0.8, 1062 j) ; verdict (agites) : rejetee (t < 2)
+
+=== ETAPE 2 : REGLES DE TRADING (parametres de la fiche, micro MGC) ===
+  1 Ouverture US surevaluee                715 trades | reussite 47.6% [44%-51%] | esperance -0.015R [-0.06 ; +0.03] | total    -10.9R | PF 0.94 | DD  23.7R | serie de pertes  9 | Sharpe -0.20 | mois positifs 55/117
+      sans couts : +0.018R | stress 0,30 $/once : -0.057R | persistance : 2016 +5.4R | 2017 -1.0R | 2018 -2.6R | 2019 +5.3R | 2020 -8.6R | 2021 +1.8R | 2022 +5.3R | 2023 +1.3R | 2024 -7.5R | 2025 -10.4R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades -0.157R -> ARRET
+  2 Momentum premiere demi-heure          1576 trades | reussite 37.2% [35%-40%] | esperance -0.158R [-0.20 ; -0.12] | total   -248.6R | PF 0.61 | DD 270.9R | serie de pertes 28 | Sharpe -2.24 | mois positifs 35/127
+      sans couts : +0.010R | stress 0,30 $/once : -0.368R | persistance : 2016 -7.7R | 2017 -37.2R | 2018 -75.0R | 2019 -44.0R | 2020 -19.5R | 2021 -5.6R | 2022 -16.7R | 2023 -31.1R | 2024 +0.5R | 2025 -25.0R | 2026 +12.6R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades -0.039R -> ARRET
+  3 Retour apres exces non informe        1584 trades | reussite 45.3% [43%-48%] | esperance -0.164R [-0.22 ; -0.11] | total   -259.1R | PF 0.73 | DD 278.0R | serie de pertes  9 | Sharpe -1.67 | mois positifs 41/127
+      sans couts : +0.023R | stress 0,30 $/once : -0.378R | persistance : 2016 -44.9R | 2017 -24.8R | 2018 -38.8R | 2019 -50.1R | 2020 -35.9R | 2021 -32.5R | 2022 +2.8R | 2023 -17.0R | 2024 -27.9R | 2025 +4.1R | 2026 +5.9R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades -0.058R -> ARRET
+  4 Fed accommodante (sortie 14:28)          9 trades | reussite 55.6% [27%-81%] | esperance +0.260R [-0.35 ; +0.87] | total     +2.3R | PF 2.04 | DD   1.1R | serie de pertes  1 | Sharpe +0.33 | mois positifs 5/9
+      sans couts : +0.353R | stress 0,30 $/once : +0.209R | persistance : 2019 -0.1R | 2021 +1.1R | 2022 +0.4R | 2023 +0.5R | 2024 +1.3R | 2025 -0.8R
+  4 variante sortie 15:05                    8 trades | reussite 50.0% [22%-78%] | esperance +0.074R [-0.41 ; +0.56] | total     +0.6R | PF 1.33 | DD   0.9R | serie de pertes  2 | Sharpe +0.13 | mois positifs 4/8
+      sans couts : +0.117R | stress 0,30 $/once : +0.050R | persistance : 2019 +0.1R | 2021 +1.4R | 2022 -0.6R | 2023 +0.5R | 2024 -0.8R
+  6 Avant le fixing du matin              2707 trades | reussite 39.9% [38%-42%] | esperance -0.120R [-0.15 ; -0.09] | total   -323.8R | PF 0.66 | DD 348.5R | serie de pertes 19 | Sharpe -2.32 | mois positifs 32/127
+      sans couts : -0.008R | stress 0,30 $/once : -0.260R | persistance : 2016 -24.0R | 2017 -58.3R | 2018 -65.3R | 2019 -58.4R | 2020 -7.1R | 2021 -22.2R | 2022 -32.8R | 2023 -30.1R | 2024 -33.0R | 2025 -10.4R | 2026 +17.8R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades +0.117R -> continuer
+  7 Apres le fixing de l apres-midi       2589 trades | reussite 47.2% [45%-49%] | esperance -0.021R [-0.05 ; +0.01] | total    -55.3R | PF 0.93 | DD  80.8R | serie de pertes 10 | Sharpe -0.46 | mois positifs 59/123
+      sans couts : +0.030R | stress 0,30 $/once : -0.086R | persistance : 2016 -35.0R | 2017 -5.2R | 2018 -23.0R | 2019 +3.3R | 2020 +5.0R | 2021 -5.0R | 2022 +1.1R | 2023 -13.6R | 2024 +2.7R | 2025 +15.5R | 2026 -1.1R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades -0.096R -> ARRET
+  8 Barrieres des chiffres ronds (100 $)  2339 trades | reussite 29.2% [27%-31%] | esperance -0.161R [-0.23 ; -0.09] | total   -376.9R | PF 0.77 | DD 407.6R | serie de pertes 27 | Sharpe -1.28 | mois positifs 39/104
+      sans couts : -0.024R | stress 0,30 $/once : -0.331R | persistance : 2016 +7.1R | 2017 -35.8R | 2018 -55.3R | 2019 -22.3R | 2020 -27.4R | 2021 -59.9R | 2022 -21.7R | 2023 -19.7R | 2024 -9.3R | 2025 -73.9R | 2026 -58.9R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades -0.104R -> ARRET
+  8 temoin : niveaux au hasard (+37 $)    2818 trades | reussite 27.8% [26%-30%] | esperance -0.198R [-0.26 ; -0.13] | total   -557.8R | PF 0.73 | DD 590.0R | serie de pertes 19 | Sharpe -1.66 | mois positifs 29/103
+      sans couts : -0.053R | stress 0,30 $/once : -0.379R | persistance : 2016 -62.0R | 2017 -9.3R | 2018 -47.2R | 2019 -3.0R | 2020 -79.4R | 2021 -73.0R | 2022 -60.4R | 2023 -94.5R | 2024 -50.1R | 2025 -43.2R | 2026 -35.6R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades +0.512R -> continuer
+  9 Fuite vers l or                       2631 trades | reussite 38.8% [37%-41%] | esperance -0.078R [-0.12 ; -0.03] | total   -205.5R | PF 0.83 | DD 245.9R | serie de pertes 15 | Sharpe -0.97 | mois positifs 44/122
+      sans couts : +0.025R | stress 0,30 $/once : -0.206R | persistance : 2016 +6.4R | 2017 -16.8R | 2018 -28.2R | 2019 +2.1R | 2020 -115.1R | 2021 -13.8R | 2022 -15.7R | 2023 +0.7R | 2024 -24.2R | 2025 -2.9R | 2026 +2.0R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades +0.008R -> continuer
+  10 Momentum des jours agites             514 trades | reussite 38.5% [34%-43%] | esperance -0.142R [-0.24 ; -0.05] | total    -73.0R | PF 0.71 | DD  93.2R | serie de pertes 16 | Sharpe -0.87 | mois positifs 44/119
+      sans couts : +0.036R | stress 0,30 $/once : -0.364R | persistance : 2016 -0.3R | 2017 -1.4R | 2018 -33.3R | 2019 -26.8R | 2020 +2.5R | 2021 +3.0R | 2022 -4.4R | 2023 -4.6R | 2024 +5.6R | 2025 -26.2R | 2026 +12.9R
+      critere d abandon de la fiche : gain moyen des 50 derniers trades +0.226R -> continuer
+
+Rappels de la fiche : les strategies 2 et 10 partagent la fenetre 15:30 -> 16:00 ET et ne s additionnent pas ;
+le marche haussier 2024-2026 penalise les strategies vendeuses (1, 6) meme si l anomalie existe : voir les temoins.
+
+Calcul en 88 s.
+Trades : C:\Users\Mathis\Documents\FichesEtCode\Python\resultats\or_20261009_222828

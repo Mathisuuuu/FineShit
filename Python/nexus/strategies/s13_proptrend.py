@@ -3,7 +3,8 @@
 Signal = moyenne des signes des rendements 21/63/252 j (long/court), taille = min(vol cible 10 %,
 risque 0.5 % au stop ATR x3) x |signal|, lots par symbole, regles prop codees en dur (perte du
 jour 5 %, drawdown 10 % statique ou suiveur, marge 80 %), veto macro par regles (agenda CSV).
-Le veto Claude, le webhook et les comptes miroirs sont propres au temps reel NinjaTrader.
+Veto macro : regles (agenda CSV), Claude (veto seulement, jamais de creation de trade ; reponses en cache, appels
+API en backtest sur demande), ou regles puis Claude. Le webhook et les comptes miroirs sont propres au temps reel.
 """
 from __future__ import annotations
 
@@ -41,7 +42,12 @@ class Nexus13PropTrend8(NexusStrategy):
         prop_max_drawdown_pct=10.0,
         prop_drawdown_type="statique",   # statique | suiveur
         prop_buffer_pct=80.0,
-        veto_mode="regles",              # aucun | regles
+        veto_mode="regles",              # aucun | regles | claude | regles_puis_claude
+        claude_model="claude-opus-5-5",
+        claude_api_key="",               # vide = ANTHROPIC_API_KEY ou keys.txt
+        veto_confidence=0.7,
+        api_calls_in_backtest=False,     # False = seules les reponses en cache servent
+        llm_cache_file="",
         macro_file="",
         veto_window_minutes=60,
         veto_min_impact=3,
@@ -55,10 +61,21 @@ class Nexus13PropTrend8(NexusStrategy):
         self.horizons = [int(float(x)) for x in split_list(p.horizon_days) if int(float(x)) > 0]
         self.macro = D.MacroCalendar(p.macro_file if p.macro_file and os.path.exists(p.macro_file) else None)
         self.nx("Agenda macro : " + self.macro.message)
+        if p.veto_mode not in ("aucun", "regles", "claude", "regles_puis_claude"):
+            raise ValueError("veto_mode : aucun | regles | claude | regles_puis_claude")
+        self.claude = self.llm_cache = None
+        self.llm_calls = self.llm_refusals = 0
+        if p.veto_mode in ("claude", "regles_puis_claude"):
+            from .. import llm as L
+            self.claude = L.LlmConfig.build("claude", p.claude_model, p.claude_api_key, 0.0, 300, 30)
+            self.llm_cache = L.LlmCache.get_instance(p.llm_cache_file or None)
+            self.nx(f"Veto Claude {self.claude.label} (cle {L.mask(self.claude.api_key)}) | appels en backtest : "
+                    f"{'OUI' if p.api_calls_in_backtest else 'non (cache seul)'} | cache {self.llm_cache.count} reponses")
         self.prop_halted = False
         self.halt_reason = ""
         self.prop_day = None
         self.prop_day_start = M.NAN
+        self.prop_last_eq = M.NAN
         self.prop_peak = p.initial_bankroll
         self.worst_daily_loss = self.worst_drawdown = 0.0
         self.near_breach_days = self.vetoes = self.veto_checks = self.signal_changes = 0
@@ -81,7 +98,9 @@ class Nexus13PropTrend8(NexusStrategy):
         p = self.p
         eq = self.equity
         if self.prop_day is None or day > self.prop_day:
-            self.prop_day, self.prop_day_start = day, eq
+            # reference du jour = derniere equity observee avant le changement de jour (cloture precedente)
+            self.prop_day, self.prop_day_start = day, (self.prop_last_eq if M.ok(self.prop_last_eq) else eq)
+        self.prop_last_eq = eq
         if eq > self.prop_peak:
             self.prop_peak = eq
         dd_ref = p.initial_bankroll if p.prop_drawdown_type == "statique" else self.prop_peak
@@ -152,7 +171,7 @@ class Nexus13PropTrend8(NexusStrategy):
             return
         increase = abs(target) > abs(cur) or sign(target) != sign(cur)
         if increase and target != 0:
-            veto, vr = self._macro_veto(s, h)
+            veto, vr = self._macro_veto(s, h, sign(target))
             if veto:
                 self.vetoes += 1
                 self.nx(f"Veto macro {s.name} : {vr}")
@@ -164,7 +183,7 @@ class Nexus13PropTrend8(NexusStrategy):
         self.set_target(s, target, stop, f"tendance {avg:+.2f} (1/3/12 mois) vol {vol:.1%} -> {target} unites")
         self.signal_changes += 1
 
-    def _macro_veto(self, s, h):
+    def _macro_veto(self, s, h, direction: int = 1):
         p = self.p
         if p.veto_mode == "aucun":
             return False, None
@@ -172,14 +191,40 @@ class Nexus13PropTrend8(NexusStrategy):
         d = h.last_date
         now_utc = datetime(d.year, d.month, d.day) + timedelta(hours=p.bar_close_utc_hour)
         ev = self.macro.near(self._currencies_of(s), now_utc, 0, p.veto_window_minutes, p.veto_min_impact)
-        if not ev:
+        rule_txt = " ; ".join(str(e) for e in ev)
+        if p.veto_mode == "regles":
+            return (True, "evenement(s) dans l heure : " + rule_txt) if ev else (False, None)
+        if p.veto_mode == "regles_puis_claude" and not ev:
             return False, None
-        return True, "evenement(s) dans l heure : " + " ; ".join(f"{e.utc:%Y-%m-%d %H:%M} {e.currency} {e.title}" for e in ev)
+        # Claude : veto seulement (jamais de creation de trade).
+        from .. import llm as L
+        user = L.Prompts.macro_user(s.name, direction, now_utc, ev)
+        hit = self.llm_cache.get(L.cache_key(self.claude, L.Prompts.MACRO_SYSTEM, user, L.Prompts.VERSION))
+        if hit is not None:
+            r = L.LlmResult(True, hit, from_cache=True)
+        elif not p.api_calls_in_backtest:
+            self.llm_refusals += 1
+            r = L.LlmResult(False, "", "API desactivee en backtest")
+        else:
+            self.llm_calls += 1
+            r = L.complete(self.claude, L.Prompts.MACRO_SYSTEM, user, self.llm_cache, L.Prompts.VERSION)
+            L.AiLedger.record(self.strategy_id, self.claude, r, "fiche13_veto_macro")
+        parsed = L.Prompts.parse_judge(r.text) if r.ok else None
+        if parsed is not None:
+            veto, why, conf = parsed
+            if veto and conf >= p.veto_confidence:
+                return True, f"Claude : {why} (confiance {conf:.2f})"
+            return False, None
+        # Sans reponse : repli sur la regle (prudence prop).
+        if ev:
+            return True, f"repli regle (Claude indisponible : {r.error}) : {rule_txt}"
+        return False, None
 
     def report_extras(self, lines):
         p = self.p
         lines.append(f"Prop : pire perte journaliere {self.worst_daily_loss:.2%} (limite {p.prop_daily_loss_pct:.1f} %) | drawdown max "
                      f"{self.worst_drawdown:.2%} ({p.prop_drawdown_type}, limite {p.prop_max_drawdown_pct:.1f} %) | jours en marge de securite "
                      f"{self.near_breach_days}" + (f" | COMPTE ARRETE : {self.halt_reason}" if self.prop_halted else ""))
-        lines.append(f"Changements de position : {self.signal_changes} | controles de veto : {self.veto_checks} | vetos : {self.vetoes} (mode {p.veto_mode})")
+        lines.append(f"Changements de position : {self.signal_changes} | controles de veto : {self.veto_checks} | vetos : {self.vetoes} (mode {p.veto_mode})"
+                     + (f" | appels Claude {self.llm_calls}, sans reponse en cache {self.llm_refusals}" if self.claude is not None else ""))
         lines.append("Regles prop A VERIFIER chez la firme ; noms CFD dependants du fournisseur (alias : ^GSPC->US500, ^NDX->NAS100, ^GDAXI->GER40).")

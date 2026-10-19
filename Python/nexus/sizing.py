@@ -116,11 +116,12 @@ class SizingConfig:
     confidence_weight: float = 0.5
     use_wilson_lower_bound: bool = False
     wilson_z: float = 1.96
-    no_edge_fraction: float = 0.0
+    no_edge_fraction: float = 0.0025
     rck_alpha: float = 0.70
     rck_beta: float = 0.10
     waiver_trades: int = 30
     waiver_multiplier: float = 0.5
+    apply_waiver: bool = True               # faux en backtest (compteur de trades reels nul)
     max_trade_fraction: float = 0.03
     max_trade_dollars: float = 0.0
     max_symbol_fraction: float = 0.10
@@ -190,7 +191,7 @@ def size(c: SizingConfig, stats: TradeStats | None, native_fraction: float, mode
         f = min(r.native, k) if c.mode == "min_natif_kelly" else k
         d.append(kd)
     d.append(f"base={f:.2%}")
-    if stats is not None and stats.live_resolved < c.waiver_trades:
+    if c.apply_waiver and stats is not None and stats.live_resolved < c.waiver_trades:
         f *= c.waiver_multiplier
         d.append(f"waiver x{c.waiver_multiplier} ({stats.live_resolved}/{c.waiver_trades} reels)")
     if c.use_correlation_divisor and M.ok(sum_positive_correlation) and sum_positive_correlation > 0:

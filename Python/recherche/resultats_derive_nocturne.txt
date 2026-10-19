@@ -1,0 +1,97 @@
+======================================================================================================================
+ DERIVE NOCTURNE DES FUTURES SUR INDICES : STRATEGIE CONSTRUITE SUR BOYARCHENKO, LARSEN & WHELAN (FED DE NEW YORK)
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/derive_nocturne.py (ecrit avant le calcul). Heures de New York (ET).
+VIX : CBOE, 9290 dates communes CBOE / FRED, ecart max 0.00, ecarts > 0,01 : 0.
+
+[ES] 2496 nuits utilisables (183 exclues : ecart d heure New York - Francfort different de 6 h)
+ ETAPE 1 - l anomalie et son mecanisme
+  ES - 1a. 2:00 -> 3:00 ET : 2496 nuits, +0.44 pb (t +1.8) = +1.1 % par an | 2016-2020 +0.97 (t +2.6) | 2021-2026 -0.04 (t -0.1)
+      par annee (pb) : 2016:+1.52 2017:+0.44 2018:+1.21 2019:-0.43 2020:+2.10 2021:-0.10 2022:-0.67 2023:-1.04 2024:-0.14 2025:+0.26 2026:+2.29
+      1b. 2016-2026 : pente du RSV -2.5 (t -1.8) ; avec le VIX : RSV +2.4 (t +0.3), RSV x VIX -0.25 (t -0.5) -> effet d un RSV a -1 ecart-type : VIX 12 : +0.11 pb, VIX 20 : +0.46 pb, VIX 30 : +0.90 pb
+      1b. 2016-2020 : pente du RSV -4.9 (t -2.1) ; avec le VIX : RSV +2.2 (t +0.2), RSV x VIX -0.36 (t -0.5) -> effet d un RSV a -1 ecart-type : VIX 12 : +0.34 pb, VIX 20 : +0.81 pb, VIX 30 : +1.39 pb
+      1b. 2021-2026 : pente du RSV -1.0 (t -0.6) ; avec le VIX : RSV +1.2 (t +0.1), RSV x VIX -0.11 (t -0.2) -> effet d un RSV a -1 ecart-type : VIX 12 : +0.02 pb, VIX 20 : +0.19 pb, VIX 30 : +0.40 pb
+      quintiles de RSV (du plus vendeur au plus acheteur) : Q1 +1.35 pb (t +2.5) | Q2 -0.08 pb (t -0.1) | Q3 +0.92 pb (t +1.7) | Q4 -0.13 pb (t -0.2) | Q5 -0.12 pb (t -0.2)
+      1c. ecart-type du RSV_bvc par annee : 2016:0.141 2017:0.175 2018:0.165 2019:0.168 2020:0.166 2021:0.182 2022:0.160 2023:0.172 2024:0.194 2025:0.195 2026:0.196 | 2016-2020 0.164 -> 2021-2026 0.183
+      controle du RSV approche : correlation avec le rendement de la meme heure +0.51
+ ETAPE 2 - strategies (regles figees)
+  --- ES R0 achat 2:00 -> 3:00 ET chaque nuit (anomalie brute)
+      2496 nuits (1176 en 2016-2020, 1320 en 2021-2026 ; 234 par an) | brut +0.44 pb (t +1.8) | 2016-2020 +0.97 (t +2.6) | 2021-2026 -0.04 (t -0.1)
+      temoin +nan pb, Welch +nan | couts 1 tick 0.86 pb -> net -0.43 pb, sans les 3 meilleures nuits -0.55 pb | stress 2 ticks (1.58 pb) -> net -1.15 pb
+      Sharpe net annualise -0.53 | Sharpe deflate (36 essais) 0.00
+      net par annee (pb, nuits) : 2016:+0.7(238.0) 2017:-0.4(236.0) 2018:+0.3(237.0) 2019:-1.3(232.0) 2020:+1.2(233.0) 2021:-1.0(236.0) 2022:-1.5(236.0) 2023:-1.9(235.0) 2024:-1.0(233.0) 2025:-0.6(230.0) 2026:+1.4(150.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95)
+  --- ES V1 BtD de P1 : 1:30 -> 3:30 ET apres RSV < 0
+      1160 nuits (534 en 2016-2020, 626 en 2021-2026 ; 109 par an) | brut +0.79 pb (t +1.4) | 2016-2020 +2.03 (t +2.5) | 2021-2026 -0.27 (t -0.3)
+      temoin +0.65 pb, Welch +0.2 | couts 1 tick 0.86 pb -> net -0.07 pb, sans les 3 meilleures nuits -0.43 pb | stress 2 ticks (1.58 pb) -> net -0.79 pb
+      Sharpe net annualise -0.04 | Sharpe deflate (36 essais) 0.01
+      net par annee (pb, nuits) : 2016:-0.2(93.0) 2017:-0.1(99.0) 2018:+2.8(121.0) 2019:-0.6(105.0) 2020:+3.3(116.0) 2021:-0.9(116.0) 2022:-2.0(103.0) 2023:-2.7(104.0) 2024:-1.3(108.0) 2025:+0.4(111.0) 2026:-0.4(84.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95)
+  --- ES V2 rachat des gros desequilibres : RSV <= -1 sigma_ref et VIX >= 20
+      137 nuits (50 en 2016-2020, 87 en 2021-2026 ; 16 par an) | brut +5.69 pb (t +2.1) | 2016-2020 +12.29 (t +2.6) | 2021-2026 +1.90 (t +0.6)
+      temoin +0.65 pb, Welch +1.8 | couts 1 tick 0.86 pb -> net +4.83 pb, sans les 3 meilleures nuits +2.28 pb | stress 2 ticks (1.58 pb) -> net +4.11 pb
+      Sharpe net annualise 0.61 | Sharpe deflate (36 essais) 0.39
+      net par annee (pb, nuits) : 2018:+27.4(10.0) 2019:+4.6(3.0) 2020:+7.7(37.0) 2021:+3.5(28.0) 2022:-0.6(34.0) 2023:-8.2(6.0) 2024:-14.6(5.0) 2025:+10.6(8.0) 2026:+8.1(6.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0.95)
+
+[NQ] 2496 nuits utilisables (183 exclues : ecart d heure New York - Francfort different de 6 h)
+ ETAPE 1 - l anomalie et son mecanisme
+  NQ - 1a. 2:00 -> 3:00 ET : 2496 nuits, +0.59 pb (t +2.1) = +1.5 % par an | 2016-2020 +0.86 (t +2.4) | 2021-2026 +0.34 (t +0.8)
+      par annee (pb) : 2016:+1.24 2017:+0.20 2018:+1.24 2019:-0.49 2020:+2.11 2021:+0.31 2022:-0.25 2023:-1.27 2024:+0.27 2025:+0.67 2026:+3.44
+      1b. 2016-2026 : pente du RSV -3.7 (t -1.6) ; avec le VIX : RSV -0.5 (t -0.0), RSV x VIX -0.14 (t -0.2) -> effet d un RSV a -1 ecart-type : VIX 12 : +0.28 pb, VIX 20 : +0.42 pb, VIX 30 : +0.60 pb
+      1b. 2016-2020 : pente du RSV -4.3 (t -1.3) ; avec le VIX : RSV -5.4 (t -0.4), RSV x VIX +0.15 (t +0.2) -> effet d un RSV a -1 ecart-type : VIX 12 : +0.44 pb, VIX 20 : +0.29 pb, VIX 30 : +0.10 pb
+      1b. 2021-2026 : pente du RSV -3.4 (t -1.0) ; avec le VIX : RSV +6.9 (t +0.3), RSV x VIX -0.53 (t -0.4) -> effet d un RSV a -1 ecart-type : VIX 12 : -0.07 pb, VIX 20 : +0.48 pb, VIX 30 : +1.16 pb
+      quintiles de RSV (du plus vendeur au plus acheteur) : Q1 +1.24 pb (t +1.7) | Q2 +0.92 pb (t +1.4) | Q3 +0.19 pb (t +0.3) | Q4 -0.01 pb (t -0.0) | Q5 +0.44 pb (t +0.8)
+      1c. ecart-type du RSV_bvc par annee : 2016:0.112 2017:0.131 2018:0.130 2019:0.128 2020:0.115 2021:0.117 2022:0.125 2023:0.126 2024:0.135 2025:0.138 2026:0.136 | 2016-2020 0.124 -> 2021-2026 0.129
+      controle du RSV approche : correlation avec le rendement de la meme heure +0.68
+ ETAPE 2 - strategies (regles figees)
+  --- NQ R0 achat 2:00 -> 3:00 ET chaque nuit (anomalie brute)
+      2496 nuits (1176 en 2016-2020, 1320 en 2021-2026 ; 234 par an) | brut +0.59 pb (t +2.1) | 2016-2020 +0.86 (t +2.4) | 2021-2026 +0.34 (t +0.8)
+      temoin +nan pb, Welch +nan | couts 1 tick 0.29 pb -> net +0.29 pb, sans les 3 meilleures nuits +0.19 pb | stress 2 ticks (0.49 pb) -> net +0.10 pb
+      Sharpe net annualise 0.32 | Sharpe deflate (36 essais) 0.14
+      net par annee (pb, nuits) : 2016:+0.9(238.0) 2017:-0.1(236.0) 2018:+0.9(237.0) 2019:-0.8(232.0) 2020:+1.8(233.0) 2021:+0.0(236.0) 2022:-0.5(236.0) 2023:-1.6(235.0) 2024:-0.0(233.0) 2025:+0.4(230.0) 2026:+3.1(150.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0.95)
+  --- NQ V1 BtD de P1 : 1:30 -> 3:30 ET apres RSV < 0
+      1133 nuits (501 en 2016-2020, 632 en 2021-2026 ; 107 par an) | brut +1.46 pb (t +2.2) | 2016-2020 +2.07 (t +2.5) | 2021-2026 +0.98 (t +1.0)
+      temoin +0.35 pb, Welch +1.3 | couts 1 tick 0.29 pb -> net +1.17 pb, sans les 3 meilleures nuits +0.79 pb | stress 2 ticks (0.49 pb) -> net +0.98 pb
+      Sharpe net annualise 0.53 | Sharpe deflate (36 essais) 0.35
+      net par annee (pb, nuits) : 2016:+1.4(103.0) 2017:+0.3(88.0) 2018:+1.9(112.0) 2019:-0.3(97.0) 2020:+5.5(101.0) 2021:+0.7(126.0) 2022:-0.9(101.0) 2023:-2.1(103.0) 2024:+0.9(112.0) 2025:+3.3(111.0) 2026:+2.4(79.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0.95)
+  --- NQ V2 rachat des gros desequilibres : RSV <= -1 sigma_ref et VIX >= 20
+      116 nuits (37 en 2016-2020, 79 en 2021-2026 ; 14 par an) | brut +7.20 pb (t +2.2) | 2016-2020 +18.16 (t +3.4) | 2021-2026 +2.06 (t +0.5)
+      temoin +0.35 pb, Welch +2.0 | couts 1 tick 0.29 pb -> net +6.91 pb, sans les 3 meilleures nuits +4.05 pb | stress 2 ticks (0.49 pb) -> net +6.71 pb
+      Sharpe net annualise 0.72 | Sharpe deflate (36 essais) 0.47
+      net par annee (pb, nuits) : 2018:+21.0(13.0) 2019:+11.2(3.0) 2020:+16.9(21.0) 2021:+5.6(20.0) 2022:+0.0(34.0) 2023:-10.7(4.0) 2024:-16.1(4.0) 2025:+5.1(12.0) 2026:+14.6(5.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; Sharpe deflate >= 0.95)
+
+[YM] 2495 nuits utilisables (183 exclues : ecart d heure New York - Francfort different de 6 h)
+ ETAPE 1 - l anomalie et son mecanisme
+  YM - 1a. 2:00 -> 3:00 ET : 2495 nuits, +0.29 pb (t +1.2) = +0.7 % par an | 2016-2020 +1.00 (t +2.4) | 2021-2026 -0.34 (t -1.1)
+      par annee (pb) : 2016:+1.64 2017:+0.57 2018:+0.95 2019:-0.55 2020:+2.38 2021:-0.34 2022:-0.73 2023:-0.72 2024:-1.03 2025:-0.38 2026:+1.98
+      1b. 2016-2026 : pente du RSV -1.8 (t -1.0) ; avec le VIX : RSV -7.6 (t -0.6), RSV x VIX +0.34 (t +0.4) -> effet d un RSV a -1 ecart-type : VIX 12 : +0.47 pb, VIX 20 : +0.11 pb, VIX 30 : -0.34 pb
+      1b. 2016-2020 : pente du RSV -2.8 (t -0.8) ; avec le VIX : RSV -20.4 (t -1.1), RSV x VIX +1.09 (t +0.9) -> effet d un RSV a -1 ecart-type : VIX 12 : +0.89 pb, VIX 20 : -0.15 pb, VIX 30 : -1.46 pb
+      1b. 2021-2026 : pente du RSV -1.5 (t -0.7) ; avec le VIX : RSV +10.1 (t +0.8), RSV x VIX -0.63 (t -0.8) -> effet d un RSV a -1 ecart-type : VIX 12 : -0.37 pb, VIX 20 : +0.33 pb, VIX 30 : +1.21 pb
+      quintiles de RSV (du plus vendeur au plus acheteur) : Q1 +1.02 pb (t +1.8) | Q2 -0.27 pb (t -0.4) | Q3 +0.45 pb (t +0.8) | Q4 +0.15 pb (t +0.3) | Q5 -0.23 pb (t -0.4)
+      1c. ecart-type du RSV_bvc par annee : 2016:0.101 2017:0.118 2018:0.126 2019:0.127 2020:0.126 2021:0.135 2022:0.120 2023:0.136 2024:0.145 2025:0.154 2026:0.158 | 2016-2020 0.120 -> 2021-2026 0.141
+      controle du RSV approche : correlation avec le rendement de la meme heure +0.61
+ ETAPE 2 - strategies (regles figees)
+  --- YM R0 achat 2:00 -> 3:00 ET chaque nuit (anomalie brute)
+      2495 nuits (1175 en 2016-2020, 1320 en 2021-2026 ; 234 par an) | brut +0.29 pb (t +1.2) | 2016-2020 +1.00 (t +2.4) | 2021-2026 -0.34 (t -1.1)
+      temoin +nan pb, Welch +nan | couts 1 tick 0.62 pb -> net -0.33 pb, sans les 3 meilleures nuits -0.46 pb | stress 2 ticks (1.04 pb) -> net -0.74 pb
+      Sharpe net annualise -0.41 | Sharpe deflate (36 essais) 0.00
+      net par annee (pb, nuits) : 2016:+1.0(238.0) 2017:-0.1(236.0) 2018:+0.3(237.0) 2019:-1.2(232.0) 2020:+1.8(232.0) 2021:-1.0(236.0) 2022:-1.3(236.0) 2023:-1.3(235.0) 2024:-1.6(233.0) 2025:-1.0(230.0) 2026:+1.4(150.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95)
+  --- YM V1 BtD de P1 : 1:30 -> 3:30 ET apres RSV < 0
+      1160 nuits (524 en 2016-2020, 636 en 2021-2026 ; 109 par an) | brut +0.46 pb (t +0.8) | 2016-2020 +1.48 (t +1.6) | 2021-2026 -0.38 (t -0.5)
+      temoin +0.62 pb, Welch -0.2 | couts 1 tick 0.62 pb -> net -0.16 pb, sans les 3 meilleures nuits -0.55 pb | stress 2 ticks (1.04 pb) -> net -0.58 pb
+      Sharpe net annualise -0.09 | Sharpe deflate (36 essais) 0.01
+      net par annee (pb, nuits) : 2016:+1.2(98.0) 2017:+0.2(97.0) 2018:+2.2(114.0) 2019:-1.0(102.0) 2020:+1.5(113.0) 2021:-0.6(124.0) 2022:-0.8(106.0) 2023:-2.6(100.0) 2024:-1.2(112.0) 2025:-1.7(110.0) 2026:+1.2(84.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95)
+  --- YM V2 rachat des gros desequilibres : RSV <= -1 sigma_ref et VIX >= 20
+      133 nuits (47 en 2016-2020, 86 en 2021-2026 ; 16 par an) | brut +5.51 pb (t +2.1) | 2016-2020 +11.53 (t +1.9) | 2021-2026 +2.22 (t +0.9)
+      temoin +0.62 pb, Welch +1.8 | couts 1 tick 0.62 pb -> net +4.89 pb, sans les 3 meilleures nuits +2.23 pb | stress 2 ticks (1.04 pb) -> net +4.47 pb
+      Sharpe net annualise 0.63 | Sharpe deflate (36 essais) 0.40
+      net par annee (pb, nuits) : 2018:+23.9(14.0) 2019:+5.1(2.0) 2020:+5.4(31.0) 2021:+3.0(26.0) 2022:+0.2(32.0) 2023:-13.3(5.0) 2024:-9.4(4.0) 2025:+8.3(11.0) 2026:+8.2(8.0)
+      VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0.95)
+
+Calcul en 6 s.

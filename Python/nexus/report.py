@@ -79,8 +79,11 @@ def build_report(res, extras: list[str] | None = None, trials: int = 1, var_tria
             _exposure_line(res),
             f"Cycle drawdown->recup. : {'oui' if cycle else 'non'}" + (f" (plus profond {deepest:.1%}, {bars} pas)" if cycle else ""),
             f"Disjoncteurs           : drawdown x{st.breaker.drawdown_trips}, journalier x{st.breaker.daily_trips}"
-            f"  (reference journaliere : {p.daily_breaker_ref})",
-            ""]
+            f"  (reference journaliere : {p.daily_breaker_ref})"]
+    if any(s.traded and s.asset_class in ("Action", "Etf") for s in st.syms) and p.initial_bankroll < 25000:
+        out.append(f"AVERTISSEMENT PDT (US) : capital {p.initial_bankroll:,.0f} $ < 25 000 $ -> au plus 3 allers-retours "
+                   "intrajournaliers sur 5 jours glissants en reel (module C)")
+    out.append("")
 
     out.append(f"--- Monte Carlo ({p.monte_carlo_sims} tirages) -------------------------------------------")
     pnls = [x.net_pnl for x in t]
@@ -102,7 +105,7 @@ def build_report(res, extras: list[str] | None = None, trials: int = 1, var_tria
                    + ("  -> SUR-AJUSTEMENT PROBABLE" if pbo > 0.5 else ""))
     else:
         out.append("PBO (CSCV)             : n/a (lancer une grille : python -m nexus grille ...)")
-    out.append("Walk-forward           : python -m nexus walkforward ... (180 j / 30 j [Fil])")
+    out.append("Walk-forward           : python -m nexus grille -s FICHE -p ... --walkforward 180/30 [Fil]")
     out.append("")
 
     if extras:
@@ -116,6 +119,6 @@ def build_report(res, extras: list[str] | None = None, trials: int = 1, var_tria
     out.append(("[x] " if n >= 30 and cycle else "[ ] ") + f"au moins 30 trades fermes ({n}) ET un cycle drawdown -> recuperation ({'oui' if cycle else 'non'})")
     out.append(("[x] " if net > 0 else "[ ] ") + f"frais {'Binance ' if has_crypto else ''}modelises et PnL encore positif (net {net:.2f})")
     out.append("[ ] remplissages reels compares au paper (a faire en Sim101 puis en reel)")
-    out.append("Rappel : backtest Python independant de NinjaTrader ; valider aussi dans le Strategy Analyzer.")
+    out.append("Rappel : un backtest ne remplace pas le paper trading ; faire auditer la methode par une seconde IA.")
     out.append(line)
     return "\n".join(out)

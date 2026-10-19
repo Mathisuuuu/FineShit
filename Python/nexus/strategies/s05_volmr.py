@@ -96,9 +96,12 @@ class Nexus05VolatilityMeanReversion(NexusStrategy):
         while declining and k < p.decline_days:
             declining = v.vol5[-1 - k] < v.vol5[-2 - k]
             k += 1
-        alloc = p.allocation_per_asset_pct / 100.0 * max(1.0, self.bankroll())
-        unit_value = s.last_price * self.value_per_point(s)
-        cur = s.target_qty * unit_value / alloc if alloc > 0 and unit_value > 0 else 0.0
+        # Exposition VISEE (fraction de l allocation, AVANT module B) : etat propre a la fiche, pour que
+        # les regles comparent toujours des grandeurs avant module B. Resynchronisee a 0 si la position
+        # a ete coupee de l exterieur (entree rejetee, disjoncteur).
+        if s.target_qty == 0 and s.qty == 0:
+            v.exposure = 0.0
+        cur = v.exposure
         wk = D.week_key(day)
         week_end = D.is_last_trading_day_of_week(day, s.holidays, s.seven_days) or (v.last_week_key is not None and wk > v.last_week_key + 1)
         target, why = cur, None
@@ -132,12 +135,14 @@ class Nexus05VolatilityMeanReversion(NexusStrategy):
             v.last_week_key = wk
         if target > cur and vol5_rising:
             target, why = cur, None
-        v.exposure = target
-        if why is None or abs(target - cur) < 1e-6:
+        if why is None or abs(target - cur) < 1e-9:
             return
+        v.exposure = target
         q = 0 if target <= 0 else self.size_qty(s, target * p.allocation_per_asset_pct / 100.0, s.last_price)[0]
         if target > 0 and q == 0:
             self.nx_once("q0" + s.name, f"{s.name} : quantite nulle (capital ou plafonds) - augmenter le capital ou l allocation.")
+        if q == s.target_qty:
+            return          # aucune variation de quantite : pas d ordre
         self.set_target(s, q, M.NAN, why)
 
     def report_extras(self, lines):

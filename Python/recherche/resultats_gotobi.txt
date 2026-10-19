@@ -1,0 +1,38 @@
+======================================================================================================================
+ GOTOBI PRE-FIX DRIFT - USD/JPY avant le fixing de Tokyo (09:55), future 6J Databento 1 minute 2016-2026
+======================================================================================================================
+Regles de la fiche, sans optimisation : jours gotobi (decales au jour ouvre precedent), achat 09:00 -> 09:55 Tokyo,
+abstention si le dollar a deja monte de plus de 1 volatilite habituelle entre 08:00 et 09:00, stop a 1.5
+volatilite typique de la fenetre (ecart absolu median, 60 jours). 1R = 250 $. Couts : 1 tick de glissement par
+ordre + commission (micro MJY : 0,60 $ par cote, tick 1,25 $ ; 6J standard : 2,50 $, tick 6,25 $).
+
+Jours ouvres de Tokyo avec un prix a 08:00, 09:00, 09:55 et 11:00 (au plus 10 min d anciennete) : 1692 (528 jours gotobi, 1164 autres), 2016-03-14 -> 2026-08-28.
+
+=== 1. L ANOMALIE EXISTE-T-ELLE ? (rendement de USD/JPY en points de base, sans execution ni couts) ===
+Groupe temoin : la meme fenetre les jours non gotobi. Ecart : t de Welch et p par permutation (2 000 tirages).
+  09:00 -> 09:55 (la strategie)    2016-2026 : gotobi +2.43 pb (t +4.5, 528 j) | autres jours +0.35 pb (t +1.0, 1164 j) | ecart +2.08 pb, t +3.3, p 0.001
+  09:00 -> 09:55 (la strategie)    2016-2020 : gotobi +3.37 pb (t +4.5, 245 j) | autres jours -0.24 pb (t -0.6, 542 j) | ecart +3.62 pb, t +4.2, p 0.000
+  09:00 -> 09:55 (la strategie)    2021-2026 : gotobi +1.62 pb (t +2.1, 283 j) | autres jours +0.87 pb (t +1.7, 622 j) | ecart +0.75 pb, t +0.8, p 0.419
+  08:00 -> 09:00 (avant l entree)  2016-2026 : gotobi +0.09 pb (t +0.2, 528 j) | autres jours -0.30 pb (t -1.2, 1164 j) | ecart +0.39 pb, t +0.8, p 0.396
+  08:00 -> 09:00 (avant l entree)  2016-2020 : gotobi -0.07 pb (t -0.1, 245 j) | autres jours -0.38 pb (t -1.2, 542 j) | ecart +0.31 pb, t +0.5, p 0.634
+  08:00 -> 09:00 (avant l entree)  2021-2026 : gotobi +0.22 pb (t +0.4, 283 j) | autres jours -0.23 pb (t -0.6, 622 j) | ecart +0.45 pb, t +0.7, p 0.492
+  09:55 -> 11:00 (apres le fixing) 2016-2026 : gotobi -1.94 pb (t -4.2, 528 j) | autres jours -0.37 pb (t -1.0, 1164 j) | ecart -1.57 pb, t -2.7, p 0.014
+  09:55 -> 11:00 (apres le fixing) 2016-2020 : gotobi -2.25 pb (t -3.4, 245 j) | autres jours -0.73 pb (t -1.3, 542 j) | ecart -1.52 pb, t -1.8, p 0.107
+  09:55 -> 11:00 (apres le fixing) 2021-2026 : gotobi -1.67 pb (t -2.5, 283 j) | autres jours -0.06 pb (t -0.1, 622 j) | ecart -1.60 pb, t -2.0, p 0.059
+  dont dernier jour gotobi du mois : +4.64 pb (91 j) ; autres jours gotobi : +1.97 pb (437 j)
+  Par annee (fenetre 09:00 -> 09:55, gotobi - autres jours, pb) : 2016 +5.5 | 2017 +6.0 | 2018 +1.3 | 2019 +0.6 | 2020 +4.6 | 2021 +1.1 | 2022 -3.3 | 2023 +2.5 | 2024 -0.2 | 2025 +4.0 | 2026 -0.0
+  Pour memoire, un tick vaut 1.58 pb sur le micro MJY et 0.79 pb sur le 6J standard ; un aller-retour coute donc environ 2 ticks plus la commission.
+
+=== 2. LA STRATEGIE (regles de la fiche) ===
+  Gotobi pre-fix, micro MJY (fiche)        420 trades | reussite 44.3% [40%-49%] | esperance -0.124R [-0.20 ; -0.05] | total    -51.9R | PF 0.66 | DD  60.3R | serie de pertes  8 | Sharpe -0.99 | mois positifs 33/88
+    stress +1 tick                         420 trades | reussite 35.2% [31%-40%] | esperance -0.289R [-0.36 ; -0.21] | total   -121.6R | PF 0.39 | DD 123.0R | serie de pertes 13 | Sharpe -2.19 | mois positifs 21/88
+    sur le 6J standard (1R = 1 000 $)      420 trades | reussite 49.8% [45%-55%] | esperance +0.006R [-0.06 ; +0.08] | total     +2.4R | PF 1.02 | DD  14.0R | serie de pertes  7 | Sharpe +0.05 | mois positifs 43/88
+    diagnostic : sans aucun cout           420 trades | reussite 56.0% [51%-61%] | esperance +0.122R [+0.05 ; +0.20] | total    +51.2R | PF 1.51 | DD   6.9R | serie de pertes  6 | Sharpe +0.99 | mois positifs 55/88
+    diagnostic : sans le filtre anti-anticipation   519 trades | reussite 45.1% [41%-49%] | esperance -0.124R [-0.19 ; -0.06] | total    -64.4R | PF 0.67 | DD  72.1R | serie de pertes  9 | Sharpe -1.08 | mois positifs 31/90
+  Seconde jambe : vente 09:55 -> 11:00 (hypothese), MJY   519 trades | reussite 40.8% [37%-45%] | esperance -0.152R [-0.22 ; -0.08] | total    -78.7R | PF 0.62 | DD  80.9R | serie de pertes 10 | Sharpe -1.25 | mois positifs 33/90
+    seconde jambe sans aucun cout          519 trades | reussite 54.9% [51%-59%] | esperance +0.143R [+0.07 ; +0.21] | total    +74.4R | PF 1.61 | DD  10.5R | serie de pertes  8 | Sharpe +1.21 | mois positifs 59/90
+  Persistance (fiche, MJY) : 2016 +0.0R | 2017 +6.7R | 2018 -10.9R | 2019 -2.9R | 2020 -2.1R | 2021 -5.5R | 2022 -10.0R | 2023 -1.3R | 2024 -7.5R | 2025 -4.4R | 2026 -14.0R
+  Jours gotobi ecartes par le filtre anti-anticipation : 108 sur 528
+
+Calcul en 5 s.
+Trades : C:\Users\Mathis\Documents\FichesEtCode\Python\resultats\gotobi_20261009_212210

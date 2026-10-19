@@ -101,13 +101,30 @@ def test_kelly_fiche_b():
     assert sr.fraction <= 0.01 + 1e-9
 
 
-def test_kelly_bloque_si_negatif():
-    """Constat : une fois Kelly <= 0, toute entree est bloquee (no_edge_fraction = 0)."""
+def test_kelly_negatif_taille_sonde_par_defaut():
+    """Kelly <= 0 : taille sonde de 0.25 % (l estimation peut remonter) ; sans waiver en backtest."""
     st = B.TradeStats()
     for r in [-0.03] * 6 + [0.01] * 2:
         st.add(r)
-    sr = B.size(B.SizingConfig(), st, 0.03, M.NAN, 0.0, 1e5, 0, 0, 0)
+    sr = B.size(B.SizingConfig(apply_waiver=False), st, 0.03, M.NAN, 0.0, 1e5, 0, 0, 0)
+    assert not sr.blocked and abs(sr.fraction - 0.0025) < 1e-12 and "sonde" in sr.detail
+
+
+def test_kelly_negatif_bloque_si_sonde_nulle():
+    """no_edge_fraction = 0 : blocage definitif (comportement d origine, sur demande)."""
+    st = B.TradeStats()
+    for r in [-0.03] * 6 + [0.01] * 2:
+        st.add(r)
+    sr = B.size(B.SizingConfig(no_edge_fraction=0.0), st, 0.03, M.NAN, 0.0, 1e5, 0, 0, 0)
     assert sr.blocked and sr.fraction == 0
+
+
+def test_waiver_seulement_si_demande():
+    """Davey waiver : regle du temps reel ; en backtest il ne s applique que si apply_waiver=True."""
+    libre = dict(max_trade_fraction=0.0, max_symbol_fraction=0.0, max_class_fraction=0.0, max_total_fraction=0.0)
+    sans = B.size(B.SizingConfig(apply_waiver=False, **libre), B.TradeStats(), 0.02, M.NAN, 0.0, 1e5, 0, 0, 0)
+    avec = B.size(B.SizingConfig(apply_waiver=True, **libre), B.TradeStats(), 0.02, M.NAN, 0.0, 1e5, 0, 0, 0)
+    assert abs(avec.fraction - 0.5 * sans.fraction) < 1e-12
 
 
 def test_hmm_retrouve_les_etats():

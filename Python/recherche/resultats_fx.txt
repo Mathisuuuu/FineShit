@@ -1,0 +1,94 @@
+======================================================================================================================
+ TROIS STRATEGIES FX COMBINEES - futures CME 6E, 6B, 6J, 6A (micros), Databento 1 minute 2016-2026
+======================================================================================================================
+1R = 250 $, taille = plancher(R / risque du stop) en micros (60 au plus). Couts : commission micro 0,60 $ par cote,
+glissement 1 tick (2 ticks a 16:00 Londres, 3 ticks a l entree apres une annonce, 2 a la sortie) ; stress : +1 a +2 ticks.
+Walk-forward : chaque annee a partir de 2019, configuration au meilleur R des 3 annees precedentes.
+Sharpe deflate : 24 essais comptes (3 variantes du fix, 9 configurations post-annonce, 12 chiffres ronds).
+
+=== 1. FIX FLOW (Krohn et al. + Melvin & Prins, stop Andersen & Bollerslev) - aucun parametre optimise ===
+Jambe avant le fix 15:00 -> 16:00 Londres (dollar acheteur), jambe apres 16:00 -> 16:15 (dollar vendeur) ; fin de mois,
+jambe alignee avec le signal de Melvin & Prins (SPY contre EZU / EWU / EWJ / EWA sur le mois, en dollars).
+  Fix flow (fiche : fin de mois, aligne)   508 trades | reussite 23.4% [20%-27%] | esperance -0.426R [-0.48 ; -0.37] | total   -216.3R | PF 0.18 | DD 216.6R | serie de pertes 23 | Sharpe -2.41 | mois positifs 20/127
+    stress +1 tick                         508 trades | reussite 19.1% [16%-23%] | esperance -0.548R [-0.61 ; -0.49] | total   -278.3R | PF 0.12 | DD 278.3R | serie de pertes 25 | Sharpe -2.66 | mois positifs 15/127
+  diagnostic : Krohn seul, tous les jours 21728 trades | reussite 30.6% [30%-31%] | esperance -0.237R [-0.24 ; -0.23] | total  -5147.1R | PF 0.29 | DD 5149.2R | serie de pertes 38 | Sharpe -13.33 | mois positifs 1/127
+  diagnostic : fin de mois, jambes NON alignees   508 trades | reussite 29.5% [26%-34%] | esperance -0.314R [-0.38 ; -0.25] | total   -159.6R | PF 0.32 | DD 160.1R | serie de pertes 23 | Sharpe -1.75 | mois positifs 30/127
+  diagnostic : fiche sans aucun cout       508 trades | reussite 35.0% [31%-39%] | esperance -0.170R [-0.22 ; -0.12] | total    -86.4R | PF 0.48 | DD  87.5R | serie de pertes 16 | Sharpe -1.31 | mois positifs 37/127
+L anomalie existe-t-elle ici, sans execution ? Rendement du DOLLAR en points de base (t de Student) :
+  6E : 2016-2020 tous les jours avant +0.49 (+1.3) | 2016-2020 tous les jours apres -0.53 (-3.4) | 2021-2026 tous les jours avant +0.37 (+0.9) | 2021-2026 tous les jours apres -0.21 (-1.3) | 2016-2020 fin de mois avant -4.45 (-1.9) | 2016-2020 fin de mois apres +2.02 (+2.1) | 2021-2026 fin de mois avant -0.25 (-0.1) | 2021-2026 fin de mois apres +0.91 (+1.2)
+  6B : 2016-2020 tous les jours avant -0.44 (-0.8) | 2016-2020 tous les jours apres -0.12 (-0.5) | 2021-2026 tous les jours avant +0.35 (+0.8) | 2021-2026 tous les jours apres -0.39 (-2.1) | 2016-2020 fin de mois avant -11.91 (-3.5) | 2016-2020 fin de mois apres +3.81 (+1.7) | 2021-2026 fin de mois avant -2.29 (-0.7) | 2021-2026 fin de mois apres +0.24 (+0.3)
+  6J : 2016-2020 tous les jours avant -0.73 (-2.0) | 2016-2020 tous les jours apres +0.13 (+0.8) | 2021-2026 tous les jours avant +0.35 (+0.9) | 2021-2026 tous les jours apres -0.03 (-0.2) | 2016-2020 fin de mois avant -2.90 (-1.5) | 2016-2020 fin de mois apres +1.06 (+1.3) | 2021-2026 fin de mois avant -1.34 (-0.6) | 2021-2026 fin de mois apres +0.53 (+0.7)
+  6A : 2016-2020 tous les jours avant +0.05 (+0.1) | 2016-2020 tous les jours apres -0.17 (-0.7) | 2021-2026 tous les jours avant +0.02 (+0.0) | 2021-2026 tous les jours apres +0.33 (+1.5) | 2016-2020 fin de mois avant -4.42 (-1.6) | 2016-2020 fin de mois apres +1.89 (+1.2) | 2021-2026 fin de mois avant -0.65 (-0.2) | 2021-2026 fin de mois apres +1.85 (+1.5)
+  (Krohn et al. : dollar en hausse AVANT le fix, en baisse APRES.)
+Fins de mois selon le signal de Melvin & Prins (dollar avant / apres le fix, pb) :
+  6E : signal vendre du dollar (65 mois) : avant -2.88 (t -1.0), apres +1.78 (t +2.0) | signal acheter du dollar (62 mois) : avant -1.84 (t -0.8), apres +1.06 (t +1.2)
+  6B : signal vendre du dollar (73 mois) : avant -7.60 (t -2.3), apres +3.51 (t +1.9) | signal acheter du dollar (54 mois) : avant -6.66 (t -2.0), apres -0.36 (t -0.3)
+  6J : signal vendre du dollar (71 mois) : avant -1.24 (t -0.6), apres +1.19 (t +1.5) | signal acheter du dollar (56 mois) : avant -2.55 (t -1.4), apres +0.27 (t +0.4)
+  6A : signal vendre du dollar (71 mois) : avant -3.38 (t -1.0), apres +2.37 (t +1.9) | signal acheter du dollar (56 mois) : avant -1.84 (t -0.6), apres +1.58 (t +1.1)
+  Krohn seul, par jambe : avant le fix -0.136R (10864 trades) ; apres le fix -0.337R (10864)
+  Persistance (fiche) : 2016 -15.9R | 2017 -25.0R | 2018 -22.7R | 2019 -31.9R | 2020 -13.5R | 2021 -23.0R | 2022 -7.3R | 2023 -17.9R | 2024 -20.2R | 2025 -24.1R | 2026 -14.7R
+  Persistance (Krohn seul) : 2016 -281.0R | 2017 -564.6R | 2018 -506.2R | 2019 -616.8R | 2020 -398.6R | 2021 -491.7R | 2022 -323.0R | 2023 -423.4R | 2024 -594.6R | 2025 -542.2R | 2026 -405.0R
+
+=== 2. POST-ANNONCE + FLUX (NFP, CPI ; ABDV, Love & Payne) ===
+Surprise implicite (consensus indisponible) : panier dollar entre 08:30 et 08:30 + attente, standardise sur les
+annonces passees ; |z| >= 1 ; flux de la paire (classification en volume) dans le meme sens ; stop 2 ATR, objectif 3 ATR.
+Grille (toute la periode, pour information) :
+  attente 5 min, duree 30 min        324 trades | esperance -0.453R | total  -146.9R
+  attente 5 min, duree 60 min        324 trades | esperance -0.428R | total  -138.5R
+  attente 5 min, duree 90 min        324 trades | esperance -0.404R | total  -130.8R
+  attente 10 min, duree 30 min       321 trades | esperance -0.360R | total  -115.6R
+  attente 10 min, duree 60 min       321 trades | esperance -0.340R | total  -109.3R
+  attente 10 min, duree 90 min       321 trades | esperance -0.333R | total  -107.0R
+  attente 15 min, duree 30 min       303 trades | esperance -0.486R | total  -147.4R
+  attente 15 min, duree 60 min       303 trades | esperance -0.456R | total  -138.0R
+  attente 15 min, duree 90 min       303 trades | esperance -0.409R | total  -123.8R
+PBO de la grille : 40%
+Choix du walk-forward : 2019 : attente 10 min, duree 60 min | 2020 : attente 10 min, duree 90 min | 2021 : attente 10 min, duree 90 min | 2022 : attente 15 min, duree 90 min | 2023 : attente 15 min, duree 90 min | 2024 : attente 15 min, duree 90 min | 2025 : attente 5 min, duree 90 min | 2026 : attente 5 min, duree 90 min
+  Post-annonce, walk-forward 2019-2026     268 trades | reussite 35.8% [30%-42%] | esperance -0.475R [-0.61 ; -0.34] | total   -127.2R | PF 0.43 | DD 127.2R | serie de pertes 17 | Sharpe -1.40 | mois positifs 14/51
+    stress +2 ticks                        268 trades | reussite 33.6% [28%-39%] | esperance -0.710R [-0.86 ; -0.56] | total   -190.3R | PF 0.30 | DD 190.3R | serie de pertes 17 | Sharpe -1.79 | mois positifs 14/51
+    configuration du milieu de la fiche (10 min, 60 min), toute la periode   321 trades | reussite 38.6% [33%-44%] | esperance -0.340R [-0.46 ; -0.22] | total   -109.3R | PF 0.52 | DD 114.5R | serie de pertes 17 | Sharpe -0.95 | mois positifs 23/61
+    diagnostic : la meme sans aucun cout   321 trades | reussite 44.5% [39%-50%] | esperance +0.051R [-0.06 ; +0.17] | total    +16.3R | PF 1.11 | DD  22.2R | serie de pertes 17 | Sharpe +0.16 | mois positifs 28/61
+  Persistance (walk-forward) : 2019 -6.9R | 2020 -0.3R | 2021 -36.9R | 2022 -22.6R | 2023 -12.4R | 2024 -15.3R | 2025 -17.8R | 2026 -15.1R
+
+=== 3. CASCADE DE STOPS SUR CHIFFRES RONDS (Osler, filtre horaire de Ranaldo) ===
+Niveaux 00 / 50 sur le prix reel (non ajuste) du future, USD/JPY = 1 / prix du 6J ; barres 5 min ; continuation apres
+une cassure nette avec acceleration, rebond apres une approche sans cassure avec ralentissement ; stop 10 pips de l autre
+cote du niveau ; sortie au bout de la duree.
+Grille (toute la periode, pour information) :
+  cassure 3 pips, acceleration 1.5, duree 30 min        8994 trades | esperance -0.258R | total  -2319.2R
+  cassure 3 pips, acceleration 1.5, duree 60 min        8286 trades | esperance -0.257R | total  -2126.3R
+  cassure 3 pips, acceleration 1.5, duree 120 min       7658 trades | esperance -0.262R | total  -2006.3R
+  cassure 3 pips, acceleration 2, duree 30 min          7596 trades | esperance -0.262R | total  -1991.5R
+  cassure 3 pips, acceleration 2, duree 60 min          6990 trades | esperance -0.261R | total  -1821.6R
+  cassure 3 pips, acceleration 2, duree 120 min         6481 trades | esperance -0.265R | total  -1714.7R
+  cassure 6 pips, acceleration 1.5, duree 30 min        6785 trades | esperance -0.255R | total  -1733.1R
+  cassure 6 pips, acceleration 1.5, duree 60 min        6226 trades | esperance -0.253R | total  -1578.2R
+  cassure 6 pips, acceleration 1.5, duree 120 min       5760 trades | esperance -0.246R | total  -1415.8R
+  cassure 6 pips, acceleration 2, duree 30 min          6291 trades | esperance -0.257R | total  -1619.4R
+  cassure 6 pips, acceleration 2, duree 60 min          5767 trades | esperance -0.257R | total  -1482.5R
+  cassure 6 pips, acceleration 2, duree 120 min         5348 trades | esperance -0.256R | total  -1371.4R
+PBO de la grille : 0%
+Choix du walk-forward : 2019 : cassure 6 pips, acceleration 2, duree 120 min | 2020 : cassure 6 pips, acceleration 2, duree 120 min | 2021 : cassure 6 pips, acceleration 1.5, duree 120 min | 2022 : cassure 6 pips, acceleration 1.5, duree 120 min | 2023 : cassure 6 pips, acceleration 1.5, duree 120 min | 2024 : cassure 6 pips, acceleration 2, duree 120 min | 2025 : cassure 6 pips, acceleration 2, duree 120 min | 2026 : cassure 6 pips, acceleration 2, duree 120 min
+  Chiffres ronds, walk-forward 2019-2026  3864 trades | reussite 32.9% [31%-34%] | esperance -0.266R [-0.30 ; -0.23] | total  -1028.7R | PF 0.52 | DD 1028.7R | serie de pertes 19 | Sharpe -5.04 | mois positifs 5/92
+    stress +1 tick                        3864 trades | reussite 27.0% [26%-28%] | esperance -0.437R [-0.47 ; -0.40] | total  -1687.1R | PF 0.36 | DD 1687.1R | serie de pertes 22 | Sharpe -7.79 | mois positifs 2/92
+    sans filtre de Ranaldo (parametres par defaut) 29182 trades | reussite 32.7% [32%-33%] | esperance -0.258R [-0.27 ; -0.25] | total  -7538.2R | PF 0.46 | DD 7539.2R | serie de pertes 27 | Sharpe -13.16 | mois positifs 0/128
+    diagnostic : parametres par defaut sans aucun cout  6747 trades | reussite 45.4% [44%-47%] | esperance +0.001R [-0.02 ; +0.02] | total     +4.1R | PF 1.00 | DD  79.1R | serie de pertes 13 | Sharpe +0.03 | mois positifs 64/128
+  Persistance (walk-forward) : 2019 -114.6R | 2020 -167.8R | 2021 -92.1R | 2022 -155.2R | 2023 -140.2R | 2024 -131.8R | 2025 -137.8R | 2026 -89.3R
+Biais horaire de Ranaldo dans ces donnees (pips par jour et par plage, cotation usuelle ; le filtre suppose : devise
+domestique en baisse pendant ses heures) :
+  6E : Asie 23-06 h +1.55 / +0.10 | Europe 07-12 h -1.41 / -0.95 | New York 17-21 h +0.56 / +0.41 | chevauchement 12-17 h -0.06 / +0.00  (2016-2020 / 2021-2026)
+  6B : Asie 23-06 h -0.22 / -0.72 | Europe 07-12 h -0.89 / -0.78 | New York 17-21 h +0.57 / +0.52 | chevauchement 12-17 h +0.34 / +0.60  (2016-2020 / 2021-2026)
+  6J : Asie 23-06 h -2.38 / -0.88 | Europe 07-12 h +0.40 / +1.09 | New York 17-21 h +0.61 / +1.38 | chevauchement 12-17 h +0.10 / +0.84  (2016-2020 / 2021-2026)
+  6A : Asie 23-06 h +0.47 / -0.23 | Europe 07-12 h +0.08 / -0.89 | New York 17-21 h +0.41 / +0.37 | chevauchement 12-17 h -0.30 / -0.08  (2016-2020 / 2021-2026)
+
+=== COMBINAISON DES TROIS (2019-2026, hors echantillon pour 2 et 3) ===
+  Trois strategies combinees              4500 trades | reussite 32.4% [31%-34%] | esperance -0.291R [-0.32 ; -0.26] | total  -1308.5R | PF 0.49 | DD 1308.5R | serie de pertes 23 | Sharpe -5.57 | mois positifs 2/92
+Correlation des R quotidiens :
+          fix  annonce  ronds
+fix     +1.00    -0.01  +0.01
+annonce -0.01    +1.00  +0.00
+ronds   +0.01    +0.00  +1.00
+  Persistance : 2019 -153.4R | 2020 -181.6R | 2021 -152.0R | 2022 -185.1R | 2023 -170.5R | 2024 -167.3R | 2025 -179.7R | 2026 -119.0R
+
+Calcul en 109 s.
+Trades : C:\Users\Mathis\Documents\FichesEtCode\Python\resultats\fx_20261009_205416

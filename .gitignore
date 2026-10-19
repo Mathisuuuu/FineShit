@@ -1,0 +1,27 @@
+# Donnees de marche sous licence Databento : redistribution interdite -> jamais dans le depot.
+Cotations/
+
+# Cles API et secrets
+.env
+.env.*
+.env.txt
+keys.txt
+Python/keys.txt
+
+# Caches et resultats du moteur Python
+Python/.cache/
+Python/resultats/
+resultats/
+Dashboard/donnees/
+Data/news_live.csv
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Sorties de compilation C# (bancs d essai Tests/Linux)
+bin/
+obj/

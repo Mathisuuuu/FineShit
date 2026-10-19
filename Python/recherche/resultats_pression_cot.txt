@@ -1,0 +1,27 @@
+======================================================================================================================
+ PRESSION DE COUVERTURE / PRESSION SPECULATIVE (COT de la CFTC) : STRATEGIE CONSTRUITE SUR HUIT TRAVAUX
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/pression_cot.py (ecrit avant le calcul).
+
+COT : 2014-01-07 -> 2026-10-06, 5994 rapports ; rendements mensuels 2016-01 -> 2026-08.
+ETAPE 1 - l anomalie
+  1a. variation hebdomadaire des positions des speculateurs (Q) et rendement mardi -> mardi de la meme semaine :
+      ES corr -0.36, meme sens 38% | NQ corr -0.00, meme sens 51% | YM corr +0.29, meme sens 62% | GC corr +0.51, meme sens 74% | CL corr +0.32, meme sens 70% | 6E corr +0.21, meme sens 58% | 6B corr +0.09, meme sens 53% | 6J corr +0.35, meme sens 61% | 6A corr +0.08, meme sens 52%
+  1b. Q publie le vendredi -> rendement du vendredi au vendredi suivant (pente en % de rendement par point de Q) :
+      matieres GC CL  2016-2020 pente -2.69 (t -0.4, 491 semaines) | 2021-2026 pente -7.99 (t -1.1, 549 semaines)
+      devises         2016-2020 pente -1.66 (t -2.1, 1004 semaines) | 2021-2026 pente -0.23 (t -0.3, 1152 semaines)
+      indices         2016-2020 pente -3.14 (t -1.6, 753 semaines) | 2021-2026 pente +3.04 (t +1.4, 864 semaines)
+  1c. signal SP standardise dans sa classe -> rendement du mois suivant (regression empilee) :
+      2016-2020 : pente -0.49 % de rendement mensuel par ecart-type de signal (t -1.87, 531 marche-mois)
+      2021-2026 : pente +0.08 % de rendement mensuel par ecart-type de signal (t +0.37, 612 marche-mois)
+
+ETAPE 2 - portefeuilles mensuels (poids de fin de mois, tenus le mois suivant), nets de couts
+  --- V partout (FFFM20, classes a parts egales) : 127 mois | net -26.2 pb/mois (t -1.24) | 2016-2020 -68.9 (t -2.00) | 2021-2026 +10.8 (t +0.43)
+      temoin momentum 12 mois -4.4 pb/mois, Welch -0.70 | sans les 3 meilleurs mois -35.0 | stress 2 ticks -26.3 | Sharpe annualise -0.38 | Sharpe deflate (41 essais) 0.00
+      classe indices   : -0.3 pb/mois (t -0.03), Sharpe -0.01 | 2016-2020 t -0.66 | 2021-2026 t +0.27
+      classe devises   : -8.0 pb/mois (t -0.91), Sharpe -0.28 | 2016-2020 t -1.06 | 2021-2026 t -0.12
+      classe matieres  : -70.4 pb/mois (t -1.13), Sharpe -0.35 | 2016-2020 t -1.81 | 2021-2026 t +0.38
+      temoin momentum partout : -4.4 pb/mois (t -0.19), Sharpe -0.06 ; correlation V / momentum +0.27
+
+VERDICT (V) : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95)
+Calcul en 25 s.
