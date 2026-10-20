@@ -760,8 +760,10 @@ def cmd_tableau(args):
     idx = exporter(args.cotations, args.sortie, n_sim=args.simulations, grille=not args.sans_grille, seulement=seul)
     for s in idx["strategies"]:
         k = s["kpi"]
-        print(f"  {s['id']:<20} {s['statut']:<10} Sharpe {k['sharpe']:.2f}  tests ok {s['ok']}  alertes {s['alertes']}")
-    print(f"[nexus] tableau de bord : {len(idx['strategies'])} strategie(s) dans {args.sortie} ({time.time() - t:.0f} s)")
+        sh = k.get("sharpe")
+        print(f"  {s['id'][:40]:<40} {s['statut']:<10} Sharpe {sh if sh is None else round(sh, 2)}  tests ok {s['ok']}  alertes {s['alertes']}")
+    print(f"[nexus] tableau de bord : {len(idx['strategies'])} strategie(s), {idx['prop_candidats']} candidates prop firm "
+          f"(futures intraday) dans {args.sortie} ({time.time() - t:.0f} s)")
     print("        lancer ensuite : node Dashboard/serveur.js  puis ouvrir http://localhost:3000")
 
 
@@ -849,13 +851,14 @@ def main(argv=None):
     p.add_argument("--fournisseur", default="claude", help="claude | deepseek | gemini | openai")
     p.add_argument("--modele", help="modele (defaut : celui du fournisseur)")
     p.set_defaults(func=cmd_audit)
-    p = sub.add_parser("tableau", help="export du tableau de bord Node.js (strategies validees + candidates, vectorbt)")
+    p = sub.add_parser("tableau", help="export du tableau de bord Node.js (toutes les strategies, memes objets vectorbt, memes tests)")
     p.add_argument("--cotations", "-d", default=REPO_QUOTES, help="dossier racine des barres 1 minute (defaut : ../Cotations)")
     p.add_argument("--sortie", default=os.path.join(os.path.dirname(__file__), "..", "..", "Dashboard", "donnees"),
                    help="dossier des fichiers JSON lus par Dashboard/serveur.js")
     p.add_argument("--simulations", type=int, default=2000, help="tirages Monte Carlo / bootstrap")
     p.add_argument("--sans-grille", dest="sans_grille", action="store_true", help="sans grille de parametres (plus rapide)")
-    p.add_argument("--seulement", help="codes a exporter : S1 (validees), G1 Gotobi, O1 ORB, N1 or la nuit, L1 LETF ; ex. S1,G1")
+    p.add_argument("--seulement", help="a recalculer (les autres fiches sont reprises) : S1, G1 Gotobi, O1 ORB, N1 or la nuit, "
+                                       "L1 LETF, R (toutes les strategies du runner) ou un identifiant R_... ; ex. S1,G1 ou R")
     p.set_defaults(func=cmd_tableau)
     args = ap.parse_args(argv)
     args.func(args)

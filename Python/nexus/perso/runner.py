@@ -107,6 +107,23 @@ TESTS = [
     ("boombitch, filtre de tendance 200 j (alternative)", "boombitch.cs",
      _user("DonchianAlt", "NQ", "MNQ", minutes=15, sma_jours=200),
      "alternative retenue par la regle mais gain en validation dans le bruit (+0,04 de Sharpe)"),
+    ("boombitch, taille inverse a la volatilite, conforme a la seance (alternative)", "boombitch.cs",
+     _user("DonchianAlt", "NQ", "MNQ", minutes=15, fixed_risk=300.0, fin_de_seance=True),
+     "version prop firm : vendue a la derniere barre de chaque seance CME (17:00 New York), rachetee a la reouverture avec "
+     "le meme stop ; retenue le 2026-10-19 (nexus/perso/creneaux.py, H5 : Sharpe 1,42, Sharpe deflate 0,98 pour 393 essais)"),
+    ("boombitch conforme a la seance, replique sur YM (alternative)", "boombitch.cs",
+     _user("DonchianAlt", "YM", "MYM", minutes=15, fixed_risk=300.0, fin_de_seance=True),
+     "replique de H5 sur le Dow (nexus/perso/creneaux.py, H6) : fiable au sens du tableau de bord (IC du Sharpe > 0, deux "
+     "moities > 0) mais Sharpe deflate 0,54 pour 401 essais et t 1,0 sur 2021-2026 : ne passe pas la methode"),
+    ("boombitch conforme a la seance, micro bitcoin MBT (alternative)", "boombitch.cs",
+     _user("DonchianAlt", "BTC", "MBT", minutes=15, fixed_risk=300.0, fin_de_seance=True),
+     "replique de H5 sur le micro bitcoin du CME (nexus/perso/creneaux.py, H11 ; comptant Binance 08/2017-09/2026 limite a la "
+     "seance CME, frais 3 pb du notionnel par cote) : Sharpe 1,56 [1,05 ; 2,03], deflate 1,00 pour 412 essais, fiable ; rejetee "
+     "par la methode sur un seul critere (Welch 1,39 contre le temoin, il faut 2)"),
+    ("NQ 1-A : resultats des grandes capitalisations, 30 min apres le 8-K (MNQ)", "etude 60 strategies", dict(kind="nq1"),
+     "strategie courte (environ 16 jours par an, 30 min) : r_NQ(16:00 -> T+15) donne le sens, position T+15 -> T+45 ; T = 8-K "
+     "EDGAR d AAPL, MSFT, AMZN, GOOGL, META, NVDA (nexus/perso/nq1_variantes.py) ; fiable au sens du tableau de bord (Sharpe 0,69 "
+     "[0,16 ; 1,20]) mais t 2,8 et Sharpe deflate trop faible : ne passe pas la methode"),
     ("AUDusd (paires z-score, 15 min)", "AUDusd.cs", dict(kind="pairs", leader="6E", follower="6B", minutes=15),
      "NZD/USD et AUD/USD absents (pas de forex chez Alpaca) : teste sur 6B suiveur / 6E meneur, 10 000 unites"),
     # --- Fiches Nexus (sans ML ni actualites) --------------------------------------------------------------------------
@@ -200,6 +217,9 @@ NON_TESTEES = [
 def _minutes(src: str) -> pd.DataFrame:
     if src == "DAXCASH":                      # DAX cash (CFD Dukascopy), historique minute depuis 2014
         return pd.read_parquet(os.path.join(PY_DIR, ".cache", "dukascopy", "DEUIDXEUR_1m.parquet"))
+    if src in ("BTC", "ETH"):                 # comptant Binance limite a la seance CME (substitut de MBT / MET)
+        from .creneaux import minutes_crypto
+        return minutes_crypto(src)
     return alpaca_minutes(src) if src in ("SPY", "IWM") else futures_minutes(src)
 
 
@@ -224,7 +244,11 @@ def run_test(spec: dict, out_dir: str) -> dict:
             df = resample(df, spec["minutes"])
         if spec.get("rth"):
             df = user.rth_only(df)
-        e = Engine(df, INSTRUMENTS[spec["inst"]])
+        inst = INSTRUMENTS[spec["inst"]]
+        if src in ("BTC", "ETH"):
+            from .creneaux import seance_cme
+            df = df[seance_cme(df.index)]
+        e = Engine(df, inst, slippage_ticks=0 if inst.commission_pb else 1)      # frais en notionnel : demi-tick deja compris
         mod = suite_s if kind == "qf" else (ict if spec["cls"] == "ICT2022" else user)
         st = getattr(mod, spec["cls"])(e, **spec["params"])
         e.run(st)
@@ -265,6 +289,10 @@ def run_test(spec: dict, out_dir: str) -> dict:
     elif kind == "or":
         from .or_anomalies import run_spec as or_spec
         s, trades_df = or_spec(spec)
+        data_txt = s.pop("data")
+    elif kind == "nq1":
+        from .nq1_variantes import run_spec as nq1_spec
+        s, trades_df = nq1_spec(spec)
         data_txt = s.pop("data")
     elif kind == "gotobi":
         from .gotobi import run_spec as gotobi_spec

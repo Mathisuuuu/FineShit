@@ -41,6 +41,7 @@ class Inst:
     point_value: float          # $ par point
     tick: float
     commission: float           # $ par contrat et par cote
+    commission_pb: float = 0.0  # en plus, fraction du notionnel par contrat et par cote (micro-futures crypto)
 
 
 INSTRUMENTS = {
@@ -52,6 +53,8 @@ INSTRUMENTS = {
     "6E": Inst("6E", "6E", 125000.0, 0.00005, 2.5), "M6E": Inst("M6E", "6E", 12500.0, 0.0001, 0.6),
     "6B": Inst("6B", "6B", 62500.0, 0.0001, 2.5), "M6B": Inst("M6B", "6B", 6250.0, 0.0001, 0.6),
     "6J": Inst("6J", "6J", 12500000.0, 0.0000005, 2.5), "MJY": Inst("MJY", "6J", 1250000.0, 0.000001, 0.6),
+    # micro-futures crypto du CME (0,1 BTC / 0,1 ETH) : frais en fraction du notionnel, demi-tick compris (creneaux.py H11)
+    "MBT": Inst("MBT", "BTC", 0.1, 5.0, 0.0, 3e-4), "MET": Inst("MET", "ETH", 0.1, 0.5, 0.0, 15e-4),
     "6A": Inst("6A", "6A", 100000.0, 0.00005, 2.5),
     "M6A": Inst("M6A", "6A", 10000.0, 0.0001, 0.6),
     "FDAX": Inst("FDAX", "FDAX", 25.0 * 1.10, 0.5, 2.5), "FDXS": Inst("FDXS", "FDAX", 1.0 * 1.10, 1.0, 0.6),
@@ -219,7 +222,7 @@ class Engine:
     def _fill(self, new_pos: int, price: float, i: int, reason: str, tag: str = ""):
         if new_pos == self.pos:
             return
-        pv, com = self.inst.point_value, self.inst.commission
+        pv, com = self.inst.point_value, self.inst.commission + self.inst.commission_pb * price * self.inst.point_value
         t = self.index[i]
         if self.pos != 0 and (new_pos == 0 or np.sign(new_pos) != np.sign(self.pos) or abs(new_pos) < abs(self.pos)):
             close_q = abs(self.pos) if (new_pos == 0 or np.sign(new_pos) != np.sign(self.pos)) else abs(self.pos) - abs(new_pos)

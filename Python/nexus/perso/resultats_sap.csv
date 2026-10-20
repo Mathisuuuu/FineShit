@@ -1,0 +1,46 @@
+# Communiques de resultats de SAP (news.sap.com, etiquette earnings) : heure de publication (datePublished) en UTC
+# et a Francfort ; lus le 2026-10-20 (nexus/perso/sap.py).
+slug,publie_utc,url,francfort,heure_connue
+Fourth Quarter and Full Year 2015 Preliminary Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2016-01-22,False
+Q1 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2016-04-20,False
+Q2 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2016-07-20,False
+Q3 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2016-10-21,False
+Q4 and Full Year 2016 Preliminary Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2017-01-24,False
+Q1 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2017-04-25,False
+Q2 and Half Year 2017 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2017-07-20,False
+Q3 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2017-10-19,False
+Q4 and Full Year 2017 Preliminary Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2018-01-30,False
+Q1 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2018-04-24,False
+Q2 and Half-Year 2018 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2018-07-19,False
+Q3 Financial Results,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2018-10-18,False
+Q4 and Full Year 2018 Preliminary Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2019-01-29,False
+Q1 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2019-04-24,False
+Q2 and Half-Year 2019 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2019-07-18,False
+Q3 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2019-10-21,False
+Q4 and Full Year 2019 Preliminary Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2020-01-28,False
+Q1 2020 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2020-04-21,False
+Q2 and Half-Year 2020 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2020-07-27,False
+Q3 2020 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2020-10-26,False
+Preliminary Q4 and Full-Year 2020 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2021-01-29,False
+Q1 2021 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2021-04-22,False
+Q2 and Half-Year 2021 Financial Results,,"web.archive.org calendrier SAP, prevue (derniere copie avant la date)",2021-07-21,False
+ent Contact Us Service Request Upcoming Events Past Events Annual General Meetin,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2021-10-21,False
+Service Request Upcoming Events Past Events Annual General Meeting Q4 and Full-Y,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2022-01-27,False
+ent Contact Us Service Request Upcoming Events Past Events Annual General Meetin,,"web.archive.org calendrier SAP, confirmee (evenement passe)",2022-04-22,False
+sap-announces-q2-and-half-year-2022-results,2022-07-21 05:04:27,https://news.sap.com/2022/07/sap-announces-q2-and-half-year-2022-results/,2022-07-21 07:04:27,True
+sap-announces-third-quarter-2022-results,2022-10-25 05:01:20,https://news.sap.com/2022/10/sap-announces-third-quarter-2022-results/,2022-10-25 07:01:20,True
+sap-announces-fourth-quarter-and-full-year-2022-results,2023-01-26 06:09:58,https://news.sap.com/2023/01/sap-announces-fourth-quarter-and-full-year-2022-results/,2023-01-26 07:09:58,True
+sap-announces-q1-2023-results,2023-04-21 05:03:21,https://news.sap.com/2023/04/sap-announces-q1-2023-results/,2023-04-21 07:03:21,True
+sap-announces-q2-2023-results,2023-07-20 16:05:48,https://news.sap.com/2023/07/sap-announces-q2-2023-results/,2023-07-20 18:05:48,True
+sap-announces-q3-2023-results,2023-10-18 20:07:15,https://news.sap.com/2023/10/sap-announces-q3-2023-results/,2023-10-18 22:07:15,True
+sap-announces-q4-and-fy-2023-results,2024-01-23 22:53:27,https://news.sap.com/2024/01/sap-announces-q4-and-fy-2023-results/,2024-01-23 23:53:27,True
+sap-announces-q1-2024-results,2024-04-22 20:06:27,https://news.sap.com/2024/04/sap-announces-q1-2024-results/,2024-04-22 22:06:27,True
+sap-announces-q2-2024-results,2024-07-22 20:06:17,https://news.sap.com/2024/07/sap-announces-q2-2024-results/,2024-07-22 22:06:17,True
+sap-announces-q3-2024-results,2024-10-21 20:07:11,https://news.sap.com/2024/10/sap-announces-q3-2024-results/,2024-10-21 22:07:11,True
+sap-announces-q4-and-fy-2024-results,2025-01-28 05:02:46,https://news.sap.com/2025/01/sap-announces-q4-and-fy-2024-results/,2025-01-28 06:02:46,True
+sap-announces-q1-2025-results,2025-04-22 20:06:56,https://news.sap.com/2025/04/sap-announces-q1-2025-results/,2025-04-22 22:06:56,True
+sap-announces-q2-and-hy-2025-results,2025-07-22 20:16:15,https://news.sap.com/2025/07/sap-announces-q2-and-hy-2025-results/,2025-07-22 22:16:15,True
+sap-announces-q3-2025-results,2025-10-22 20:08:05,https://news.sap.com/2025/10/sap-announces-q3-2025-results/,2025-10-22 22:08:05,True
+sap-announces-q4-and-fy-2025-results,2026-01-29 05:05:31,https://news.sap.com/2026/01/sap-announces-q4-and-fy-2025-results/,2026-01-29 06:05:31,True
+sap-announces-q1-2026-results,2026-04-23 20:22:30,https://news.sap.com/2026/04/sap-announces-q1-2026-results/,2026-04-23 22:22:30,True
+sap-announces-q2-and-half-year-2026-results,2026-07-23 20:09:34,https://news.sap.com/2026/07/sap-announces-q2-and-half-year-2026-results/,2026-07-23 22:09:34,True

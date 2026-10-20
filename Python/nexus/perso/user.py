@@ -494,13 +494,19 @@ class Boombitch(UserBase):
 
 class DonchianAlt(Boombitch):
     """boombitch + options : cassures a la baisse (short=True), filtre de tendance (cloture de la veille au-dessus /
-    au-dessous de la moyenne de sma_jours seances). Avec les reglages par defaut : identique a Boombitch."""
+    au-dessous de la moyenne de sma_jours seances), fin_de_seance=True : position vendue a la cloture de la derniere barre
+    de chaque seance CME (17:00 New York) et rachetee a l ouverture de la suivante, meme taille et meme stop (version
+    conforme aux prop firms futures, nexus/perso/creneaux.py H5). heure_limite (minutes New York, 970 = 16:10, heure
+    limite de Topstep, MyFundedFutures et FundedNext) : position vendue a la cloture de la derniere barre finie avant
+    cette heure, rien jusqu a la fin de la seance, rachat a la reouverture avec le meme stop. Avec les reglages par
+    defaut : identique a Boombitch."""
     NAME = "Donchian (boombitch generalise)"
-    DEFAULTS = dict(short=False, sma_jours=0)
+    DEFAULTS = dict(short=False, sma_jours=0, fin_de_seance=False, heure_limite=0)
 
     def init(self):
         super().init()
         e, p = self.e, self.p
+        self.reprise = None
         h, l = pd.Series(e.h), pd.Series(e.l)
         self.lower_e = l.rolling(p.entry_donchian).min().shift(1).to_numpy()
         self.upper_x = h.rolling(p.exit_donchian).max().shift(1).to_numpy()
@@ -518,6 +524,33 @@ class DonchianAlt(Boombitch):
             return
         a = self.atr[i]
         if a <= 0:
+            return
+        if p.heure_limite:
+            lim = float(p.heure_limite)
+            fin_jour = i + 1 < e.n and e.tday[i + 1] != e.tday[i]
+            apres = lim < e.tod[i] <= 17 * 60                   # entre l heure limite et la fin de la seance (17:00)
+            if apres or self.reprise is not None and not fin_jour and e.tod[i] <= 17 * 60:
+                if fin_jour and self.reprise is not None:       # derniere barre : rachat a la reouverture, meme stop
+                    garde, stop = self.reprise
+                    self.reprise = None
+                    e.market(garde, "Rachat", stop=stop)
+                    self.prev_pos = garde
+                elif e.pos == 0:
+                    e.cancel()
+                return
+            coupe = i + 1 < e.n and not fin_jour and e.tod[i + 1] > lim and e.tod[i + 1] <= 17 * 60
+            if coupe:                                          # derniere barre finie avant l heure limite
+                if e.pos != 0:
+                    self.reprise = (e.pos, e.stop)
+                    e.flatten_now(i, "heure limite")
+                else:
+                    e.cancel()
+                return
+        if p.fin_de_seance and e.pos != 0 and i + 1 < e.n and e.tday[i + 1] != e.tday[i]:
+            garde, stop = e.pos, e.stop                       # derniere barre de la seance : vendre a la cloture,
+            e.flatten_now(i, "fin de seance")                 # racheter a l ouverture de la seance suivante, meme stop
+            e.market(garde, "Rachat", stop=stop)
+            self.prev_pos = garde                             # le stop suiveur continue (pas de nouveau stop initial)
             return
         if e.pos > 0 and self.prev_pos <= 0:
             self.stop_level = e.avg - p.atr_stop_mult * a

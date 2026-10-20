@@ -43,6 +43,7 @@ bibliothèques branchées sur **toutes** les stratégies, plus deux outils exéc
 | 15 LETF rebalancing NQ/ES | `Nexus15_LetfRebalancing.cs` (+ `AddOns\NexusLetf.cs`) | Nexus15_LetfRebalancing | 1 min |
 | A HMM 3 états | `AddOns\NexusModuleA_RegimeHmm.cs` + outil `NexusA_RegimeMonitor.cs` | NexusA_RegimeMonitor | Jour |
 | B Kelly + plafonds | `AddOns\NexusModuleB_Sizing.cs` (dans toutes les stratégies) | — | — |
+| Groupe en direct (S1 + Gotobi, logique en Python) | `AddOns\NexusPasserelle.cs` (passerelle TCP locale) + `Python/nexus/live` | AddOn NexusPasserelle (démarre avec NinjaTrader) ; fenêtre *New → Groupe* | 1 min |
 | C Disjoncteurs, exécution, validation | `AddOns\NexusModuleC_RiskValidation.cs` + socle + outil `NexusC_PortfolioMonitor.cs` | NexusC_PortfolioMonitor | — |
 
 Socle commun : `AddOns\NexusCore.cs` (maths, ADF/MacKinnon, OU, Black-Scholes, CSV, JSON),
@@ -214,6 +215,13 @@ dernières : les propriétés sont enregistrées en clair dans les workspaces.
 - Activer le journal (« TempsReelSeulement » par défaut), lancer `NexusC_PortfolioMonitor`, commencer
   sur Sim101 puis sur un petit montant (objectif : réalité de l'exécution, pas le profit).
 
+- **Groupe en direct** (S1 + Gotobi) : l'AddOn `NexusPasserelle` diffuse les barres 1 minute au moteur Python
+  (`python -m nexus.live`) et exécute ses positions cibles sur **Sim101** par défaut, avec ses propres garde-fous
+  (compte réel refusé sauf autorisation, plafond de contrats, coupure 16:10 ET, perte du jour, battement de cœur,
+  interrupteur global). Fenêtre **Groupe** (Control Center → *New* → Groupe) : état, stratégies avec Activer /
+  Désactiver, positions, journal, bouton « Tout arrêter ». Ajouter une stratégie = un fichier Python + une ligne
+  dans `Python/nexus/live/groupe.json`, sans redémarrer NinjaTrader. Détails : `Python/LISEZMOI.md`, § 17.
+
 ## 9. Choix d'interprétation (signalés aussi dans les en-têtes)
 
 - Kelly lu comme **fraction du bankroll en notionnel** (lecture du fil) ; option « fraction risquée ».
@@ -302,15 +310,18 @@ or la nuit) n'existent qu'en Python ou y sont recalculées avec vectorbt.
 cd Python
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m nexus tableau          # calcule les 5 strategies du tableau de bord (environ 10 min)
+.venv\Scripts\python -m nexus tableau          # calcule toutes les strategies du tableau de bord (environ 25 min)
 cd ..\Dashboard
 node serveur.js                                    # puis http://localhost:3000
 ```
 
-Le tableau de bord (`Dashboard/`, Node.js sans dépendance) montre la stratégie validée **S1 Noise Area NQ**
-et les candidates **Gotobi 6J**, **ORB 5 min NQ**, **or la nuit (GC)** et **fiche 15 LETF NQ / ES** : statistiques
-vectorbt, trades, Monte Carlo, bootstrap, Sharpe déflaté, PBO, walk-forward, placebos, corrélations. Le lien
-« Archive de la recherche » ouvre la page des 74 stratégies testées dans les sessions locales (`nexus/perso`).
+Le tableau de bord (`Dashboard/`, Node.js sans dépendance) montre **toutes les stratégies** dans une seule liste : la
+validée **S1 Noise Area NQ**, les candidates des sessions cloud (**Gotobi 6J**, **ORB 5 min NQ**, **or la nuit (GC)**,
+**fiche 15 LETF NQ / ES**) et toutes celles testées en local par le runner (`nexus/perso`), passées par les mêmes objets
+vectorbt et les mêmes tests (statistiques vectorbt, trades, Monte Carlo, bootstrap, Sharpe déflaté du programme
+entier, stabilité). Pages communes : Comparaison (corrélations, portefeuille combiné), **Prop firm** (combinaison la
+plus fiable de futures intraday d'après les statistiques vectorbt, validée hors échantillon, règles du compte
+modifiables) et Études sur papiers.
 
 Détails : `Python/LISEZMOI.md` (moteur, fiches, résultats) et `Dashboard/LISEZMOI.md` (tableau de bord).
 Le dossier `Cotations` (licence Databento, redistribution interdite) est exclu du dépôt par `.gitignore`.

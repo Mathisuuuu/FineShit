@@ -16,6 +16,7 @@ const TYPES = {
   ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".png": "image/png",
 };
 const ID_VALIDE = /^[A-Za-z0-9_-]{1,80}$/;
+const ANNEXES = new Set(["rendements", "prop", "etudes", "profil", "labo", "live"]);
 
 function lireConfig(fichier) {
   // Par defaut : l environnement Python du projet (Python/.venv) et le dossier Cotations du depot, s ils existent.
@@ -110,11 +111,13 @@ function creerServeur(options = {}) {
       }
       return envoyer(res, 405, { erreur: "methode non autorisee" });
     }
-    if (url.split("?")[0] === "/donnees/recherche.html" && req.method === "GET") {
-      // archive des strategies testees dans les sessions locales (page autonome de python -m nexus.perso.tableau)
-      fs.readFile(path.join(donnees, "recherche.html"), (err, buf) => {
-        if (err) return envoyer(res, 404, { erreur: "archive absente : lancer python -m nexus.perso.tableau" });
-        envoyer(res, 200, buf, TYPES[".html"]);
+    const ax = url.split("?")[0].match(/^\/api\/annexe\/([a-z]+)$/);
+    if (ax && req.method === "GET") {
+      // fichiers communs ecrits par python -m nexus tableau : rendements (comparaison), prop (onglet Prop firm), etudes
+      if (!ANNEXES.has(ax[1])) return envoyer(res, 404, { erreur: "annexe inconnue" });
+      fs.readFile(path.join(donnees, `${ax[1]}.json`), "utf8", (err, txt) => {
+        if (err) return envoyer(res, 404, { erreur: `${ax[1]}.json absent : lancer python -m nexus tableau (depuis Python/)` });
+        envoyer(res, 200, txt);
       });
       return;
     }

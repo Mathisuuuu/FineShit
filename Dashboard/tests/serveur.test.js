@@ -66,15 +66,23 @@ test("recalcul refuse sans dossier Cotations configure", async () => {
   }
 });
 
-test("archive de la recherche servie depuis le dossier des donnees", async () => {
+test("annexes communes servies en JSON (prop firm, comparaison, etudes)", async () => {
   const { srv, base } = await demarrer({ donnees: path.join(__dirname, "fixtures"), config: { python: "python3", cotations: "" } });
   const vide = await demarrer({ donnees: path.join(__dirname, "absent"), config: { python: "python3", cotations: "" } });
   try {
-    const r = await fetch(`${base}/donnees/recherche.html`);
+    const r = await fetch(`${base}/api/annexe/prop`);
     assert.equal(r.status, 200);
-    assert.match(r.headers.get("content-type"), /text\/html/);
-    assert.match(await r.text(), /Archive/);
-    assert.equal((await fetch(`${vide.base}/donnees/recherche.html`)).status, 404);
+    assert.match(r.headers.get("content-type"), /application\/json/);
+    assert.equal((await r.json()).candidats.length, 1);
+    assert.equal((await fetch(`${base}/api/annexe/inconnue`)).status, 404);          // liste blanche
+    assert.equal((await fetch(`${base}/api/annexe/..%2Findex`)).status, 404);
+    const absente = await fetch(`${vide.base}/api/annexe/etudes`);
+    assert.equal(absente.status, 404);
+    assert.match((await absente.json()).erreur, /nexus tableau/);
+    assert.equal((await fetch(`${base}/api/recherche`)).status, 404);                // ancienne archive separee supprimee
+    const html = await (await fetch(`${base}/`)).text();
+    assert.match(html, /prop\.js/);
+    assert.doesNotMatch(html, /archive\.js/);
   } finally {
     srv.close();
     vide.srv.close();

@@ -246,6 +246,51 @@ def etude(sortie: str | None = None, log=print) -> dict:
     return res
 
 
+# =============================================================================
+#  Version A en trades (tableau de bord) : MNQ, notionnel = capital
+# =============================================================================
+CAPITAL_A = 100_000.0
+
+
+def trades_a(log=print) -> pd.DataFrame:
+    """Regle A (8-K EDGAR, signal NQ) en trades : entree T+15, sortie min(T+45, 16:59), dans le sens de r_NQ(16:00 -> T+15) ;
+    MNQ (2 $ le point), notionnel = capital ; frais = aller-retour de l etude (cout_bp, demi-tick et commission)."""
+    from .soixante import prix_a
+    nq = marche("NQ")
+    jours, _, _ = preparer(log)
+    a = jours[(jours.date <= FIN_DONNEES) & (jours.t_8k <= DERNIER_T)]
+    d, T = pd.DatetimeIndex(a.date), a.t_8k.to_numpy().astype(int)
+    sens = np.sign(_rs(nq, d, 16 * 60, T + 15, ET).to_numpy())
+    ti, to = _inst(d, T + 15, ET), _inst(d, np.minimum(T + 45, 16 * 60 + 59), ET)
+    pi, ii = prix_a(nq, ti)
+    po, io = prix_a(nq, to)
+    reel = pi - nq.offset[np.clip(ii, 0, None)]
+    cout = cout_bp("NQ", float(np.nanmedian(nq.c[-500000:])), True) / 1e4
+    ok = np.isfinite(sens) & (sens != 0) & np.isfinite(pi) & np.isfinite(po) & (ii >= 0) & (io >= 0) & (reel > 0)
+    qty = np.round(CAPITAL_A / (2.0 * np.where(ok, reel, 1.0)))
+    pnl = sens * (po - pi) * qty * 2.0 - cout * qty * 2.0 * reel
+    t = pd.DataFrame(dict(instrument="NQ", direction=sens, qty=qty, entry_time=pd.to_datetime(ti), exit_time=pd.to_datetime(to),
+                          entry_price=pi, exit_price=po, pnl=pnl))[ok]
+    return t.reset_index(drop=True)
+
+
+def run_spec(spec: dict) -> tuple[dict, pd.DataFrame]:
+    import math
+    t = trades_a(lambda *a, **k: None)
+    jours = pd.bdate_range("2016-01-04", "2026-08-28")
+    d = t.groupby(t["exit_time"].dt.normalize())["pnl"].sum().reindex(jours, fill_value=0.0)
+    eq, pnl = CAPITAL_A + d.cumsum(), t["pnl"].to_numpy()
+    dd = eq.diff().dropna()
+    wins, losses = pnl[pnl > 0].sum(), -pnl[pnl < 0].sum()
+    s = dict(trades=len(pnl), win_rate=float((pnl > 0).mean()), net=float(pnl.sum()),
+             profit_factor=float(wins / losses) if losses > 0 else math.nan, avg_trade=float(pnl.mean()),
+             sharpe=float(dd.mean() / dd.std() * math.sqrt(252)) if dd.std() > 0 else math.nan,
+             max_dd=float((eq.cummax() - eq).max()), start=eq.index[0], end=eq.index[-1], capital=CAPITAL_A,
+             t_stat=float(pnl.mean() / (pnl.std(ddof=1) / math.sqrt(pnl.size))), equity=eq,
+             data="NQ 1 min -> MNQ, notionnel = 100 000 $, 8-K EDGAR des 6 grandes capitalisations")
+    return s, t
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--sortie", default=None)

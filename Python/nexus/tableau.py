@@ -1,7 +1,9 @@
-"""Export du tableau de bord (Dashboard/, serveur Node.js) : un fichier JSON par strategie.
+"""Export du tableau de bord (Dashboard/, serveur Node.js) : un fichier JSON par strategie, TOUTES les strategies.
 
-Strategies exportees : toutes les strategies du registre marquees VALIDATED (ex. S1_NoiseAreaNQ) et les
-candidates a l etude (Gotobi 6J, ORB NQ, or la nuit, fiche 15 LETF NQ / ES). Tous les chiffres viennent de vectorbt (portefeuilles, statistiques, trades,
+Strategies exportees, au meme format et avec les memes tests : celles du registre marquees VALIDATED (S1_NoiseAreaNQ),
+les candidates etudiees dans les sessions cloud (Gotobi 6J, ORB NQ, or la nuit, fiche 15 LETF NQ / ES), et toutes les
+strategies du runner local (nexus/perso/runner.py), rejouees dans vectorbt par nexus/tableau_runner.py. Les candidates
+ont en plus leurs tests propres (grille de reglages, placebos, latence...). Tous les chiffres viennent de vectorbt (portefeuilles, statistiques, trades,
 drawdowns, rendements, ratios glissants, Sharpe deflate), de scipy (bootstrap BCa, test de permutation) et de
 nexus.validation (Sharpe probabiliste, PBO, decoupage walk-forward). Le code ci-dessous ne fait qu assembler
 et mettre en forme ; il n exporte aucune cotation brute (seulement des resultats).
@@ -37,14 +39,19 @@ except ImportError:  # pragma: no cover
     vbt = None
 
 ANNEE = "252 days"
-VERSION = 1
+VERSION = 2
+# Nombre CUMULE d essais du programme de recherche (sessions cloud + locales, voir la memoire « methode-strategie-papiers »)
+# et variance des Sharpe annualises des essais : le Sharpe deflate de TOUTES les strategies du tableau est calcule avec ces
+# deux valeurs (memes tests pour toutes). La variance est remplacee a l export par celle des strategies exportees.
+ESSAIS_PROGRAMME = 427
+VAR_SHARPE_PROGRAMME = 0.5
 
 
 # =============================================================================
 #  Mise en forme JSON
 # =============================================================================
 def _js(x):
-    if x is None:
+    if x is None or x is pd.NaT or x is pd.NA:
         return None
     if isinstance(x, (pd.Timestamp, dt.datetime, dt.date)):
         return pd.Timestamp(x).strftime("%Y-%m-%d %H:%M") if pd.Timestamp(x).time() != dt.time(0) else pd.Timestamp(x).strftime("%Y-%m-%d")
@@ -178,9 +185,24 @@ def _dd_paths(r_trades: np.ndarray, n: int, rng, remise: bool) -> pd.DataFrame:
     return pd.DataFrame(np.column_stack(cols))
 
 
+def unites_mc(t: pd.DataFrame, r: pd.Series, max_trades: int = 4000) -> tuple[pd.DataFrame, str]:
+    """Unites du test des signes et du Monte Carlo : les trades ; regroupes par jour au-dela de max_trades trades
+    (memoire) ; les rendements journaliers s il n y a pas de trades (portefeuille permanent)."""
+    if t is None or len(t) < 20:
+        return pd.DataFrame({"brut": r.to_numpy(), "net": r.to_numpy()}), "rendements journaliers (pas de trades)"
+    if len(t) > max_trades:
+        j = pd.DatetimeIndex(t["sortie"]).normalize()
+        g = t[["brut", "net"]].groupby(j).sum()
+        return g, f"trades regroupes par jour ({len(t)} trades, {len(g)} jours)"
+    return t, f"{len(t)} trades"
+
+
 def bloc_tests_communs(r: pd.Series, t: pd.DataFrame, publication: str, essais: int, var_sharpe_ann: float,
-                       n_sim: int = 2000, seed: int = 7) -> tuple[list, dict]:
-    """Batterie commune : Sharpe par periode, IC bootstrap BCa, PSR, Sharpe deflate, test des signes, Monte Carlo."""
+                       n_sim: int = 2000, seed: int = 7, libelle: str | None = None) -> tuple[list, dict]:
+    """Batterie commune : Sharpe par periode, IC bootstrap BCa, PSR, Sharpe deflate, test des signes, Monte Carlo.
+    libelle : nom de la coupure (par defaut « publication ») ; les strategies sans date de publication sont coupees au
+    01/01/2021, comme les deux periodes de la methode de recherche."""
+    nom_coupure = libelle or f"publication {publication}"
     rng = np.random.default_rng(seed)
     pub = pd.Timestamp(publication)
     acc = _acc(r)
@@ -196,13 +218,14 @@ def bloc_tests_communs(r: pd.Series, t: pd.DataFrame, publication: str, essais: 
         sh_av, sh_ap = _acc(avant).sharpe_ratio(), _acc(apres).sharpe_ratio()
         l2 = r[r.index >= r.index[-1] - pd.DateOffset(years=2)]
         sh_l2 = _acc(l2).sharpe_ratio()
-    add("Performance", "Sharpe 2016-2026 (vectorbt)", f"{sh:.2f}", f"{len(r)} seances", "ok" if sh >= 1 else ("alerte" if sh < 0.5 else "info"))
+    add("Performance", "Sharpe sur tout l historique (vectorbt)", f"{sh:.2f}", f"{len(r)} seances, {r.index[0]:%Y-%m-%d} -> {r.index[-1]:%Y-%m-%d}",
+        "ok" if sh >= 1 else ("alerte" if sh < 0.5 else "info"))
     if len(avant) >= 20:
-        add("Performance", "Sharpe avant / apres publication", f"{sh_av:.2f} / {sh_ap:.2f}", f"publication {publication}, {len(apres)} seances apres",
+        add("Performance", "Sharpe avant / apres la coupure", f"{sh_av:.2f} / {sh_ap:.2f}", f"{nom_coupure}, {len(apres)} seances apres",
             "ok" if sh_ap >= 0.5 else "alerte")
     else:
-        add("Performance", "Sharpe apres publication", f"{sh_ap:.2f}",
-            f"publication {publication}, avant les donnees : tout l historique ({len(apres)} seances) est posterieur", "ok" if sh_ap >= 0.5 else "alerte")
+        add("Performance", "Sharpe apres la coupure", f"{sh_ap:.2f}",
+            f"{nom_coupure}, avant les donnees : tout l historique ({len(apres)} seances) est posterieur", "ok" if sh_ap >= 0.5 else "alerte")
     add("Performance", "Sharpe des 2 dernieres annees", f"{sh_l2:.2f}", f"depuis {l2.index[0]:%Y-%m-%d}", "ok" if sh_l2 >= 0.5 else "alerte")
     ans = (1 + r).groupby(r.index.year).prod() - 1
     add("Performance", "Annees positives", f"{int((ans > 0).sum())}/{len(ans)}", ", ".join(f"{y} {v:+.1%}" for y, v in ans.items()),
@@ -214,7 +237,7 @@ def bloc_tests_communs(r: pd.Series, t: pd.DataFrame, publication: str, essais: 
         f"{n_sim} tirages", "ok" if b.confidence_interval.low > 0 else "alerte")
     bp = SS.bootstrap((apres.to_numpy(),), V.annualized_sharpe, method="BCa", n_resamples=n_sim, random_state=seed) if len(apres) > 60 else None
     if bp is not None:
-        add("Robustesse statistique", "IC 95 % du Sharpe apres publication", f"[{bp.confidence_interval.low:.2f} ; {bp.confidence_interval.high:.2f}]",
+        add("Robustesse statistique", "IC 95 % du Sharpe apres la coupure", f"[{bp.confidence_interval.low:.2f} ; {bp.confidence_interval.high:.2f}]",
             f"{len(apres)} seances", "ok" if bp.confidence_interval.low > 0 else "alerte")
     psr = V.probabilistic_sharpe(x.mean() / x.std(ddof=1), 0.0, len(x), SS.skew(x), SS.kurtosis(x, fisher=False))
     add("Robustesse statistique", "Probabilite que le Sharpe vrai soit > 0", f"{psr:.1%}", "Sharpe probabiliste (asymetrie et queues comprises)",
@@ -223,7 +246,7 @@ def bloc_tests_communs(r: pd.Series, t: pd.DataFrame, publication: str, essais: 
         y = apres.to_numpy()
         p0 = V.probabilistic_sharpe(y.mean() / y.std(ddof=1), 0.0, len(y), SS.skew(y), SS.kurtosis(y, fisher=False))
         p5 = V.probabilistic_sharpe(y.mean() / y.std(ddof=1), 0.5 / math.sqrt(252), len(y), SS.skew(y), SS.kurtosis(y, fisher=False))
-        add("Robustesse statistique", "Apres publication : P(Sharpe > 0) / P(Sharpe > 0,5)", f"{p0:.1%} / {p5:.1%}", "", "ok" if p0 >= 0.9 else "alerte")
+        add("Robustesse statistique", "Apres la coupure : P(Sharpe > 0) / P(Sharpe > 0,5)", f"{p0:.1%} / {p5:.1%}", nom_coupure, "ok" if p0 >= 0.9 else "alerte")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         dsr = acc.deflated_sharpe_ratio(var_sharpe=var_sharpe_ann, nb_trials=int(essais))   # variance des Sharpe ANNUALISES
@@ -232,13 +255,14 @@ def bloc_tests_communs(r: pd.Series, t: pd.DataFrame, publication: str, essais: 
         f"{essais} essais, variance des Sharpe annualises {var_sharpe_ann:.2f} ; Sharpe a battre {sr0 * math.sqrt(252):.2f} "
         f"(controle nexus.validation : {dsr_n:.1%})", "ok" if dsr >= 0.95 else "alerte")
 
-    brut = t["brut"].to_numpy()
+    u, quoi = unites_mc(t, r)
+    brut = u["brut"].to_numpy()
     pt = SS.permutation_test((brut,), np.mean, permutation_type="samples", n_resamples=max(n_sim * 5, 10000),
                              alternative="greater", random_state=seed)
     add("Robustesse statistique", "Test des signes (permutation scipy)", f"p = {pt.pvalue:.4f}",
-        f"memes trades, sens tires au hasard ; gain brut moyen {brut.mean() * 1e4:.2f} bp", "ok" if pt.pvalue < 0.05 else "alerte")
+        f"{quoi}, sens tires au hasard ; gain brut moyen {brut.mean() * 1e4:.2f} bp", "ok" if pt.pvalue < 0.05 else "alerte")
 
-    rt = t["net"].to_numpy()
+    rt = u["net"].to_numpy()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         obs = -pd.Series(rt).vbt.returns(freq="1D").max_drawdown()
@@ -247,7 +271,7 @@ def bloc_tests_communs(r: pd.Series, t: pd.DataFrame, publication: str, essais: 
         dd_boot = -boot.vbt.returns(freq="1D").max_drawdown().to_numpy()
         fin_boot = (1 + boot).prod().to_numpy() - 1
     q = lambda a, p: float(np.quantile(a, p))
-    add("Monte Carlo", "Perte max, ordre des trades melange", f"mediane {np.median(dd_perm):.1%}",
+    add("Monte Carlo", f"Perte max, ordre melange ({quoi})", f"mediane {np.median(dd_perm):.1%}",
         f"95 % : {q(dd_perm, .95):.1%}, 99 % : {q(dd_perm, .99):.1%} ; observee {obs:.1%}", "info")
     add("Monte Carlo", "Perte max, trades tires avec remise", f"mediane {np.median(dd_boot):.1%}",
         f"95 % : {q(dd_boot, .95):.1%}, 99 % : {q(dd_boot, .99):.1%}", "info")
@@ -315,7 +339,8 @@ def bloc_surajustement(r: pd.Series, rmat: pd.DataFrame | None, reference: str |
         s1, s2 = float(_acc(r.iloc[:h]).sharpe_ratio()), float(_acc(r.iloc[h:]).sharpe_ratio())
     v = np.array([b["sharpe"] for b in blocs], float)
     add(f"Stabilite : {n_blocs} sous-periodes egales", f"{int((v > 0).sum())}/{n_blocs} positives",
-        "Sharpe " + " ; ".join(f"{b['debut'][:7]} -> {b['fin'][:7]} : {b['sharpe']:.2f}" for b in blocs), "ok" if (v > 0).all() else "alerte")
+        "Sharpe " + " ; ".join(f"{b['debut'][:7]} -> {b['fin'][:7]} : " + ("–" if b["sharpe"] is None else f"{b['sharpe']:.2f}") for b in blocs),
+        "ok" if (v > 0).all() else "alerte")
     add("Stabilite : premiere / seconde moitie", f"{s1:.2f} / {s2:.2f}", f"coupure au {r.index[h]:%d/%m/%Y}",
         "ok" if s2 > 0 and s2 >= 0.5 * s1 else "alerte")
     out["blocs"] = blocs
@@ -535,6 +560,11 @@ def fiche_nexus(code: str, cotations: str, n_sim: int, grille: bool, log=print) 
     return fiche, r
 
 
+def _kpi_sans_trades(valeur: pd.Series) -> dict:
+    vide = pd.DataFrame({"entree": pd.to_datetime([]), "sortie": pd.to_datetime([]), "PnL": [], "net_notionnel": [], "net": []})
+    return _kpi(valeur, vide)
+
+
 def _kpi(valeur: pd.Series, t: pd.DataFrame) -> dict:
     r = valeur.pct_change().dropna()
     acc = _acc(r)
@@ -623,6 +653,17 @@ def fiche_gotobi(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[d
                           detail=" ; ".join(f"{s['cas']} {s['sharpe']:.2f} (apres pub. {s['sharpe_apres']:.2f})" for s in cas),
                           verdict="ok" if pire["sharpe"] >= 0.5 else "alerte"))
     log("  placebos, couts, latence : ok")
+    # prop firms : le micro MJY (1 250 000 yens, tick 0,000001, 0,60 $ par cote) double le tick rapporte au notionnel
+    from . import prop_combinaisons as PC
+    px_ = 2.25 / (m["frais"] * 12_500_000)
+    mj = m.assign(frais=0.6 / (px_ * 1_250_000), glissement=0.5 * 0.000001 / px_)
+    x_ = PC.mesures(GT.valeur_journaliere(GT.portefeuille(mj), cal).pct_change().fillna(0.0), ESSAIS_PROGRAMME)
+    tests.append(dict(famille="Prop firms", test="Micro MJY au lieu de 6J",
+                      resultat=f"Sharpe {x_['sharpe']:.2f} [{x_['ic_bas']:.2f} ; {x_['ic_haut']:.2f}], moities {x_['sharpe_p1']:.2f} / {x_['sharpe_p2']:.2f}",
+                      detail="couts du micro (tick deux fois plus gros rapporte au notionnel, commission 0,60 $ pour 12 fois moins de "
+                             "notionnel) ; " + ("toujours fiable" if x_["fiable"] else "PLUS fiable : en prop firm, trader le contrat 6J "
+                             "(environ 84 000 $ de notionnel, environ 500 $ d ecart-type par jour, compatible avec un compte de 50 000 $)"),
+                      verdict="ok" if x_["fiable"] else "alerte"))
     if grille:
         entrees, sorties = ["07:00", "07:30", "08:00", "08:30", "09:00"], ["10:00", "10:30", "11:00", "11:30", "12:00"]
         rets, pts = {}, []
@@ -760,6 +801,14 @@ def fiche_orb(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict
                           detail=" ; ".join(f"{x['cas']} {x['sharpe']:.2f} (apres pub. {x['sharpe_apres']:.2f})" for x in cas_),
                           verdict="ok" if pire["sharpe"] >= 0.5 else "alerte"))
     log("  couts, latence : ok")
+    # prop firms : le micro MNQ (multiplicateur 2, 0,60 $ par cote) : meme tick rapporte au notionnel, commission plus lourde
+    from . import prop_combinaisons as PC
+    px_ = OR.COMMISSION / (m["frais"] * 20.0)
+    x_ = PC.mesures(OR.valeur_journaliere(OR.portefeuille(m.assign(frais=0.6 / (px_ * 2.0))), cal).pct_change().fillna(0.0), ESSAIS_PROGRAMME)
+    tests.append(dict(famille="Prop firms", test="Micro MNQ au lieu de NQ",
+                      resultat=f"Sharpe {x_['sharpe']:.2f} [{x_['ic_bas']:.2f} ; {x_['ic_haut']:.2f}], moities {x_['sharpe_p1']:.2f} / {x_['sharpe_p2']:.2f}",
+                      detail="commission de 0,60 $ par cote pour un dixieme du notionnel de NQ ; " + ("toujours fiable" if x_["fiable"] else "PLUS fiable"),
+                      verdict="ok" if x_["fiable"] else "alerte"))
     extra, rmat = {}, None
     if grille:
         axes = dict(minutes_ouverture=[5, 15, 30], stop_atr=[0.05, 0.10, 0.15, 0.20], volume_min=[0.8, 1.0, 1.5])
@@ -931,19 +980,23 @@ def _prop_or_nuit(m, cotations, cal, pf, r, sens, log) -> list:
     return tests
 
 
-def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict, pd.Series]:
+def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print, variante: str | None = None) -> tuple[dict, pd.Series]:
+    """variante="conforme" : la version intraday (achat 18:00 -> 8:20, achat 13:30 -> derniere minute de la seance),
+    candidate N2 du lot « creneaux vides » (nexus/perso/creneaux.py, H10) ; memes tests que la regle publiee."""
     from arch.bootstrap import StationaryBootstrap
-    m, info = ON.charger(cotations)
-    p0 = ON.DEFAULTS
+    conforme = variante == "conforme"
+    P = dict(jambes="asie,soir") if conforme else {}
+    m, info = ON.charger(cotations, "MGC" if conforme else "GC")      # compte prop firm : le micro (un GC = environ 340 000 $)
+    p0 = {**ON.DEFAULTS, **P}
     cap = p0["capital"]
     t0 = time.time()
-    pf = ON.portefeuille(m)
+    pf = ON.portefeuille(m, **P)
     log(f"  vectorbt : {len(pf.trades.records_readable)} trades ({time.time() - t0:.0f} s)")
     seance = pd.DatetimeIndex(m["seance"].to_numpy())
     cal = calendrier(seance[0], seance[-1])
 
     def run(**kw):
-        p_ = ON.portefeuille(m, compact=True, **kw)      # memes trades et memes valeurs de fin de seance, plus rapide
+        p_ = ON.portefeuille(m, compact=True, **{**P, **kw})      # memes trades et memes valeurs de fin de seance, plus rapide
         return p_, ON.valeur_journaliere(p_, cal).pct_change().fillna(0.0)
 
     valeur = ON.valeur_journaliere(pf, cal)
@@ -956,7 +1009,7 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
     m2 = m.copy()
     m2.loc[m2.index > cut, ["open", "close"]] *= 1.25
     a = pf.trades.records_readable
-    b = ON.portefeuille(m2).trades.records_readable
+    b = ON.portefeuille(m2, **P).trades.records_readable
     a, b = a[a["Exit Timestamp"] < cut].reset_index(drop=True), b[b["Exit Timestamp"] < cut].reset_index(drop=True)
     ok = len(a) == len(b) and np.allclose(a["PnL"], b["PnL"]) and (a["Entry Timestamp"] == b["Entry Timestamp"]).all()
     tests.append(dict(famille="Comptabilite", test="Biais d anticipation (prix futurs x 1,25)", resultat="aucun" if ok else "PROBLEME",
@@ -965,21 +1018,31 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
     loc = lambda c: pd.DatetimeIndex(tr[c]).tz_localize("UTC").tz_convert(ON.NY).tz_localize(None)
     he, hs = loc("Entry Timestamp"), loc("Exit Timestamp")
     mn_e, mn_s = he.hour * 60 + he.minute, hs.hour * 60 + hs.minute
-    ok_e, ok_s = np.mean((mn_e >= 810) & (mn_e <= 820)), np.mean((mn_s >= 500) & (mn_s <= 510))
     duree = (hs - he).total_seconds() / 3600
-    tests.append(dict(famille="Comptabilite", test="Heures d execution (New York)", resultat=f"{ok_e:.1%} des achats a 13:30, {ok_s:.1%} des ventes a 8:20",
-                      detail=f"{len(tr)} trades (au plus 10 min de retard) ; les autres ventes : derniere minute d une seance sans 8:20 ; "
-                             f"duree mediane {np.median(duree):.1f} h, max {duree.max():.0f} h (week-end prolonge)",
-                      verdict="ok" if ok_e > 0.99 and ok_s > 0.99 else "alerte"))
+    if conforme:
+        ok_e = np.mean(((mn_e >= 1080) & (mn_e <= 1090)) | ((mn_e >= 810) & (mn_e <= 820)))
+        ok_s = np.mean(((mn_s >= 500) & (mn_s <= 510)) | ((mn_s >= 1000) & (mn_s < 1020)))
+        tests.append(dict(famille="Comptabilite", test="Heures d execution (New York)",
+                          resultat=f"{ok_e:.1%} des achats a 18:00 ou 13:30, {ok_s:.1%} des ventes a 8:20 ou en fin de seance",
+                          detail=f"{len(tr)} trades (au plus 10 min de retard) ; fin de seance = derniere minute avant 17:00 ; "
+                                 f"duree mediane {np.median(duree):.1f} h, max {duree.max():.1f} h (jamais a travers la pause de 17:00)",
+                          verdict="ok" if ok_e > 0.99 and ok_s > 0.99 and duree.max() < 23 else "alerte"))
+    else:
+        ok_e, ok_s = np.mean((mn_e >= 810) & (mn_e <= 820)), np.mean((mn_s >= 500) & (mn_s <= 510))
+        tests.append(dict(famille="Comptabilite", test="Heures d execution (New York)", resultat=f"{ok_e:.1%} des achats a 13:30, {ok_s:.1%} des ventes a 8:20",
+                          detail=f"{len(tr)} trades (au plus 10 min de retard) ; les autres ventes : derniere minute d une seance sans 8:20 ; "
+                                 f"duree mediane {np.median(duree):.1f} h, max {duree.max():.0f} h (week-end prolonge)",
+                          verdict="ok" if ok_e > 0.99 and ok_s > 0.99 else "alerte"))
     # temoins : l or garde en permanence, la seance du COMEX seule, la version intraday
     plac, temoins = [], {}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        for lab, kw in [("nuit 13:30 -> 8:20 (strategie)", {}), ("or garde en permanence", dict(jambes="permanent")),
+        lab_s = "version intraday (18:00 -> 8:20 + 13:30 -> 17:00)" if conforme else "nuit 13:30 -> 8:20 (strategie)"
+        for lab, kw in [("nuit 13:30 -> 8:20 (strategie)", dict(jambes="nuit")), ("or garde en permanence", dict(jambes="permanent")),
                         ("seance du COMEX seule (8:20 -> 13:30)", dict(jambes="pause")),
                         ("version intraday (18:00 -> 8:20 + 13:30 -> 17:00)", dict(jambes="asie,soir")),
                         ("or achete toute la seance, intraday (18:00 -> 17:00)", dict(jambes="tout"))]:
-            _, rr = run(**kw) if kw else (pf, r)
+            _, rr = (pf, r) if lab == lab_s else run(**kw)
             temoins[lab] = rr
             plac.append(dict(cas=lab, sharpe=_js(_acc(rr).sharpe_ratio())))
     sh = {x["cas"]: x["sharpe"] for x in plac}
@@ -987,17 +1050,20 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
                       detail="l idee du papier : l or ne gagne rien (ou perd) pendant la seance de jour de New York ; "
                              + " ; ".join(f"{x['cas']} {x['sharpe']:.2f}" for x in plac),
                       verdict="ok" if sh["seance du COMEX seule (8:20 -> 13:30)"] < 0 else "alerte"))
-    x_, y_ = r.to_numpy(), temoins["or garde en permanence"].to_numpy()
+    ref_or = "or achete toute la seance, intraday (18:00 -> 17:00)" if conforme else "or garde en permanence"
+    x_, y_ = r.to_numpy(), temoins[ref_or].to_numpy()
     f_sh = lambda z: z.mean() / z.std(ddof=1) * math.sqrt(252)
     ecart = f_sh(x_) - f_sh(y_)
     dist = np.array([f_sh(u) - f_sh(w) for (u, w), _ in StationaryBootstrap(10, x_, y_, seed=7).bootstrap(n_sim)])
     p_ec = float(np.mean(dist - ecart >= ecart))
     reg = SS.linregress(y_, x_)
-    tests.append(dict(famille="Placebo", test="Bat-elle l or garde en permanence ?", resultat=f"{ecart:+.2f} de Sharpe, p = {p_ec:.3f}",
+    tests.append(dict(famille="Placebo", test="Bat-elle l or garde toute la seance ?" if conforme else "Bat-elle l or garde en permanence ?",
+                      resultat=f"{ecart:+.2f} de Sharpe, p = {p_ec:.3f}",
                       detail=f"bootstrap stationnaire (arch), {n_sim} tirages, IC 95 % [{np.quantile(dist, .025):.2f} ; {np.quantile(dist, .975):.2f}] ; "
                              f"rendement hors exposition a l or {reg.intercept * 252:+.1%} par an (t = {reg.intercept / reg.intercept_stderr:.2f}), "
                              f"beta {reg.slope:.2f}", verdict="ok" if p_ec < 0.05 else "alerte"))
-    tests.append(dict(famille="Placebo", test="Version intraday (fermee a 17:00, reprise a 18:00)",
+    tests.append(dict(famille="Placebo", test="Regle publiee (gardee a travers la pause et le week-end)" if conforme else
+                      "Version intraday (fermee a 17:00, reprise a 18:00)",
                       resultat=f"Sharpe {sh['version intraday (18:00 -> 8:20 + 13:30 -> 17:00)']:.2f} contre {sh['nuit 13:30 -> 8:20 (strategie)']:.2f}",
                       detail="sans la pause 17:00-18:00 ni le week-end, et avec deux allers-retours par seance au lieu d un : "
                              "une grande partie du rendement disparait", verdict="info"))
@@ -1019,7 +1085,20 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
         tests.append(dict(famille="Sensibilite", test=f"{famille} : pire cas ({pire['cas']})", resultat=f"Sharpe {pire['sharpe']:.2f}",
                           detail=" ; ".join(f"{x['cas']} {x['sharpe']:.2f}" for x in cas_), verdict="ok" if pire["sharpe"] >= 0.5 else "alerte"))
     log("  couts, latence : ok")
-    tests += _prop_or_nuit(m, cotations, cal, pf, r, sens, log)
+    if not conforme:
+        tests += _prop_or_nuit(m, cotations, cal, pf, r, sens, log)
+    else:
+        from . import prop_combinaisons as PC
+        mg, _ = ON.charger(cotations, "GC")
+        rm = ON.valeur_journaliere(ON.portefeuille(mg, compact=True, **P), cal).pct_change().fillna(0.0)
+        x = PC.mesures(rm, ESSAIS_PROGRAMME)
+        tests.append(dict(famille="Prop firms", test="Avec le contrat GC au lieu du micro MGC",
+                          resultat=f"Sharpe {x['sharpe']:.2f} [{x['ic_bas']:.2f} ; {x['ic_haut']:.2f}], moities {x['sharpe_p1']:.2f} / {x['sharpe_p2']:.2f}",
+                          detail="fiche calculee avec le micro MGC (10 onces, 0,85 $ par cote) : a 1 % de risque par jour, un compte de 50 000 "
+                                 "a 150 000 $ tient 2 a 6 MGC, jamais un GC (environ 340 000 $ de notionnel). Avec GC, couts environ 3 fois "
+                                 "plus faibles par once : " + ("fiable" if x["fiable"] else "pas fiable non plus"),
+                          verdict="info"))
+        log("  contrat GC : ok")
     extra, rmat = {}, None
     ref_lab = "pause_debut=08:20,pause_fin=13:30"
     if grille:
@@ -1097,6 +1176,32 @@ def fiche_or_nuit(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[
         kpi=_kpi(valeur, t), vectorbt=bloc_vectorbt(pf, valeur), series=bloc_series(valeur), trades=rows,
         tests=tests, monte_carlo=mc, sensibilite=sens, placebo=plac,
         placebo_titre="Temoins : l or garde en permanence, la seance du COMEX, la version intraday", **extra)
+    if conforme:
+        fiche.update(
+            id="OrNuit_GC_conforme", code="N2", statut="testee",
+            titre="Or la nuit, conforme a la seance · MGC",
+            resume="Or la nuit sans traverser la pause de 17:00 ni le week-end, en micro MGC (taille d un compte prop firm) : achat a "
+                   "la reouverture de 18:00, vente a 8:20 (ouverture du COMEX) ; nouvel achat a 13:30, vente a 16:59. Avec les couts "
+                   "du micro, elle n est pas fiable (avec le contrat GC, elle l etait de justesse).",
+            fonctionnement=[
+                "18:00 New York (reouverture du CME, 0:00 a Paris) : achat de MGC (micro or) ; 8:20 (ouverture du COMEX) : vente.",
+                "13:30 (cloture du COMEX) : achat ; derniere minute de la seance (16:59) : vente. Rien pendant la pause 17:00-18:00 "
+                "ni le week-end : la position est toujours soldee dans la seance CME (regle des prop firms).",
+                "Deux allers-retours par seance. Pas de barre a l heure prevue (plus de 10 min de retard) : pas de trade.",
+                f"Taille : 100 % du capital ({cap:,.0f} $, notionnel = capital, sans levier), gains reinvestis. Couts du micro MGC : "
+                "0,85 $ par contrat et par execution + 1/2 tick (0,10 $), environ 3 fois plus par once qu avec GC.",
+                "Regle deja codee dans nexus/or_nuit.py (jambes=\"asie,soir\"), temoin de la candidate N1 ; mesuree avec la methode "
+                "le 2026-10-19 (nexus/perso/creneaux.py, H10) : Sharpe 0,65 [0,06 ; 1,22], moities 0,34 / 0,88, Sharpe deflate "
+                "0,19 pour 409 essais, t 2,1 : REJETEE par la methode, fiable au sens du tableau de bord. Pas un test a l aveugle "
+                "(Sharpe deja vu par la session cloud).",
+                "Avec le contrat GC (environ 340 000 $ de notionnel, trop gros pour un compte prop firm a 1 % de risque par jour), "
+                "elle etait fiable de justesse (0,65) ; avec le micro MGC, Sharpe 0,34 [-0,31 ; 0,94], premiere moitie -0,09.",
+            ],
+            pourquoi="Version prop firm de la candidate N1 (Blose & Gondhalekar 2014 : l or gagne hors de la seance du COMEX et perd "
+                     "pendant). Elle tient l or la nuit (18:00-8:20), les heures que les autres strategies fiables couvrent le moins. "
+                     "La pause 17:00-18:00 et le week-end, qu elle abandonne, portaient une bonne part du rendement de N1.",
+            placebo_titre="Temoins : la regle publiee, l or garde toute la seance, la seance du COMEX")
+        fiche["parametres"] = {k: _js(v) for k, v in p0.items()}
     return fiche, r
 
 
@@ -1303,6 +1408,7 @@ def fiche_letf(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dic
 # =============================================================================
 # candidates a l etude : (code pour --seulement, identifiant de la fiche, fonction d export)
 CANDIDATES = [("G1", "Gotobi_6J", fiche_gotobi), ("O1", "ORB_NQ", fiche_orb), ("N1", "OrNuit_GC", fiche_or_nuit),
+              ("N2", "OrNuit_GC_conforme", lambda c, n, g, log=print: fiche_or_nuit(c, n, g, log, variante="conforme")),
               ("L1", "LETF_NQ_ES", fiche_letf)]
 
 
@@ -1310,60 +1416,238 @@ def strategies_validees() -> list[str]:
     return [c for c in available() if getattr(get(c), "VALIDATED", None)]
 
 
+
+
+# =============================================================================
+#  Export commun : toutes les strategies, memes objets vectorbt, memes tests
+# =============================================================================
+INSTRUMENTS_FICHE = {"S1": ["NQ"], "G1": ["6J"], "O1": ["NQ"], "N1": ["GC"], "N2": ["GC"], "L1": ["NQ", "ES"]}
+FUTURES = {"ES", "NQ", "YM", "GC", "CL", "6E", "6B", "6J", "6A", "FDAX", "IWM"}       # IWM : substitut du future RTY
+PRESETS_PROP = [dict(nom="50 000 $", compte=50000, objectif=3000, perte_jour=1000, dd=2000),
+                dict(nom="100 000 $", compte=100000, objectif=6000, perte_jour=2000, dd=3000),
+                dict(nom="150 000 $", compte=150000, objectif=9000, perte_jour=3000, dd=4500)]
+MULTIPLICATEURS_PROP = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0]
+
+
+def _ecrire_json(obj, chemin: str):
+    """JSON compact ; tout type inconnu (pd.NA, numpy...) passe par _js, sinon en texte."""
+    def defaut(o):
+        v = _js(o)
+        return v if v is not o else str(o)
+    with open(chemin, "w", encoding="utf-8") as fh:
+        json.dump(obj, fh, ensure_ascii=False, separators=(",", ":"), default=defaut)
+
+
+def positions_fiche(fiche: dict) -> pd.DataFrame:
+    """Positions (debut, fin en UTC naif, instrument) a partir des trades de la fiche (heure locale fuseau_trades)."""
+    rows = fiche.get("trades") or []
+    if not rows:
+        return pd.DataFrame(columns=["debut", "fin", "instrument"])
+    defaut = (fiche.get("instruments") or ["?"])[0]
+    tz = fiche.get("fuseau_trades") or "America/New_York"
+    conv = lambda col: pd.DatetimeIndex(pd.to_datetime([x[col] for x in rows])).tz_localize(
+        tz, ambiguous="NaT", nonexistent="shift_forward").tz_convert("UTC").tz_localize(None)
+    p = pd.DataFrame({"debut": conv("entree"), "fin": conv("sortie"), "instrument": [x.get("actif") or defaut for x in rows]})
+    return p.dropna()
+
+
+def drapeaux(fiche: dict, pos: pd.DataFrame) -> dict:
+    """futures : tous les instruments sont des futures ; intraday : chaque position est soldee dans sa seance CME
+    (17:00 New York), comme l exigent les prop firms futures."""
+    insts = sorted(set(pos["instrument"])) if len(pos) else list(fiche.get("instruments") or [])
+    fut = fiche.get("futures", True) if fiche.get("origine") == "runner" else all(i in FUTURES for i in insts)
+    if len(pos):
+        seance = lambda s: (pd.DatetimeIndex(s).tz_localize("UTC").tz_convert("America/New_York") + pd.Timedelta(hours=6)).normalize()
+        nuit = float((seance(pos["debut"]) != seance(pos["fin"])).mean())
+    else:
+        nuit = 1.0
+    return dict(instruments=insts, futures=bool(fut), part_nuit=round(nuit, 4),
+                intraday=bool(len(pos) and nuit <= 0.01 and not fiche.get("permanent")))
+
+
+def _sharpe_ann(r: pd.Series) -> float:
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return float(_acc(r).sharpe_ratio())
+
+
+def dsr_uniforme(fiche: dict, r: pd.Series, essais: int = ESSAIS_PROGRAMME) -> float:
+    """Sharpe deflate de la strategie avec le nombre CUMULE d essais du programme : meme ligne de test pour toutes.
+    Variance des essais = variance du Sharpe estime sous l hypothese nulle (asymetrie et queues comprises), comme dans
+    toute la recherche (alternatives.dsr) ; calcul vectorbt, controle par nexus.validation. (Jusqu au 2026-10-19 la
+    variance etait celle des Sharpe des strategies exportees, 5,3, gonflee par des versions boguees tres negatives :
+    le Sharpe a battre montait a 6,7 et toutes les strategies tombaient a 0.) La ligne calculee avec le nombre
+    d essais propre a la strategie (strategies du tableau d origine) est gardee et renommee."""
+    from . import prop_combinaisons as PC
+    v0 = PC.var_nulle_ann(r)
+    dsr = PC.dsr(r, essais)
+    dsr_n, sr0 = V.deflated_sharpe(r.to_numpy(), int(essais))
+    ligne = dict(famille="Robustesse statistique", test="Sharpe deflate (programme entier, vectorbt)", resultat=f"{dsr:.1%}",
+                 detail=f"{essais} essais cumules du programme de recherche ; variance nulle du Sharpe {v0:.3f} (annualisee) ; "
+                        f"Sharpe a battre {sr0 * math.sqrt(252):.2f} (controle nexus.validation : {dsr_n:.1%})",
+                 verdict="ok" if dsr >= 0.95 else "alerte")
+    tests = []
+    for x in fiche["tests"]:
+        if x["test"].startswith("Sharpe deflate (programme entier"):
+            continue
+        if x["test"].startswith("Sharpe deflate (vectorbt, essais comptes)"):
+            if fiche.get("origine") == "runner":
+                continue                                        # remplacee par la ligne commune
+            x = dict(x, test="Sharpe deflate (essais de sa propre recherche)")
+        tests.append(x)
+    i = next((k for k, x in enumerate(tests) if x["test"].startswith("Probabilite que le Sharpe")), len(tests) - 1)
+    tests.insert(i + 1, ligne)
+    fiche["tests"] = tests
+    fiche["dsr_programme"] = _js(dsr)
+    return dsr
+
+
+def _ic_bas(fiche: dict):
+    for x in fiche["tests"]:
+        if x["test"].startswith("IC 95 % du Sharpe (bootstrap"):
+            try:
+                return float(x["resultat"].strip("[]").split(";")[0].replace(",", "."))
+            except ValueError:
+                return None
+    return None
+
+
+def entree_index(fiche: dict) -> dict:
+    return dict(id=fiche["id"], titre=fiche["titre"], statut=fiche["statut"], valide_le=fiche.get("valide_le"),
+                verdict=fiche.get("verdict_runner"), origine=fiche.get("origine"), resume=fiche["resume"], kpi=fiche["kpi"],
+                instruments=fiche.get("instruments"), futures=fiche.get("futures"), intraday=fiche.get("intraday"),
+                part_nuit=fiche.get("part_nuit"), dsr_programme=fiche.get("dsr_programme"), sharpe_ic_bas=_js(_ic_bas(fiche)),
+                capital=fiche["capital"]["initial"], alertes=sum(1 for x in fiche["tests"] if x["verdict"] == "alerte"),
+                ok=sum(1 for x in fiche["tests"] if x["verdict"] == "ok"), tests=len(fiche["tests"]))
+
+
+def annexe_prop(fiches: dict, rets: dict, positions: dict, log=print) -> dict:
+    """Donnees de l onglet Prop firm : strategies futures intraday, rendements journaliers, correlations, conflits de
+    contrat, profil horaire, et statistiques vectorbt de chaque strategie et de chaque combinaison classees par
+    fiabilite (nexus/prop_combinaisons.py). Les taux de reussite pour des regles de compte modifiees se recalculent
+    dans l interface (Dashboard/public/prop.js)."""
+    from . import prop_combinaisons as PC
+    from .perso.portefeuille import Chevauchement, Strategie
+    ids = [i for i, f in fiches.items() if f.get("futures") and f.get("intraday") and i in rets]
+    if not ids:
+        return dict(candidats=[], presets=PRESETS_PROP, multiplicateurs=MULTIPLICATEURS_PROP)
+    R = pd.DataFrame({i: rets[i] for i in ids}).sort_index()
+    for i in ids:                                               # hors de sa periode, une strategie n existe pas
+        r = rets[i]
+        R.loc[(R.index < r.index[0]) | (R.index > r.index[-1]), i] = np.nan
+    strats = [Strategie(i, R[i].fillna(0.0), positions[i]) for i in ids if len(positions[i])]
+    ch = Chevauchement(strats)
+    conf = ch.part_conflit().reindex(index=ids, columns=ids).fillna(0.0)
+    prof = ch.profil_horaire().reindex(ids)
+    tps = ch.temps_en_position()
+    corr = R.corr(min_periods=120)
+    p0 = PRESETS_PROP[0]
+    fiab = PC.analyser(R, corr, conf, ESSAIS_PROGRAMME, dict(compte=p0["compte"], objectif=p0["objectif"],
+                       perte_jour=p0["perte_jour"], dd=p0["dd"], horizon=120), MULTIPLICATEURS_PROP, log,
+                       heures={i: float(tps.get(i, np.nan)) * 365.25 * 24 for i in ids})
+    cands = []
+    for i in ids:
+        f, r = fiches[i], R[i]
+        ok = r.notna()
+        cands.append(dict(id=i, titre=f["titre"], statut=f["statut"], instruments=f.get("instruments"), sharpe=_js(_sharpe_ann(r[ok])),
+                          vol=_js(float(r[ok].std(ddof=1))), debut=_js(r[ok].index[0]), fin=_js(r[ok].index[-1]),
+                          capital=f["capital"]["initial"], temps_en_position=_js(tps.get(i, np.nan)),
+                          dsr_programme=f.get("dsr_programme"), profil=_round(prof.loc[i].to_numpy(), 4) if i in prof.index else None,
+                          stats=_js(fiab["membres"][i])))
+    return dict(dates=[d.strftime("%Y-%m-%d") for d in R.index], candidats=cands,
+                rendements={i: _round(R[i].to_numpy(), 7) for i in ids},
+                correlation=[[_js(v) for v in row] for row in corr.to_numpy()],
+                conflits=[[_js(v) for v in row] for row in conf.to_numpy()],
+                presets=PRESETS_PROP, multiplicateurs=MULTIPLICATEURS_PROP, horizon=120,
+                combinaisons=_js(fiab["combinaisons"]), recommandee=_js(fiab["recommandee"]), validation=_js(fiab["validation"]),
+                essais_combinaisons=fiab["essais_combinaisons"], filtres=fiab["filtres"], coupure=fiab["coupure"],
+                sigma_ref=PC.SIGMA_REF,
+                note="Taille : chaque strategie est ramenee au meme risque (ecart-type journalier), puis le groupe est mis a "
+                     "l echelle du compte par un multiplicateur ; tailles continues (l arrondi au micro-contrat n est pas modelise).")
+
+
 def exporter(cotations: str, sortie: str, n_sim: int = 2000, grille: bool = True, seulement=None, log=print) -> dict:
+    """Toutes les strategies (celles du tableau d origine et toutes celles du runner local) -> une fiche JSON chacune,
+    au meme format, avec les memes tests ; puis index.json, rendements.json (comparaison), prop.json (onglet Prop firm)
+    et etudes.json (etudes sur papiers). seulement : codes (S1, G1, O1, N1, L1), « R » (tout le runner) ou identifiants."""
+    from . import tableau_runner as TR
+    from .perso.runner import TESTS
+    from .perso.tableau import lire_resultats
     if vbt is None:
         raise ImportError("vectorbt n est pas installe")
     os.makedirs(sortie, exist_ok=True)
-    taches = [(c, lambda c=c: fiche_nexus(c, cotations, n_sim, grille, log)) for c in strategies_validees()]
-    taches += [(code, lambda f=f: f(cotations, n_sim, grille, log)) for code, _, f in CANDIDATES]
-    rets, liste = {}, []
-    for code, f in taches:
-        if seulement and code not in seulement:
+    lignes = lire_resultats()
+    taches = [(c, "tableau", lambda c=c: fiche_nexus(c, cotations, n_sim, grille, log)) for c in strategies_validees()]
+    taches += [(code, "tableau", lambda f=f: f(cotations, n_sim, grille, log)) for code, _, f in CANDIDATES]
+    taches += [(TR._ident(nom), "runner", lambda a=(nom, src, spec, note): TR.fiche_runner(*a, lignes.get(a[0], {}), ESSAIS_PROGRAMME, n_sim, log))
+               for nom, src, spec, note in TESTS]
+    fiches, rets = {}, {}
+    for code, origine, f in taches:
+        if seulement and not (code in seulement or (origine == "runner" and "R" in seulement)):
             continue
         log(f"[tableau] {code}")
         t0 = time.time()
-        fiche, r = f()
+        try:
+            res = f()
+        except Exception as ex:                                          # noqa: BLE001 : une fiche en erreur n arrete pas l export
+            import traceback
+            log(f"[tableau] {code} : ERREUR {type(ex).__name__} : {ex}")
+            log(traceback.format_exc(limit=4))
+            continue
+        if res is None:
+            log(f"[tableau] {code} : pas de resultats du runner, ignoree")
+            continue
+        fiche, r = res
+        fiche["origine"] = origine
+        if origine == "tableau":
+            fiche.setdefault("instruments", INSTRUMENTS_FICHE.get(code, []))
         fiche["genere_le"] = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
-        with open(os.path.join(sortie, f"{fiche['id']}.json"), "w", encoding="utf-8") as fh:
-            json.dump(fiche, fh, ensure_ascii=False, separators=(",", ":"))
+        fiches[fiche["id"]] = fiche
         rets[fiche["id"]] = r
-        liste.append(dict(id=fiche["id"], titre=fiche["titre"], statut=fiche["statut"], valide_le=fiche["valide_le"],
-                          resume=fiche["resume"], kpi=fiche["kpi"],
-                          alertes=sum(1 for x in fiche["tests"] if x["verdict"] == "alerte"),
-                          ok=sum(1 for x in fiche["tests"] if x["verdict"] == "ok")))
-        log(f"[tableau] {code} ecrit ({time.time() - t0:.0f} s)")
-    if seulement and os.path.exists(os.path.join(sortie, "index.json")):     # export partiel : garder les autres fiches
+        _ecrire_json(fiche, os.path.join(sortie, f"{fiche['id']}.json"))     # ecrite tout de suite, recrite apres la passe commune
+        log(f"[tableau] {code} calcule ({time.time() - t0:.0f} s)")
+    if seulement and os.path.exists(os.path.join(sortie, "index.json")):     # export partiel : reprendre les autres fiches
         with open(os.path.join(sortie, "index.json"), encoding="utf-8") as fh:
             ancien = json.load(fh)
         for e in ancien.get("strategies", []):
             f_ = os.path.join(sortie, f"{e['id']}.json")
-            if e["id"] in rets or not os.path.exists(f_):
+            if e["id"] in fiches or not os.path.exists(f_):
                 continue
             with open(f_, encoding="utf-8") as fh:
-                ser = json.load(fh)["series"]
-            rets[e["id"]] = pd.Series(ser["rendement"], index=pd.DatetimeIndex(ser["dates"]))
-            liste.append(e)
-    rang = {i: k for k, (_, i, _) in enumerate(CANDIDATES)}          # validees d abord, puis candidates dans l ordre d ajout
-    liste.sort(key=lambda e: (e["statut"] != "validee", rang.get(e["id"], -1)))
-    # correlations et portefeuille combine (risque egal) sur le calendrier commun
-    R = pd.DataFrame(rets)[[e["id"] for e in liste if e["id"] in rets]].dropna()
-    combi = None
-    if R.shape[1] >= 2:
-        w = 1 / R.std()
-        mix = (R * w / w.sum()).sum(axis=1)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            combi = dict(sharpe=_js(_acc(mix).sharpe_ratio()), perte_max=_js(-_acc(mix).max_drawdown()),
-                         dates=[d.strftime("%Y-%m-%d") for d in mix.index], valeur=_round((1 + mix).cumprod(), 5),
-                         poids={k: _js(v) for k, v in (w / w.sum()).items()},
-                         note="poids inversement proportionnels a la volatilite : une strategie peu volatile (Gotobi sans levier) "
-                              "recoit un gros poids, ce qui suppose du levier sur son notionnel",
-                         seules={k: _round((1 + R[k] * (mix.std() / R[k].std())).cumprod(), 5) for k in R})
-    index = dict(version=VERSION, genere_le=dt.datetime.now().strftime("%Y-%m-%d %H:%M"), strategies=liste,
-                 correlation=dict(ids=list(R.columns), matrice=[[_js(v) for v in row] for row in R.corr().to_numpy()]),
-                 correlation_mensuelle=dict(ids=list(R.columns), matrice=[[_js(v) for v in row] for row in
-                                            ((1 + R).groupby([R.index.year, R.index.month]).prod() - 1).corr().to_numpy()]),
-                 combine=combi, note="Resultats calcules sur des donnees sous licence (usage prive) : ne pas publier ce dossier.")
-    with open(os.path.join(sortie, "index.json"), "w", encoding="utf-8") as fh:
-        json.dump(index, fh, ensure_ascii=False, separators=(",", ":"))
+                fiche = json.load(fh)
+            fiche.setdefault("origine", "tableau" if e["id"] in {i for _, i, _ in CANDIDATES} or fiche.get("statut") == "validee" else "runner")
+            fiches[e["id"]] = fiche
+            ser = fiche["series"]
+            rets[e["id"]] = pd.Series(ser["rendement"], index=pd.DatetimeIndex(ser["dates"]), dtype=float).fillna(0.0)
+    # memes tests pour toutes : Sharpe deflate sur le nombre cumule d essais et la variance des Sharpe du tableau
+    shs = np.array([_sharpe_ann(r) for r in rets.values()], float)
+    var_ann = float(np.nanvar(shs[np.isfinite(shs)], ddof=1)) if np.isfinite(shs).sum() > 2 else VAR_SHARPE_PROGRAMME
+    positions = {}
+    for i, fiche in fiches.items():
+        dsr_uniforme(fiche, rets[i])
+        positions[i] = positions_fiche(fiche)
+        fiche.update(drapeaux(fiche, positions[i]))
+        _ecrire_json(fiche, os.path.join(sortie, f"{i}.json"))
+    liste = [entree_index(f) for f in fiches.values()]
+    rang = {"validee": 0, "candidate": 1}
+    liste.sort(key=lambda e: (rang.get(e["statut"], 2), -(e["kpi"].get("sharpe") or -99)))
+    R = pd.DataFrame(rets).sort_index()
+    for i, r in rets.items():
+        R.loc[(R.index < r.index[0]) | (R.index > r.index[-1]), i] = np.nan
+    R = R[[e["id"] for e in liste]]
+    _ecrire_json(dict(dates=[d.strftime("%Y-%m-%d") for d in R.index], rendements={c: _round(R[c].to_numpy(), 7) for c in R}),
+                 os.path.join(sortie, "rendements.json"))
+    prop = annexe_prop(fiches, rets, positions, log)
+    _ecrire_json(prop, os.path.join(sortie, "prop.json"))
+    etudes = os.path.join(os.path.dirname(__file__), "..", "recherche", "resultats_60.json")
+    if os.path.exists(etudes):
+        with open(etudes, encoding="utf-8") as fh, open(os.path.join(sortie, "etudes.json"), "w", encoding="utf-8") as out:
+            json.dump(json.load(fh), out, ensure_ascii=False, separators=(",", ":"))
+    from .perso.tableau import non_testees
+    index = dict(version=VERSION, genere_le=dt.datetime.now().strftime("%Y-%m-%d %H:%M"), strategies=liste, non_testees=non_testees(),
+                 essais_programme=ESSAIS_PROGRAMME, variance_sharpe=_js(var_ann), prop_candidats=len(prop["candidats"]),
+                 note="Resultats calcules sur des donnees sous licence (usage prive) : ne pas publier ce dossier.")
+    _ecrire_json(index, os.path.join(sortie, "index.json"))
+    from . import profil_horaire
+    profil_horaire.ecrire(sortie)                                      # page Profil horaire (strategies fiables sur un an)
     return index

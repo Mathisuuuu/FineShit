@@ -32,7 +32,8 @@ from .qf import INSTRUMENTS
 from .runner import PY_DIR, TESTS
 from .statistiques import durees_trades, fmt_duree
 
-FUTURES_ROOTS = {"ES", "NQ", "YM", "GC", "CL", "6E", "6B", "6J", "6A", "FDAX", "IWM"}    # IWM : substitut du future RTY
+FUTURES_ROOTS = {"ES", "NQ", "YM", "GC", "CL", "6E", "6B", "6J", "6A", "FDAX", "IWM",    # IWM : substitut du future RTY
+                 "BTC", "ETH"}                                                      # comptant Binance : substitut de MBT / MET
 S20_LEGS = ["ES", "GC", "CL", "6E"]
 MICRO = {"ES": "MES", "NQ": "MNQ", "YM": "MYM", "GC": "MGC", "CL": "MCL", "6E": "M6E", "6B": "M6B", "6A": "M6A", "6J": "MJY",
          "IWM": "M2K"}
@@ -52,7 +53,7 @@ def _is_futures(spec: dict) -> bool:
     if k in ("qf", "user"):
         src = spec.get("root") or spec.get("src")
         return src in FUTURES_ROOTS or src == "DAXCASH"
-    if k in ("pairs", "s20", "orderflow", "fx", "gotobi", "or"):
+    if k in ("pairs", "s20", "orderflow", "fx", "gotobi", "or", "nq1"):
         return True
     return k == "nexus" and spec.get("profile") == "futures"
 

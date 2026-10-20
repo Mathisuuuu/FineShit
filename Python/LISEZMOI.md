@@ -479,8 +479,24 @@ Tests de sur-ajustement (le réglage de chaque stratégie reste figé, rien n'es
 - test sur hasard : marchés minute simulés sans momentum pour S1, faux jours gotobi tirés au hasard pour le Gotobi.
 
 Options : `--simulations 2000`, `--sans-grille` (plus rapide), `--seulement S1,G1` (codes : S1, G1 Gotobi,
-O1 ORB, N1 or la nuit, L1 fiche 15 LETF). Le lien « Archive de la recherche » du tableau de bord ouvre la
-page des stratégies testées en local (`python -m nexus.perso.tableau` l'écrit dans `Dashboard/donnees/`).
+O1 ORB, N1 or la nuit, L1 fiche 15 LETF, R = toutes les stratégies du runner). Depuis le 19/10/2026, l'export
+contient AUSSI toutes les stratégies du runner local (`nexus/tableau_runner.py` : leurs trades sont rejoués dans
+`vbt.Portfolio.from_orders`, P&L identique à celui du moteur trade par trade), avec les mêmes tests ; il écrit en plus
+`rendements.json` (comparaison), `prop.json` (onglet Prop firm : stratégies futures intraday, corrélations, conflits
+de contrat, profil horaire) et `etudes.json` (copie de `recherche/resultats_60.json`). Le Sharpe déflaté de toutes
+les stratégies utilise le nombre cumulé d'essais du programme (`ESSAIS_PROGRAMME` de `nexus/tableau.py`) et, comme
+toute la recherche, la variance du Sharpe sous l'hypothèse nulle. Jusqu'au 19/10/2026 au soir, c'était la variance
+des Sharpe des stratégies exportées (5,3, gonflée par des versions boguées très négatives) : le Sharpe à battre
+montait à 6,7 et toutes les stratégies tombaient à 0.
+
+Onglet Prop firm (`nexus/prop_combinaisons.py`) : tout vient d'objets vectorbt construits sur les rendements
+journaliers. Une stratégie est **fiable** si la borne basse de l'IC à 95 % de son Sharpe est au-dessus de 0 (Sharpe
+vectorbt de 1 000 tirages avec remise des séances) et si son Sharpe est positif avant et après le 01/01/2021. Chaque
+combinaison de 1 à 4 stratégies au Sharpe positif, chacune ramenée au même risque, a les mêmes statistiques ; le
+Sharpe déflaté compte en plus toutes les combinaisons essayées. Le classement suit la borne basse de l'IC du Sharpe,
+et non plus le meilleur taux de réussite passé : choisir le maximum sur l'historique qui sert à le juger surestimait
+la réussite. La méthode de choix est validée hors échantillon : choix sur 2016-2020 seulement, résultat sur 2021-2026,
+comparé à l'ancienne méthode.
 Détails de l'interface : `Dashboard/LISEZMOI.md`. Les fichiers exportés restent hors du dépôt (licence des
 données).
 
@@ -763,10 +779,36 @@ Les variantes à ML ou à actualités ne sont pas portées. La liste de ce qui n
 de `recherche/resultats_strategies.txt` (lignes « NON TESTEES »).
 
 Historique long du DAX (S19-B) : Databento n'a l'Eurex que depuis mars 2025. `nexus/dukascopy.py` télécharge les
-minutes du CFD DAX cash de Dukascopy depuis 2014 (usage personnel, cache `.cache/dukascopy`, reprise automatique) :
+minutes du CFD DAX cash de Dukascopy depuis 2014 (usage personnel, cache `.cache/dukascopy`, reprise automatique ;
+pause entre requêtes en 4e argument, longue attente sur les réponses 429 et 503) :
 
 ```
 python -m nexus.dukascopy DEUIDXEUR 2014-01-01 2026-08-28
+```
+
+Le 19/10/2026, Dukascopy bloquait notre adresse (503 « No server is available », même pour l'EURUSD) ; le cache
+s'arrête au 16/03/2018. `nexus/histdata.py` récupère le même CFD chez HistData.com (GRXEUR, zips annuels puis mensuels,
+cache `.cache/histdata`). Attention : le site annonce l'heure de New York sans heure d'été, mais les fichiers GRXEUR
+sont en heure de New York AVEC heure d'été ; ainsi convertis, ils se confondent avec Dukascopy (corrélation 0,998
+des rendements 17:00-17:30 sur 2014-2018). Sans cette correction, la demi-heure 17:00-17:30 d'été est décalée d'une
+heure.
+
+```
+python -m nexus.histdata GRXEUR 2014 2026-08        # telechargement + conversion -> .cache/histdata/GRXEUR_1m.parquet
+```
+
+Résultats d'entreprises (accord de l'utilisateur le 20/10/2026) : `python -m nexus.perso.edgar TSLA AVGO ...` lit les heures des 8-K item 2.02 sur data.sec.gov (`nexus/perso/resultats_nasdaq_suite.csv`). Le champ acceptanceDateTime n'a pas la même convention selon le déposant (UTC vrai pour NFLX, INTC, AVGO ; heure de New York décalée deux fois pour AAPL, NVDA, CSCO) : convention choisie par société et par année à la majorité des dépôts d'après la clôture, contrôle exact contre les pages d'index pour AAPL et NVDA.
+
+Horodatage HistData (contrôle du 20/10/2026, `nexus/histdata.vers_utc`) : heure de New York avec l'heure d'été américaine jusqu'à fin 2018, avec l'heure d'été européenne depuis 2019 ; contrôlé semaine par semaine contre 6E/6J (EURJPY 0,989), 6A/6J (AUDJPY 0,985), GC (XAGUSD 0,75), NQ (JPXJPY 0,64), ES (UKXGBP 0,67). Les études DAX du 19/10 avaient 3 à 4 semaines par an décalées d'une heure depuis 2019 (résultats largement négatifs, non relancés). HistData n'a plus l'EuroStoxx 50 après 02/2019.
+
+Crypto (accord de l'utilisateur le 20/10/2026) : `nexus/binance.py` récupère les barres 1 minute au comptant de
+Binance (data.binance.vision, données publiques, BTCUSDT et ETHUSDT depuis 08/2017, un zip par mois vérifié par son
+empreinte SHA-256 publiée). Elles remplacent les micro-futures crypto du CME (MBT, MET), qui n'existent que depuis 2021.
+Depuis le 01/01/2025, Binance horodate en microsecondes (avant : millisecondes) ; l'unité est détectée fichier par
+fichier. Index du parquet : fin de barre, UTC (contrôlé contre les barres 15 min d'Alpaca avant tout calcul).
+
+```
+python -m nexus.binance BTCUSDT ETHUSDT --debut 2017-08 --fin 2026-09   # -> .cache/binance/<SYM>_1m.parquet
 ```
 
 Analyses sur les résultats du runner (elles relisent les fichiers de `resultats/perso_*`) :
@@ -786,29 +828,26 @@ Analyses sur les résultats du runner (elles relisent les fichiers de `resultats
     médiane) à plusieurs tailles, comparée au hasard (une stratégie sans avantage réussit
     dd / (objectif + dd) des évaluations).
 
-Tableau de bord (vectorbt) : `python -m nexus.perso.tableau` écrit `../Dashboard/donnees/recherche.html` (lien « Archive de la recherche » du tableau de bord), une page autonome
-(plotly.js intégré, s'ouvre par double-clic, sans connexion) à régénérer après chaque passage du runner :
+Tableau de bord : depuis le 19/10/2026, les stratégies du runner sont des fiches du tableau de bord Nexus comme les
+autres (`python -m nexus tableau`, ou `--seulement R` après un passage du runner ; § 10). L'ancienne page séparée
+(« archive », `python -m nexus.perso.tableau`) est supprimée ; `nexus/perso/tableau.py` ne garde que la lecture des
+verdicts du runner. Ce qu'elle montrait se retrouve ainsi :
 
-- le top des stratégies : quatre critères fixés d'avance (Sharpe significatif = borne basse de l'IC à 95 % > 0 ;
-  stable = Sharpe positif sur 2016-2020 et 2021-2026 ; pas seulement du bêta = alpha contre le SPY avec t ≥ 2 et pas
-  de verdict « surtout du bêta » dans `recherche/resultats_alternatives.txt` ; données fiables = 5 ans au moins, sans biais du
-  survivant ni options synthétiques), classement par critères remplis puis par la borne basse de l'IC du Sharpe ;
-- toutes les stratégies (tableau triable, filtres par verdict, recherche) ;
-- un explorateur par stratégie : statistiques vectorbt (rendement, Sharpe, Sortino, Calmar, Omega, drawdown max,
-  plus long drawdown, tail ratio, VaR, asymétrie), gain cumulé et drawdown, Sharpe sur 1 an glissant, P&L mensuel,
-  les 5 pires drawdowns (enregistrements vectorbt) ;
-- le portefeuille prop firm futures : comptes 50k / 100k / 150k, règles modifiables (objectif, perte du jour,
-  drawdown suiveur, durée), classement des stratégies et groupes par taux de réussite de l'évaluation recalculé
-  dans la page (mêmes calculs que `portefeuille.py`), corrélations, conflits de contrat, profil horaire ;
-- la recherche sur les 60 stratégies intraday : t de chaque anomalie, tableau des critères, variantes de NQ 1,
-  familles éliminées et stratégies en attente (lu dans `recherche/resultats_60.json`, écrit par `soixante`, `soixante_bc` et
-  `nq1_variantes`).
+- le classement : page Comparaison (tri par Sharpe, borne basse de l'IC, Sharpe déflaté, alertes) ; la remarque
+  « surtout du bêta » de `recherche/resultats_alternatives.txt` est dans le résumé de la stratégie ;
+- toutes les stratégies et l'explorateur : la liste de la barre de gauche et la page de chaque stratégie (mêmes
+  statistiques vectorbt, courbes, trades, tests et Monte Carlo que S1) ;
+- le portefeuille prop firm futures : onglet Prop firm (comptes 50k / 100k / 150k, règles modifiables, combinaison
+  la plus fiable de stratégies futures intraday d'après les statistiques vectorbt, validation hors échantillon du
+  choix, corrélations, conflits de contrat, profil horaire) ;
+- la recherche sur les 60 stratégies intraday et les stratégies construites sur papiers : page Études sur papiers
+  (`recherche/resultats_60.json`, écrit par `soixante`, `soixante_bc`, `nq1_variantes` et chaque module de papier).
 
-Les cotations sources (licence Databento) ne sont pas dans la page : seulement les P&L quotidiens des backtests.
+Les cotations sources (licence Databento) ne sont pas dans le tableau de bord : seulement des résultats de backtests.
 
 Intervalles de confiance, edge et Monte Carlo : `python -m nexus.perso.statistiques` → `recherche/resultats_ic_montecarlo.txt`
-(une ligne par stratégie), repris dans le tableau de bord (colonnes « Edge / trade » et « P(Sharpe > 0) », graphique
-des Sharpe avec leur intervalle à 95 %, panneaux « Edge » et « Monte Carlo » de l'explorateur) :
+(une ligne par stratégie ; dans le tableau de bord, l'IC du Sharpe, le Sharpe probabiliste et le Monte Carlo viennent
+des tests communs à toutes les stratégies) :
 
 - edge = gain moyen par trade net de coûts, IC à 95 % par bootstrap des trades (2 000 tirages) et loi de Student,
   P(edge > 0) ; taux de réussite (Wilson) ; profit factor (bootstrap) ;
@@ -993,6 +1032,76 @@ Lignées pré-FOMC (Pan & Peng 2026 : dérive des obligations à 10 ans la veill
 Halloween (Jacobsen & Zhang : +4,5 %/an, données jusqu'en 2011) lues mais non testées : trop peu de puissance sur
 10 ans, et le pré-FOMC actions a déjà échoué trois fois chez nous.
 
+`python -m nexus.perso.weekend_crypto` → `recherche/resultats_weekend_crypto.txt` (2026-10-19, piste 1 de
+`recherche/pistes.md`). Mourey, Shahrour & Şoiman (*FRL* 2025) : un week-end négatif des cryptomonnaies annonce un
+lundi négatif des actions. Signal : BTC du vendredi 16:00 au dimanche 18:00 ET ; 246 week-ends, 2021-2026. Le constat
+se retrouve après LUNA (pente du rendement vendredi → lundi sur la partie négative : t 2,7). Mais il passe en entier
+dans le saut de réouverture du dimanche 18:00 (Welch −4,6), comme le prévoient Li & Yuan 2026. Vendre ensuite, de la
+réouverture au lundi 16:00, perd 15 pb par trade (t −1,4) : **rejetée**, pas exploitable. Textes complets inaccessibles
+(vérifications anti-robots) : résumés seulement.
+
+`python -m nexus.perso.dax_cloture` → `recherche/resultats_dax_cloture.txt` (2026-10-19, piste 2 de
+`recherche/pistes.md`). S19-B jouée à l'envers (vente à 17:00 si le DAX monte depuis 09:00, achat s'il baisse,
+sortie à 17:30, stop d'origine devenu objectif) faisait un Sharpe de 2,2 sur FDAX 03/2025-08/2026, une observation
+faite après coup. Règle figée et jugée sur 02/01/2014 → 10/03/2025, période jamais regardée, CFD DAX HistData
+(`nexus/histdata.py`). 2 707 trades : −4,0 pb net par trade (t −4,9), négatif sur les deux moitiés, Sharpe −1,46 →
+**rejetée**. La demi-heure 17:00-17:30 suit le sens du jour (pente +0,020, t 2,7), surtout après une baisse
+(t 2,9) : c'est le momentum de Li, Sakkas & Urquhart (*JFM* 2022), pas un retournement. Mais ce momentum est trop
+petit pour les coûts (stratégie du papier : −0,8 pb net, t −1,9). Sur la période déjà vue, le CFD ne donne qu'un
+Sharpe de 0,30 contre 2,24 sur FDAX (même sens 97 % des jours) : l'observation d'origine était en partie propre aux
+futures, et en partie due au hasard de 1,5 an.
+
+`python -m nexus.perso.creneaux [--hypotheses H1,H2]` → `recherche/resultats_creneaux.txt` (lot « créneaux vides »,
+nuit du 19 au 20/10/2026). But : remplir le profil horaire des stratégies fiables (page « Profil horaire » du tableau
+de bord, `nexus/profil_horaire.py`). Sur un an, S1, Gotobi et ORB n'étaient en position qu'entre 9:30 et 16:00 et
+entre 18:00 et 22:00 New York ; rien de 22:00 à 9:30 ni de 16:00 à 18:00. Une hypothèse par section, protocole écrit
+dans l'en-tête avant chaque calcul, critères de la méthode et filtre de fiabilité du tableau de bord, essais cumulés :
+
+| Code | Hypothèse (papier) | Heures | Résultat |
+|---|---|---|---|
+| H1 | or : momentum de la session américaine vers l'Asie (Wei 2026) | 19:00-3:00 | rejetée (Sharpe −0,29) |
+| H2 | devises : contre-pied du saut de réouverture de 18:00 (Tolusic 2026) | 18:00-19:00 | rejetée : retour réel avant coûts (+0,64 pb, t 5,8) mais plus petit que l'aller-retour |
+| H3 | DAX : ORB de Xetra (Zarattini & Aziz 2023) | 3:00-11:30 | rejetée (0,04 ; rien après 2020) |
+| H4 | DAX : zone de bruit de S1 | 3:00-11:30 | rejetée (0,07 ; rien après 2020) |
+| H5 | NQ : boombitch rendu conforme (vendu à 16:59, racheté à 18:00) | toute la séance | **retenue** : Sharpe 1,42 [0,86 ; 1,97], moitiés 1,58 / 1,27, Sharpe déflaté 0,98 |
+| H6 | réplique de H5 sur ES, YM, GC, CL, 6E, 6B, 6J, 6A | toute la séance | aucune retenue ; YM fiable au sens du tableau de bord (0,88, déflaté 0,54) |
+| H7 | réplique de H5 sur le micro-DAX (heures Eurex) | 19:15-16:00 | rejetée (0,03) |
+| H8 | ES : retour après la sortie de la bande du VIX (Seeck 2026) | 9:30-16:00 | rejetée (−0,20 ; la règle du papier sur NQ / VXN : −0,64) |
+| H9 | flux gotobi sur 6E, 6B, 6A (Ito & Yamada 2017 ; Krohn et al. 2023) | 19:00-22:00 | rejetée (−1,63) : le flux reste propre au yen |
+| H10 | or la nuit rendu conforme (N1 vendue à 16:59, rachetée à 18:00 ; Blose & Gondhalekar 2014) | 18:00-8:20, 13:30-17:00 | rejetée par la méthode (t 2,1, déflaté 0,19) fiable avec GC (0,65 [0,06 ; 1,22], moitiés 0,34 / 0,88) mais un GC (≈ 340 000 $) est trop gros pour un compte prop firm ; avec le micro MGC 0,34 [−0,31 ; 0,94] : **non fiable** (fiche N2, calculée en MGC) |
+| H11 | crypto : règle de H5 sur le micro bitcoin (MBT) et le micro ether (MET) ; règle de Zarattini, Pagani & Barbon 2025 rendue conforme (comptant Binance 2017-2026) | toute la séance, nuit comprise | MBT **fiable** : 1,56 [1,05 ; 1,99], moitiés 1,40 / 1,71, déflaté 1,00, mais rejetée par la méthode sur le seul Welch (1,39) ; MET −0,74 ; ZPB25 0,42 |
+| H12 | bitcoin, fenêtres courtes : dernière demi-heure dans le sens de la première (Wen et al. 2022) ; deux heures après la clôture du NYSE (Padyšák & Vojtko 2022) | 23:30-00:00 et 21:00-23:00 UTC | rejetées (−2,18 et −0,70) |
+| H13 | NQ 1-A étendue à TSLA, AVGO, NFLX, COST, ADBE, AMD, INTC, CSCO (8-K EDGAR, `nexus/perso/edgar.py`) | 16:15-16:59, jours de résultats | rejetée : les 8 seules −0,59 pb ; avec les 6, NQ 1-A diluée (0,54, non fiable) |
+| Z1 | pétrole : nuit + première demi-heure → dernière demi-heure (Wen et al. 2019, 2020), `zones.py` | 15:30-16:00 | rejetée (−2,28) |
+| Z2 | veilles de jours fériés américains, ES et NQ (Ariel 1990) | 12:00-16:00 | rejetée (0,29 ; 24 derniers mois −0,44) |
+| N1-N2, E2-E3 | momentum intraday (Li, Sakkas & Urquhart 2022) et ORB 2023 sur le Nikkei et le FTSE (HistData) | Tokyo, Londres | rejetées (−1,16 ; −0,20 ; −0,70 ; 0,04) |
+| A1 | argent : la session américaine annonce la session asiatique (Wei 2026), XAGUSD | 00:00-08:00 UTC | rejetée (−0,29) |
+| J1 | Nikkei après les résultats de Fast Retailing, Tokyo Electron, Advantest, SoftBank (règle de NQ 1-A, 15:30 Tokyo ; dates : pages investisseurs, `nexus/perso/japon.py`) | 15:45-16:15 Tokyo | rejetée (−0,89) |
+| D1 | DAX après les résultats de SAP (règle de NQ 1-A ; dates : salle de presse de SAP depuis 2022, calendrier financier archivé avant, `nexus/perso/sap.py`) | 8:15-8:45 Francfort | rejetée (−0,17) |
+
+Contrôle de taille (19/10/2026) : à 1 % de risque par jour, un compte prop firm de 50 000 à 150 000 $ trade des micros
+quand le contrat standard est trop gros. Gotobi en micro MJY (tick deux fois plus gros rapporté au notionnel) : Sharpe
+0,31, non fiable, mais un 6J entier (≈ 84 000 $, ≈ 500 $ d'écart-type par jour) passe dans un compte de 50 000 $. ORB en
+MNQ : 0,84, fiable. S1 en MNQ : surcoût estimé à 0,2 pb par aller-retour pour 6 pb gagnés par trade. Ces contrôles sont
+dans les fiches (famille « Prop firms »). Heure limite de 16:10 (Topstep, MyFundedFutures, FundedNext) au lieu de 17:00 :
+S1 et ORB ferment à 16:00, Gotobi trade le soir ; boombitch conforme (`DonchianAlt(heure_limite=970)` : vendu à la
+dernière barre finie avant 16:10, racheté à 18:00 avec le même stop) passe de 1,42 à 1,35 sur NQ [0,81 ; 1,84] et de
+0,91 à 0,94 sur YM [0,37 ; 1,47], toujours fiables. Deux trades YM de juin 2018 traversent quand même la fenêtre, à
+cause de barres 17:00-17:15 présentes ces jours-là dans les données (la version 16:59 en a 6 sur NQ et 4 sur YM).
+
+Stratégies courtes (demande du 20/10/2026 : le moins de temps possible, le plus rentable, non corrélées). Critère :
+rendement annuel à 10 % de volatilité pour 100 heures en position. Seules les stratégies de 400 h par an au plus entrent
+dans les combinaisons prop firm (`HEURES_MAX`, `nexus/prop_combinaisons.py`). Courtes et fiables : NQ 1-A (résultats des
+grandes capitalisations, 30 min après le 8-K, environ 5 h par an, runner `kind="nq1"`), Gotobi (208 h), ORB (163 h),
+S1 (311 h). Combinaison recommandée : NQ 1-A + S1 + Gotobi, Sharpe 2,08 [1,49 ; 2,66], corrélation max 0,05, 524 h par an.
+Les boombitch conformes et le micro bitcoin (H11) restent affichés, marqués « trop longue ».
+
+H5 et la réplique YM sont dans le runner (`DonchianAlt(fin_de_seance=True)` : position vendue à la dernière barre
+de chaque séance CME et rachetée à la réouverture avec le même stop) et dans le tableau de bord. Avec elles, la seule
+heure sans stratégie fiable est 17:00-18:00, la pause quotidienne du CME. Leçon : une stratégie de plusieurs jours
+fiable peut devenir conforme aux prop firms à peu de frais (les sauts de réouverture ne pesaient que 2 205 $ sur
+132 374 $ pour boombitch).
+
 Calendrier des annonces américaines de 08:30 ET (`nexus/perso/annonces_us.csv`, sources officielles, vérifié sur le
 pic de volume de 08:30) : NFP et CPI (archives du BLS), PCE (BEA, dates ALFRED de la Fed de Saint-Louis), ventes au
 détail (Census Bureau, dates ALFRED sans les révisions annuelles, calendrier officiel pour 2025-2026). Jours fériés
@@ -1011,7 +1120,107 @@ ou 1/N, régression bêta / alpha), familles courtes de variantes motivées, dé
 ≥ 90 %), PBO par famille, marchés de contrôle sans ré-optimisation. Les variantes retenues sont ajoutées au runner
 (lignes « (alternative) ») et passent donc dans le rapport prop et le tableau de bord.
 
-## 17. Tests
+## 17. Groupe en direct sur NinjaTrader (`nexus/live`, AddOn `NexusPasserelle`)
+
+Le Groupe tourne dans NinjaTrader par l'API NinjaScript, avec la logique des stratégies **en Python** (les mêmes
+règles que la recherche, jamais recopiées en C#) et NinjaTrader réduit à une passerelle :
+
+```
+NinjaTrader 8 ── AddOn NexusPasserelle.cs (TCP 127.0.0.1:51888, une ligne JSON par message)
+   │  barres 1 minute (historique de chauffe puis temps réel), exécutions, positions, battement de cœur
+   ▼
+python -m nexus.live ── moteur : registre groupe.json relu toutes les 5 s, chauffe, cibles nettes par instrument
+   │  « position cible » par instrument (ex. MNQ +3) ; la passerelle passe les ordres au marché
+   ▼
+Dashboard/donnees/live.json ── page « Groupe en direct » du tableau de bord (relue toutes les 3 s)
+```
+
+**Groupe actuel** (`nexus/live/groupe.json`) : **S1** (Noise Area sur NQ, positions en MNQ) et **Gotobi** (6J).
+NQ 1-A (résultats des grandes capitalisations, 30 min après le 8-K, MNQ) a été retirée le 2026-10-20 à la
+demande de l'utilisateur.
+
+### Installer et lancer (compte Sim101 d'abord)
+
+1. `powershell -ExecutionPolicy Bypass -File .\Installer.ps1` (copie aussi `AddOns\NexusPasserelle.cs`), puis
+   NinjaTrader → *New → NinjaScript Editor* → **F5**. L'AddOn démarre avec NinjaTrader et écoute sur
+   127.0.0.1:51888 ; il crée `Documents\NinjaTrader 8\Nexus\passerelle.json` au premier lancement.
+2. NinjaTrader connecté à un flux de données qui fournit l'historique 1 minute de NQ et 6J (la chauffe de S1
+   demande environ 75 000 minutes, soit 54 séances).
+3. Depuis `Python/` : `python -m nexus.live`. Le moteur se connecte (et se reconnecte seul), s'abonne aux
+   instruments, chauffe chaque stratégie sur l'historique, puis agit au point de décision suivant.
+4. Suivi : fenêtre **Groupe** de NinjaTrader (ci-dessous) ou page **Groupe en direct** du tableau de bord ; journal
+   `Python/.cache/live/journal_AAAAMMJJ.jsonl` ; journal de la passerelle
+   `Documents\NinjaTrader 8\Nexus\journal\passerelle_AAAAMMJJ.log`.
+
+### Fenêtre « Groupe » dans NinjaTrader (Control Center → *New* → **Groupe**)
+
+| Zone | Contenu |
+|---|---|
+| En-tête | passerelle (en écoute ou non), Python (connecté, dernier message), compte (simulation ou réel), garde-fou actif, suspension, coupure ; valeur liquidative et résultat depuis 18:00 ET |
+| **Tout arrêter / Reprendre** | écrit `"actif"` dans `passerelle.json` : tout à plat, aucun ordre jusqu'à « Reprendre » ; à la reprise, chaque stratégie retrouve sa position cible du moment |
+| Stratégies du Groupe | une ligne par entrée de `groupe.json`, désactivées comprises : statut (active, chauffe, désactivée, erreur), cible, état ; bouton **Activer / Désactiver** (la commande part à Python, qui modifie `"actif"` dans `groupe.json`) |
+| Instruments | cible nette, position réelle (« ordre en cours » tant qu'elles diffèrent), plafond |
+| Journal | 80 derniers messages de la passerelle |
+
+Le bouton **Flatten** de NinjaTrader ne suffit pas : la passerelle ramène chaque instrument à sa cible dans la seconde.
+Pour arrêter le Groupe, utiliser **Tout arrêter**, ou fermer le moteur Python (tout à plat à la déconnexion).
+
+### Garde-fous (dans NinjaTrader, indépendants de Python : `passerelle.json`, relu à chaque modification)
+
+| Réglage | Défaut | Effet |
+|---|---|---|
+| `compte` | `Sim101` | seul compte utilisé ; un compte non simulé est **refusé** (aucun ordre) tant que `compte_reel_autorise` n'est pas à `true` |
+| `max_contrats` | NQ 1, MNQ 10, 6J 2, MJY 20… | plafond de position par racine ; la cible est écrêtée (`max_contrats_defaut` pour les autres) |
+| `coupure_et` / `reprise_et` | 16:10 / 18:00 | tout à plat entre ces heures de New York (limite Topstep ; S1 finit à 16:00) |
+| `perte_jour_max` | 0 (désactivé) | perte de valeur liquidative depuis 18:00 ET : tout à plat, Groupe suspendu jusqu'à la séance suivante |
+| `delai_coeur_s` | 30 | sans message de Python pendant 30 s (ou à la déconnexion) : tout à plat |
+| fichier `Nexus\KILL_SWITCH` | absent | présent : tout à plat (interrupteur global commun aux stratégies Nexus) |
+| `actif` | `true` | `false` (bouton « Tout arrêter » de la fenêtre Groupe) : tout à plat, aucun ordre |
+
+Chaque verrou remet les cibles de la passerelle à 0. Quand il est levé (reprise de 18:00, « Reprendre », Python
+reconnecté), le moteur renvoie les cibles du moment de chaque stratégie. Exception : après une **perte du jour** ou
+l'**interrupteur global**, le Groupe reste suspendu jusqu'à la séance suivante. Dédier le compte au Groupe : la
+passerelle ramène chaque instrument géré à sa cible, y compris après un ordre manuel.
+Les contrats sont résolus par le calendrier de roulement de NinjaTrader (`NQ` → `NQ 12-26`), historique
+`MergeBackAdjusted`.
+
+### Ajouter une stratégie (sans rien redémarrer)
+
+1. Un fichier Python avec une classe dérivée de `nexus.live.strategie.StrategieLive` : `abonnements()` (instruments
+   et barres de chauffe), `sur_barre(instrument, barre)` et/ou `sur_horloge(t)`, et `self.ctx.cible(instrument, qté)`.
+   La stratégie ne parle jamais à NinjaTrader ; le moteur additionne les cibles de toutes les stratégies par
+   instrument.
+2. Une entrée dans `nexus/live/groupe.json` : `{"nom": ..., "classe": "module:Classe", "actif": true, "params": {...}}`.
+   Le moteur la charge dans les 5 s, s'abonne à ses instruments, la chauffe sur l'historique et l'active.
+   Retirer l'entrée ou mettre `"actif": false` met ses cibles à 0 aussitôt. Une entrée modifiée (paramètres ou
+   code) est remplacée dès que ses positions sont à plat. Une stratégie qui lève une exception passe en
+   « erreur », cibles à 0, sans arrêter les autres.
+3. Avant de l'ajouter : la rejouer dans le moteur avec `nexus.live.rejeu.rejouer` et comparer à ses trades de
+   recherche (vectorbt), comme `--verifier` le fait pour S1 et Gotobi.
+
+### Parité avec la recherche (`python -m nexus.live --verifier`, données Cotations 2016-2026)
+
+Les stratégies en direct sont rejouées minute par minute dans le vrai moteur. La passerelle est simulée : une cible
+modifiée à l'instant t est exécutée à l'ouverture de la barre suivante.
+
+| Stratégie | Référence | Résultat |
+|---|---|---|
+| S1 | `S1_NoiseAreaNQ.backtest` (même capital du jour) | 3 656 événements sur 3 656 identiques (jour, heure, position et nombre de contrats) ; 21 demi-séances du calendrier = 21 des données |
+| Gotobi | `gotobi.signaux` | 2 239 sur 2 239 identiques ; 2 ventes de plus en direct (15/06/2020 et 15/06/2026 à 08:00 Tokyo, aucune barre 6J avant 08:14-08:38 : la recherche saute le jour, un ordre au marché serait exécuté) |
+
+Seule différence de prix attendue : la sortie de fin de séance de S1. En direct, elle se fait à l'ouverture de la
+minute de 16:00 ; dans le backtest, à la clôture de la minute 15:59-16:00.
+
+`python -m nexus.live --essai` : essai de bout en bout sans NinjaTrader (vrai client TCP, vrai moteur, fausse
+passerelle) : chauffe, exécutions, ajout et retrait à chaud, cibles additionnées, commandes Activer / Désactiver de
+la fenêtre Groupe, garde-fou de perte du jour.
+
+**Non vérifié ici** : la passerelle et la fenêtre Groupe dans NinjaTrader lui-même. Elles compilent sans erreur
+contre les DLL 8.1.8.3, mais aucune n'a été ouverte ni aucun ordre passé depuis cette machine. Premier essai : Sim101,
+marché ouvert. Vérifier dans la fenêtre Groupe (ou le journal de la passerelle) l'abonnement à NQ et 6J, puis
+l'arrivée des barres et les cibles.
+
+## 18. Tests
 
 ```
 python -m pytest -q
@@ -1029,9 +1238,11 @@ python -m pytest -q
 - le moteur intrajournalier `perso` : exécutions, stops, objectifs, limites, déclencheurs horaires,
   calendrier US (fériés, EIA, fin de mois), ATR NinjaTrader, parité de risque ;
 - les stratégies minute : fiche 16 et S1 (dont le résultat de référence), Gotobi, ORB, or la nuit, fiche 15 LETF,
-  groupe P1, simulation des challenges prop, catalogue SSRN et export du tableau de bord.
+  groupe P1, simulation des challenges prop, catalogue SSRN et export du tableau de bord ;
+- le Groupe en direct (`tests/test_live.py`) : protocole, cibles nettes, registre à chaud, erreurs isolées,
+  suspension, demi-séances, parité de S1 et de Gotobi avec la recherche, essai de bout en bout TCP.
 
-## 18. Architecture
+## 19. Architecture
 
 ```
 nexus/
@@ -1053,6 +1264,7 @@ nexus/
   gotobi.py orb.py or_nuit.py letf.py   candidates minute construites dans vectorbt (§ 10 à 13)
   p1.py prop.py  groupe P1 (criblage intraday) et simulation des challenges de prop firms
   tableau.py     export du tableau de bord Node.js (statistiques vectorbt, tests, corrélations)
+  live/          Groupe en direct sur NinjaTrader : moteur, client de la passerelle, stratégies, rejeu (§ 17)
   perso/         stratégies NinjaScript personnelles, anomalies, moteur intrajournalier (§ 16)
 outils/          recalcul indépendant de la fiche 16, catalogue SSRN
 recherche/       rapports de chaque étude (resultats_*.txt, resultats_60.json, resultats_strategies.*)

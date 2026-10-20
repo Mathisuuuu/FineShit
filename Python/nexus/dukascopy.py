@@ -5,7 +5,7 @@ Un fichier par jour : datafeed/<SYMBOLE>/<annee>/<mois-1>/<jour>/BID_candles_min
 seconde du jour UTC, open, close, low, high en milliemes de point, volume). Les minutes sans transaction (volume nul)
 sont ecartees, comme NinjaTrader ne cree pas de barre sans tick. Index = heure de FIN de barre, UTC naif.
 
-    python -m nexus.dukascopy DEUIDXEUR 2014-01-01 2026-08-28
+    python -m nexus.dukascopy DEUIDXEUR 2014-01-01 2026-08-28 [pause entre requetes en secondes, 1 par defaut]
 """
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def _day(sym: str, day: pd.Timestamp, tries: int = 6, pause: float = 1.0):
             if ex.code == 404:
                 return day, []
             err = ex
-            if ex.code == 429:           # limite de debit : longue pause avant de reessayer
+            if ex.code in (429, 503):    # limite de debit (503 « No server is available » : blocage de l adresse)
                 time.sleep(120 * (k + 1))
                 continue
         except Exception as ex:          # 503, delais : on ralentit et on recommence
@@ -62,7 +62,8 @@ def _save(path: str, have: pd.DataFrame | None, rows: list) -> pd.DataFrame:
     return df
 
 
-def download(sym: str, start, end, path: str | None = None, threads: int = 1, chunk: int = 20, log=print) -> pd.DataFrame:
+def download(sym: str, start, end, path: str | None = None, threads: int = 1, chunk: int = 20, pause: float = 1.0,
+             log=print) -> pd.DataFrame:
     """Reprend la ou il s est arrete : sauvegarde toutes les `chunk` journees (le serveur limite fortement le debit)."""
     scale = SCALE.get(sym.upper(), 1000.0)
     path = path or os.path.join(DEFAULT_CACHE, "dukascopy", f"{sym.upper()}_1m.parquet")
@@ -77,7 +78,7 @@ def download(sym: str, start, end, path: str | None = None, threads: int = 1, ch
     with ThreadPoolExecutor(max_workers=threads) as ex:
         for k in range(0, len(days), chunk):
             rows = []
-            for day, recs in ex.map(lambda d: _day(sym, d), days[k:k + chunk]):
+            for day, recs in ex.map(lambda d: _day(sym, d, pause=pause), days[k:k + chunk]):
                 if isinstance(recs, Exception):
                     failed.append(day)
                     continue
@@ -94,4 +95,4 @@ def download(sym: str, start, end, path: str | None = None, threads: int = 1, ch
 
 
 if __name__ == "__main__":
-    download(sys.argv[1], sys.argv[2], sys.argv[3])
+    download(sys.argv[1], sys.argv[2], sys.argv[3], pause=float(sys.argv[4]) if len(sys.argv) > 4 else 1.0)

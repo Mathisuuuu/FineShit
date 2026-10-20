@@ -2145,5 +2145,1848 @@
   },
   "dsr": 0.0111,
   "n_essais": 372
+ },
+ "weekend_crypto": {
+  "genere": "2026-10-19 16:10",
+  "titre": "Week-end crypto -> lundi des futures d indices (Mourey, Shahrour & Soiman 2025)",
+  "sous": "Signal : BTC du vendredi 16:00 au dimanche 18:00 ET ; vente si negatif. Net en pb par trade ; moities avant / apres le 01/11/2023 ; 2021-2026 ; 375 essais. Papiers lus en resume seulement (textes bloques).",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   vente dim. 18:00 -> lun. 16:00 si W < 0",
+    "n": 104,
+    "moyenne": -15.1871,
+    "t": -1.4272,
+    "t1": -0.0954,
+    "t2": -2.1239,
+    "temoin": -20.0257,
+    "welch": 0.5008,
+    "sharpe_an": -0.5985,
+    "dsr": 0.0
+   },
+   {
+    "code": "V2",
+    "nom": "V   couts 2 ticks",
+    "n": 104,
+    "moyenne": -16.2092,
+    "t": -1.5235,
+    "t1": -0.1649,
+    "t2": -2.1911,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.6381,
+    "dsr": 0.0
+   },
+   {
+    "code": "T",
+    "nom": "temoin : meme vente apres W > 0",
+    "n": 142,
+    "moyenne": -21.2316,
+    "t": -3.6752,
+    "t1": -1.4724,
+    "t2": -4.0784,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -1.4903,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  vente lun. 9:30 -> 16:00 si W < 0",
+    "n": 104,
+    "moyenne": -16.5691,
+    "t": -2.0195,
+    "t1": -0.5936,
+    "t2": -2.2536,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.8393,
+    "dsr": 0.0
+   },
+   {
+    "code": "R0",
+    "nom": "R0  vente ven. 16:00 -> lun. 16:00 (non executable)",
+    "n": 104,
+    "moyenne": 1.6544,
+    "t": 0.1561,
+    "t1": 0.6112,
+    "t2": -0.5578,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.0661,
+    "dsr": 0.0025
+   },
+   {
+    "code": "NQ",
+    "nom": "replique de V sur NQ",
+    "n": 104,
+    "moyenne": -13.7511,
+    "t": -0.9715,
+    "t1": 0.0108,
+    "t2": -1.5168,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.4093,
+    "dsr": 0.0
+   },
+   {
+    "code": "YM",
+    "nom": "replique de V sur YM",
+    "n": 104,
+    "moyenne": -12.0543,
+    "t": -1.3247,
+    "t1": 0.1123,
+    "t2": -2.0937,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.5562,
+    "dsr": 0.0
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain moyen net > 0",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "criteres": {
+   "n": 104,
+   "moyenne": -13.9605,
+   "t": -1.3117,
+   "m1": -0.2065,
+   "t1": -0.0119,
+   "m2": -26.2141,
+   "t2": -2.0433,
+   "temoin": -20.0257,
+   "welch": 0.5008,
+   "cout": 1.2265,
+   "net": -15.1871,
+   "sans3": -23.638,
+   "part_annees": 0.3333,
+   "tests": {
+    "t >= 3": false,
+    "meme signe et t >= 1,5 sur chaque moitie": false,
+    "t de Welch >= 2 contre le temoin": false,
+    "gain moyen net > 0": false,
+    "gain net > 0 sans les 3 meilleurs trades": false
+   },
+   "passe": false
+  },
+  "dsr": 0.0,
+  "n_essais": 375,
+  "etape1": {
+   "total": {
+    "n": 246,
+    "b_neg": 0.0946,
+    "t_neg": 1.6776,
+    "b_pos": -0.0199,
+    "t_pos": -0.4433,
+    "neg": -2.879,
+    "pos": 25.4662,
+    "welch": -2.3157
+   },
+   "saut": {
+    "n": 246,
+    "b_neg": 0.0658,
+    "t_neg": 2.6967,
+    "b_pos": 0.0416,
+    "t_pos": 3.133,
+    "neg": -16.721,
+    "pos": 5.4354,
+    "welch": -4.6235
+   },
+   "nuit": {
+    "n": 246,
+    "b_neg": 0.056,
+    "t_neg": 1.4307,
+    "b_pos": -0.0363,
+    "t_pos": -1.2747,
+    "neg": -1.34,
+    "pos": 9.6268,
+    "welch": -1.3123
+   },
+   "seance": {
+    "n": 246,
+    "b_neg": -0.028,
+    "t_neg": -0.7287,
+    "b_pos": -0.0249,
+    "t_pos": -0.5098,
+    "neg": 15.3422,
+    "pos": 10.4316,
+    "welch": 0.5155
+   }
+  }
+ },
+ "dax_cloture": {
+  "genere": "2026-10-19 17:16",
+  "titre": "Retournement du DAX avant la cloture de Xetra (S19-B a l envers, hors echantillon 2014-2025)",
+  "sous": "CFD DAX HistData GRXEUR (meme flux que Dukascopy), 17:00-17:30 heure de Berlin, taille FDAX ; net en pb du notionnel d un contrat par trade ; moities avant / apres le 01/07/2019 ; 378 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   S19-B a l envers (17:00-17:30)",
+    "n": 2707,
+    "moyenne": -4.0124,
+    "t": -4.9215,
+    "t1": -2.8544,
+    "t2": -4.0971,
+    "temoin": -0.2572,
+    "welch": -1.2817,
+    "sharpe_an": -1.4624,
+    "dsr": 0.0
+   },
+   {
+    "code": "V2",
+    "nom": "V   couts 2 ticks",
+    "n": 2707,
+    "moyenne": -6.0966,
+    "t": -7.4276,
+    "t1": -4.0886,
+    "t2": -6.394,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.2064,
+    "dsr": 0.0
+   },
+   {
+    "code": "T",
+    "nom": "temoin : meme regle 12:00-12:30",
+    "n": 2708,
+    "moyenne": -2.225,
+    "t": -3.7211,
+    "t1": -1.5164,
+    "t2": -3.4214,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -1.1058,
+    "dsr": 0.0
+   },
+   {
+    "code": "R0",
+    "nom": "R0  anomalie brute, 1 contrat, sans stop",
+    "n": 2751,
+    "moyenne": -3.4086,
+    "t": -7.994,
+    "t1": -5.2969,
+    "t2": -6.0674,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.3749,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  ITSM de LSU22 (momentum)",
+    "n": 2718,
+    "moyenne": -0.8102,
+    "t": -1.8759,
+    "t1": -0.2255,
+    "t2": -2.5733,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.5575,
+    "dsr": 0.0
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain moyen net > 0",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "criteres": {
+   "n": 2707,
+   "moyenne": -1.5494,
+   "t": -1.9102,
+   "m1": -1.5595,
+   "t1": -1.3898,
+   "m2": -1.5388,
+   "t2": -1.3115,
+   "temoin": -0.2572,
+   "welch": -1.2817,
+   "net": -4.0124,
+   "sans3": -4.2845,
+   "part_annees": 0.0,
+   "tests": {
+    "t >= 3": false,
+    "meme signe et t >= 1,5 sur chaque moitie": false,
+    "t de Welch >= 2 contre le temoin": false,
+    "gain moyen net > 0": false,
+    "gain net > 0 sans les 3 meilleurs trades": false
+   },
+   "passe": false
+  },
+  "dsr": 0.0,
+  "n_essais": 378,
+  "etape1": {
+   "A1": {
+    "entier": {
+     "n": 2755,
+     "b": 0.0196,
+     "t": 2.7312
+    },
+    "P1": {
+     "n": 1377,
+     "b": 0.0263,
+     "t": 2.6024
+    },
+    "P2": {
+     "n": 1378,
+     "b": 0.0134,
+     "t": 1.3475
+    }
+   },
+   "A2": {
+    "entier": {
+     "n": 2718,
+     "b": 0.0012,
+     "t": 1.2432
+    },
+    "P1": {
+     "n": 1366,
+     "b": 0.0315,
+     "t": 2.1932
+    },
+    "P2": {
+     "n": 1352,
+     "b": 0.0006,
+     "t": 1.0037
+    }
+   },
+   "A3": {
+    "entier": {
+     "n": 2723,
+     "b": 0.0023,
+     "t": 1.4476
+    },
+    "P1": {
+     "n": 1368,
+     "b": 0.0326,
+     "t": 3.5768
+    },
+    "P2": {
+     "n": 1355,
+     "b": 0.001,
+     "t": 1.2301
+    }
+   },
+   "A4": {
+    "entier": {
+     "n": 2742,
+     "b": 0.103,
+     "t": 0.4428
+    },
+    "P1": {
+     "n": 1365,
+     "b": -0.0223,
+     "t": -0.233
+    },
+    "P2": {
+     "n": 1377,
+     "b": 0.259,
+     "t": 0.5082
+    }
+   },
+   "A5": {
+    "entier": {
+     "n": 2774,
+     "b": 0.0079,
+     "t": 0.5583
+    },
+    "P1": {
+     "n": 1376,
+     "b": -0.0175,
+     "t": -1.7483
+    },
+    "P2": {
+     "n": 1398,
+     "b": 0.0317,
+     "t": 1.3262
+    }
+   },
+   "A1_asym": {
+    "n": 2755,
+    "b_neg": 0.0323,
+    "t_neg": 2.8567,
+    "b_pos": 0.0052,
+    "t_pos": 0.3479
+   }
+  },
+  "controle": {
+   "n_fdax": 370,
+   "n_cfd": 371,
+   "communs": 368,
+   "meme_sens": 0.9701,
+   "correlation": 0.6829,
+   "total_fdax": 118298.75,
+   "total_cfd": 13610.8075,
+   "sharpe_fdax": 2.2403,
+   "sharpe_cfd": 0.299
+  },
+  "contexte": {
+   "nom": "contexte : S19-B d origine (sens du jour)",
+   "n": 2707,
+   "moyenne": -0.9137,
+   "t": -1.1288,
+   "t1": -0.0786,
+   "t2": -1.5149,
+   "sharpe": -0.3355,
+   "perte_max": 0.3895,
+   "dsr": 0.0,
+   "gagnants": 0.3628,
+   "total_usd": -55337.99,
+   "sharpe_usd": -0.2916
+  }
+ },
+ "creneaux_H1": {
+  "genere": "2026-10-19 22:47",
+  "titre": "Or : momentum de session vers l Asie (Wei 2026)",
+  "sous": "00:00-08:00 UTC (19:00/20:00 -> 3:00/4:00 New York) ; GC ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 381 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   achat Asie si la session US precedente a monte",
+    "n": 1354,
+    "moyenne": -1.275,
+    "t": -0.9457,
+    "t1": -1.976,
+    "t2": 0.3721,
+    "temoin": 0.9371,
+    "welch": -0.3995,
+    "sharpe_an": -0.2855,
+    "dsr": 0.0
+   },
+   {
+    "code": "V2",
+    "nom": "V   couts 2 ticks",
+    "n": 1354,
+    "moyenne": -2.4242,
+    "t": -1.7976,
+    "t1": -2.8017,
+    "t2": -0.0594,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.5425,
+    "dsr": 0.0
+   },
+   {
+    "code": "T",
+    "nom": "temoin : achat Asie apres une session US en baisse",
+    "n": 1314,
+    "moyenne": -0.5093,
+    "t": -0.3644,
+    "t1": -0.4439,
+    "t2": -0.1416,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.11,
+    "dsr": 0.0004
+   },
+   {
+    "code": "R1",
+    "nom": "R1  regle acheteuse du papier (Asie + Europe, sans US)",
+    "n": 2062,
+    "moyenne": 0.9405,
+    "t": 0.695,
+    "t1": -0.5485,
+    "t2": 1.3675,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.2098,
+    "dsr": 0.0116
+   },
+   {
+    "code": "R0",
+    "nom": "R0  achat Asie tous les jours (derive, sans signal)",
+    "n": 2726,
+    "moyenne": -0.8625,
+    "t": -0.8852,
+    "t1": -1.7684,
+    "t2": 0.1775,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.2672,
+    "dsr": 0.0001
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain moyen net > 0",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 381
+ },
+ "creneaux_H2": {
+  "genere": "2026-10-19 22:50",
+  "titre": "Devises : contre-pied du saut de reouverture de 18:00 (Tolusic 2026)",
+  "sous": "18:00-19:00 New York ; 6E, 6B, 6A, 6J ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 384 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   contre-pied saut >= 1 pip, 18:00 -> 19:00",
+    "n": 6843,
+    "moyenne": -1.1861,
+    "t": -10.7716,
+    "t1": -6.2702,
+    "t2": -9.0861,
+    "temoin": 0.2764,
+    "welch": 1.8471,
+    "sharpe_an": -2.7529,
+    "dsr": 0.0
+   },
+   {
+    "code": "V2",
+    "nom": "V   couts 2 ticks",
+    "n": 6843,
+    "moyenne": -2.4675,
+    "t": -22.379,
+    "t1": -14.1275,
+    "t2": -17.6932,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -5.6529,
+    "dsr": 0.0
+   },
+   {
+    "code": "T",
+    "nom": "temoin : micro-saut de 20:00, 20:00 -> 21:00",
+    "n": 5019,
+    "moyenne": -1.5221,
+    "t": -9.3524,
+    "t1": -5.3599,
+    "t2": -7.8244,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.5389,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  meme entree tenue jusqu a 16:59",
+    "n": 6663,
+    "moyenne": -1.2076,
+    "t": -1.6952,
+    "t1": -1.0875,
+    "t2": -1.3185,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.4451,
+    "dsr": 0.0
+   },
+   {
+    "code": "R0",
+    "nom": "R0  contre-pied de tous les sauts, 18:00 -> 19:00",
+    "n": 9234,
+    "moyenne": -1.2578,
+    "t": -14.0481,
+    "t1": -7.3075,
+    "t2": -12.8715,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -3.6245,
+    "dsr": 0.0
+   }
+  ],
+  "echecs": [
+   "t de Welch >= 2 contre le temoin",
+   "gain moyen net > 0",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 384
+ },
+ "creneaux_H3": {
+  "genere": "2026-10-19 22:54",
+  "titre": "DAX : cassure du range d ouverture de Xetra (Zarattini & Aziz 2023)",
+  "sous": "9:00-17:30 Berlin (3:00-11:30 New York) ; FDAX (CFD DAX) ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 387 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   ORB 2023 (bougie 9:00, stop au range)",
+    "n": 3169,
+    "moyenne": 0.4889,
+    "t": 0.1607,
+    "t1": 0.9166,
+    "t2": -0.8838,
+    "temoin": 0.2806,
+    "welch": 1.5953,
+    "sharpe_an": 0.0449,
+    "dsr": 0.0025
+   },
+   {
+    "code": "V2",
+    "nom": "V   couts 2 ticks",
+    "n": 3169,
+    "moyenne": -4.2949,
+    "t": -1.4102,
+    "t1": -0.0124,
+    "t2": -2.2336,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.3941,
+    "dsr": 0.0
+   },
+   {
+    "code": "T",
+    "nom": "temoin : meme regle, bougie 12:00",
+    "n": 3046,
+    "moyenne": -5.5106,
+    "t": -2.6683,
+    "t1": -0.5735,
+    "t2": -3.899,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.7457,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  ORB 2024 sans filtre de volume (stop 10 % ATR)",
+    "n": 2968,
+    "moyenne": 2.6034,
+    "t": 0.7994,
+    "t1": 1.6531,
+    "t2": -0.8565,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.2234,
+    "dsr": 0.0156
+   },
+   {
+    "code": "R0",
+    "nom": "R0  anomalie brute, 1 contrat, sans stop",
+    "n": 3179,
+    "moyenne": 0.0665,
+    "t": 0.0422,
+    "t1": 0.6029,
+    "t2": -0.7069,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.0118,
+    "dsr": 0.0017
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 387
+ },
+ "creneaux_H4": {
+  "genere": "2026-10-19 22:57",
+  "titre": "DAX : zone de bruit de S1 sur la seance de Xetra",
+  "sous": "9:00-17:30 Berlin (3:00-11:30 New York) ; FDAX (CFD DAX) ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 390 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   reglage S1 (sigma 30 seances, bande x1,2, TWAP)",
+    "n": 1353,
+    "moyenne": 0.6887,
+    "t": 0.2217,
+    "t1": 1.0066,
+    "t2": -1.0156,
+    "temoin": 2.0789,
+    "welch": 0.5824,
+    "sharpe_an": 0.0656,
+    "dsr": 0.0029
+   },
+   {
+    "code": "V2",
+    "nom": "V   couts 2 ticks",
+    "n": 1353,
+    "moyenne": -2.7315,
+    "t": -0.8757,
+    "t1": 0.2451,
+    "t2": -1.8271,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.2591,
+    "dsr": 0.0001
+   },
+   {
+    "code": "T",
+    "nom": "temoin : achat 9:30 -> 17:30 tous les jours",
+    "n": 2411,
+    "moyenne": -0.5053,
+    "t": -0.1512,
+    "t1": -0.6781,
+    "t2": 0.6487,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.0447,
+    "dsr": 0.0009
+   },
+   {
+    "code": "R1",
+    "nom": "R1  reglage du papier (sigma 14 seances, bande x1)",
+    "n": 1600,
+    "moyenne": 0.8063,
+    "t": 0.278,
+    "t1": 0.9765,
+    "t2": -0.9122,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.0823,
+    "dsr": 0.0035
+   },
+   {
+    "code": "R0",
+    "nom": "R0  cassure seule (sans TWAP), levier 1",
+    "n": 1573,
+    "moyenne": -1.3683,
+    "t": -0.8692,
+    "t1": -0.153,
+    "t2": -1.3214,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.2572,
+    "dsr": 0.0001
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 390
+ },
+ "creneaux_H5": {
+  "genere": "2026-10-19 23:05",
+  "titre": "NQ : boombitch (Turtle Donchian) rendu conforme a la seance",
+  "sous": "toute la seance CME 18:00-17:00 New York, cassures a toute heure ; NQ (MNQ) ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 393 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   taille inverse a la vol. (300 $), conforme",
+    "n": 2491,
+    "moyenne": 5.0951,
+    "t": 4.7744,
+    "t1": 3.7084,
+    "t2": 3.0344,
+    "temoin": 1.4565,
+    "welch": 2.8069,
+    "sharpe_an": 1.4224,
+    "dsr": 0.9788
+   },
+   {
+    "code": "V0",
+    "nom": "    meme strategie NON conforme (reference)",
+    "n": 2491,
+    "moyenne": 5.0951,
+    "t": 4.7744,
+    "t1": 3.7084,
+    "t2": 3.0344,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 1.4991,
+    "dsr": 0.9896
+   },
+   {
+    "code": "R1",
+    "nom": "R1  boombitch d origine (1 MNQ), conforme",
+    "n": 2491,
+    "moyenne": 0.8664,
+    "t": 3.2947,
+    "t1": 3.025,
+    "t2": 2.3872,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.9504,
+    "dsr": 0.6712
+   },
+   {
+    "code": "R0",
+    "nom": "R0  filtre de tendance 200 j, conforme",
+    "n": 1952,
+    "moyenne": 0.9944,
+    "t": 3.5016,
+    "t1": 3.7381,
+    "t2": 2.3144,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 1.0448,
+    "dsr": 0.7783
+   },
+   {
+    "code": "T",
+    "nom": "temoin : 1 MNQ de 18:00 a 16:59 chaque seance",
+    "n": 2753,
+    "moyenne": 1.4565,
+    "t": 1.9791,
+    "t1": 2.1381,
+    "t2": 1.2596,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.5988,
+    "dsr": 0.1574
+   }
+  ],
+  "echecs": [],
+  "retenue": true,
+  "fiable": true,
+  "n_essais": 393
+ },
+ "creneaux_H6": {
+  "genere": "2026-10-19 23:17",
+  "titre": "Replique de H5 (Donchian conforme) sur ES, YM, GC, CL, 6E, 6B, 6J, 6A",
+  "sous": "toute la seance CME 18:00-17:00 New York ; MES, MYM, MGC, MCL, M6E, M6B, MJY, M6A ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 401 essais.",
+  "lignes": [
+   {
+    "code": "ES",
+    "nom": "ES (MES)  2943 trades  P&L -8 774 $",
+    "n": 2943,
+    "moyenne": -0.2981,
+    "t": -0.3419,
+    "t1": -1.651,
+    "t2": 1.0465,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.1039,
+    "dsr": 0.0004
+   },
+   {
+    "code": "YM",
+    "nom": "YM (MYM)  2785 trades  P&L +81 749 $",
+    "n": 2785,
+    "moyenne": 2.9353,
+    "t": 2.9129,
+    "t1": 3.0486,
+    "t2": 1.0422,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.8805,
+    "dsr": 0.5366
+   },
+   {
+    "code": "GC",
+    "nom": "GC (MGC)  2665 trades  P&L +51 446 $",
+    "n": 2665,
+    "moyenne": 1.9304,
+    "t": 1.9894,
+    "t1": 0.654,
+    "t2": 2.1566,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.6032,
+    "dsr": 0.1778
+   },
+   {
+    "code": "CL",
+    "nom": "CL (MCL)  2837 trades  P&L -84 054 $",
+    "n": 2837,
+    "moyenne": -2.9628,
+    "t": -3.4337,
+    "t1": -1.7302,
+    "t2": -3.1715,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -1.0379,
+    "dsr": 0.0
+   },
+   {
+    "code": "6E",
+    "nom": "6E (M6E)  2602 trades  P&L -213 352 $",
+    "n": 2602,
+    "moyenne": -8.1995,
+    "t": -8.1227,
+    "t1": -5.8749,
+    "t2": -5.6245,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.3741,
+    "dsr": 0.0
+   },
+   {
+    "code": "6B",
+    "nom": "6B (M6B)  2761 trades  P&L -250 408 $",
+    "n": 2761,
+    "moyenne": -9.0695,
+    "t": -9.7728,
+    "t1": -5.4173,
+    "t2": -8.3205,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.8577,
+    "dsr": 0.0
+   },
+   {
+    "code": "6J",
+    "nom": "6J (MJY)  2324 trades  P&L -196 559 $",
+    "n": 2324,
+    "moyenne": -8.4578,
+    "t": -7.316,
+    "t1": -4.6352,
+    "t2": -5.6725,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.1505,
+    "dsr": 0.0
+   },
+   {
+    "code": "6A",
+    "nom": "6A (M6A)  2802 trades  P&L -315 371 $",
+    "n": 2802,
+    "moyenne": -11.2552,
+    "t": -13.1464,
+    "t1": -9.6137,
+    "t2": -9.0131,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -3.6849,
+    "dsr": 0.0
+   },
+   {
+    "code": "V",
+    "nom": "YM (MYM)  2785 trades  P&L +81 749 $",
+    "n": 2785,
+    "moyenne": 2.9353,
+    "t": 2.9129,
+    "t1": 3.0486,
+    "t2": 1.0422,
+    "temoin": 0.4809,
+    "welch": 2.3306,
+    "sharpe_an": 0.8805,
+    "dsr": 0.5366
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": true,
+  "n_essais": 401
+ },
+ "creneaux_H7": {
+  "genere": "2026-10-19 23:20",
+  "titre": "DAX : Donchian conforme (regle de H5) sur le micro-DAX",
+  "sous": "01:15-22:00 Berlin (19:15-16:00 New York) ; FDXS (CFD DAX) ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 402 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   FDXS  2363 trades  P&L +2 255 $",
+    "n": 2363,
+    "moyenne": 0.0954,
+    "t": 0.0961,
+    "t1": 1.2251,
+    "t2": -1.199,
+    "temoin": 0.1294,
+    "welch": -0.033,
+    "sharpe_an": 0.0269,
+    "dsr": 0.0019
+   },
+   {
+    "code": "T",
+    "nom": "temoin : 1 FDXS de l ouverture a la cloture de chaque seance",
+    "n": 3206,
+    "moyenne": 0.1294,
+    "t": 0.4845,
+    "t1": -0.5939,
+    "t2": 1.1719,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.1358,
+    "dsr": 0.0062
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 402
+ },
+ "creneaux_H8": {
+  "genere": "2026-10-19 23:28",
+  "titre": "ES : retour apres la sortie de la bande de volatilite implicite (Seeck 2026)",
+  "sous": "9:30-16:00 New York ; ES ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 405 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   ES, bande VIX / 16, retour jusqu a la cloture",
+    "n": 475,
+    "moyenne": -2.7357,
+    "t": -0.6334,
+    "t1": -1.1071,
+    "t2": 0.1482,
+    "temoin": -3.8746,
+    "welch": 0.5701,
+    "sharpe_an": -0.1995,
+    "dsr": 0.0001
+   },
+   {
+    "code": "V2",
+    "nom": "V   couts 2 ticks",
+    "n": 475,
+    "moyenne": -4.0738,
+    "t": -0.9428,
+    "t1": -1.3493,
+    "t2": -0.0503,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.2969,
+    "dsr": 0.0
+   },
+   {
+    "code": "T",
+    "nom": "temoin : bande deux fois plus etroite (VIX / 32)",
+    "n": 1567,
+    "moyenne": -5.5468,
+    "t": -2.6054,
+    "t1": -2.1461,
+    "t2": -1.5888,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.8197,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  regle du papier : NQ, bande VXN / 16",
+    "n": 535,
+    "moyenne": -9.1487,
+    "t": -2.0282,
+    "t1": -1.3071,
+    "t2": -1.5658,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.6364,
+    "dsr": 0.0
+   },
+   {
+    "code": "R0",
+    "nom": "R0  V seulement si VIX >= 30",
+    "n": 50,
+    "moyenne": -5.1565,
+    "t": -0.1911,
+    "t1": -0.2352,
+    "t2": -0.0303,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.0607,
+    "dsr": 0.0007
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain moyen net > 0",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 405
+ },
+ "creneaux_H9": {
+  "genere": "2026-10-19 23:32",
+  "titre": "Le flux gotobi sur 6E, 6B, 6A (Ito & Yamada 2017 ; Krohn et al. 2023)",
+  "sous": "08:00-11:00 Tokyo (18:00/19:00-21:00/22:00 New York) ; 6E, 6B, 6A ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 407 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   6E 6B 6A, les deux jambes, jours gotobi",
+    "n": 2240,
+    "moyenne": -2.8988,
+    "t": -7.4392,
+    "t1": -2.8356,
+    "t2": -8.5309,
+    "temoin": 0.8318,
+    "welch": -0.1205,
+    "sharpe_an": -1.629,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  jambe d avant le fixing seulement",
+    "n": 2226,
+    "moyenne": -1.26,
+    "t": -4.5217,
+    "t1": -1.8873,
+    "t2": -5.0962,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.9937,
+    "dsr": 0.0
+   },
+   {
+    "code": "T",
+    "nom": "temoin : meme regle les autres jours ouvres",
+    "n": 5512,
+    "moyenne": -2.8253,
+    "t": -12.0944,
+    "t1": -9.725,
+    "t2": -7.3417,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.6837,
+    "dsr": 0.0
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain moyen net > 0",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 407
+ },
+ "creneaux_H10": {
+  "genere": "2026-10-19 23:42",
+  "titre": "Or la nuit rendu conforme a la seance (Blose & Gondhalekar 2014)",
+  "sous": "18:00-8:20 et 13:30-17:00 New York ; GC ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 409 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   18:00 -> 8:20 et 13:30 -> 16:59",
+    "n": 5435,
+    "moyenne": 1.5462,
+    "t": 2.1232,
+    "t1": 0.7894,
+    "t2": 2.0817,
+    "temoin": -1.4864,
+    "welch": 2.2498,
+    "sharpe_an": 0.647,
+    "dsr": 0.194
+   },
+   {
+    "code": "R1",
+    "nom": "R1  jambe asie seule (18:00 -> 8:20)",
+    "n": 2735,
+    "moyenne": 2.4786,
+    "t": 1.9028,
+    "t1": 1.2378,
+    "t2": 1.4471,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.5759,
+    "dsr": 0.133
+   },
+   {
+    "code": "T",
+    "nom": "temoin : seance du COMEX (8:20 -> 13:30)",
+    "n": 2750,
+    "moyenne": -1.7461,
+    "t": -1.3757,
+    "t1": -1.0368,
+    "t2": -0.9373,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.4248,
+    "dsr": 0.0
+   },
+   {
+    "code": "REF",
+    "nom": "reference : or garde toute la seance",
+    "n": 2735,
+    "moyenne": 3.0798,
+    "t": 1.5739,
+    "t1": 0.8598,
+    "t2": 1.322,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.4753,
+    "dsr": 0.0738
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": true,
+  "n_essais": 409
+ },
+ "creneaux_H11": {
+  "genere": "2026-10-20 10:47",
+  "titre": "Crypto : micro bitcoin et micro ether du CME (H5 replique ; Zarattini, Pagani & Barbon 2025)",
+  "sous": "toute la seance CME 18:00-17:00 New York ; MBT, MET ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 412 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "V   regle de H5 sur MBT (2011 trades, 53477 $ par trade)",
+    "n": 2011,
+    "moyenne": 12.2169,
+    "t": 4.069,
+    "t1": 2.7266,
+    "t2": 3.0294,
+    "temoin": 1.0629,
+    "welch": 1.3861,
+    "sharpe_an": 1.5571,
+    "dsr": 0.9996
+   },
+   {
+    "code": "Vs",
+    "nom": "V   regle de H5 sur MBT couts x 2 (2011 trades, 53477 $ par trade)",
+    "n": 2011,
+    "moyenne": 6.2115,
+    "t": 2.0694,
+    "t1": 1.6787,
+    "t2": 1.245,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.9175,
+    "dsr": 0.6567
+   },
+   {
+    "code": "TV",
+    "nom": "    temoin : MBT de 18:00 a 17:00 chaque seance",
+    "n": 2375,
+    "moyenne": 1.0629,
+    "t": 0.1424,
+    "t1": 0.4753,
+    "t2": -0.2833,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.0464,
+    "dsr": 0.0022
+   },
+   {
+    "code": "V2",
+    "nom": "V2  regle de H5 sur MET (1981 trades, 41411 $ par trade)",
+    "n": 1981,
+    "moyenne": -12.731,
+    "t": -3.705,
+    "t1": -2.5031,
+    "t2": -2.7333,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.7371,
+    "dsr": 0.0
+   },
+   {
+    "code": "V2s",
+    "nom": "V2  regle de H5 sur MET couts x 2 (1981 trades, 41411 $ par trade)",
+    "n": 1981,
+    "moyenne": -42.757,
+    "t": -12.4619,
+    "t1": -7.4181,
+    "t2": -10.0522,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -3.4367,
+    "dsr": 0.0
+   },
+   {
+    "code": "TV2",
+    "nom": "    temoin : MET de 18:00 a 17:00 chaque seance",
+    "n": 2375,
+    "moyenne": -28.8949,
+    "t": -3.0981,
+    "t1": -1.8865,
+    "t2": -2.4783,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -1.0092,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  regle ZPB25 conforme (MBT), exposition moyenne 0.19",
+    "n": 1813,
+    "moyenne": 2.6959,
+    "t": 1.3031,
+    "t1": 2.0298,
+    "t2": 0.1304,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.4244,
+    "dsr": 0.0463
+   },
+   {
+    "code": "R1s",
+    "nom": "R1  regle ZPB25 conforme (MBT) couts x 2, exposition moyenne 0.19",
+    "n": 1813,
+    "moyenne": 1.2395,
+    "t": 0.5994,
+    "t1": 1.7123,
+    "t2": -0.5085,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.1953,
+    "dsr": 0.0084
+   },
+   {
+    "code": "TR1",
+    "nom": "    temoin de R1 : exposition constante 0.19",
+    "n": 2375,
+    "moyenne": 0.1969,
+    "t": 0.1424,
+    "t1": 0.4753,
+    "t2": -0.2833,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.0464,
+    "dsr": 0.0022
+   }
+  ],
+  "echecs": [
+   "t de Welch >= 2 contre le temoin"
+  ],
+  "retenue": false,
+  "fiable": true,
+  "n_essais": 412
+ },
+ "creneaux_H12": {
+  "genere": "2026-10-20 10:57",
+  "titre": "Bitcoin : fenetres courtes (Wen et al. 2022 ; Padysak & Vojtko 2022)",
+  "sous": "23:30-00:00 UTC ; 21:00-23:00 UTC ; MBT ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 414 essais.",
+  "lignes": [
+   {
+    "code": "V",
+    "nom": "R1  achat 21:00 -> 23:00 UTC (seance CME, 60 min en moyenne)",
+    "n": 2378,
+    "moyenne": -3.83,
+    "t": -2.3527,
+    "t1": -0.5445,
+    "t2": -2.8886,
+    "temoin": -7.9499,
+    "welch": 1.4026,
+    "sharpe_an": -0.6989,
+    "dsr": 0.0
+   },
+   {
+    "code": "Vs",
+    "nom": "V   derniere demi-heure dans le sens de la premiere couts x 2",
+    "n": 2374,
+    "moyenne": -13.5351,
+    "t": -13.1861,
+    "t1": -6.2245,
+    "t2": -12.9841,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -3.8937,
+    "dsr": 0.0
+   },
+   {
+    "code": "TV",
+    "nom": "    temoin : achat de 23:30 a 00:00 UTC chaque jour",
+    "n": 2379,
+    "moyenne": -7.792,
+    "t": -7.6001,
+    "t1": -3.3025,
+    "t2": -7.8236,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -2.2535,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1",
+    "nom": "R1  achat 21:00 -> 23:00 UTC (seance CME, 60 min en moyenne)",
+    "n": 2378,
+    "moyenne": -3.83,
+    "t": -2.3527,
+    "t1": -0.5445,
+    "t2": -2.8886,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.6989,
+    "dsr": 0.0
+   },
+   {
+    "code": "R1s",
+    "nom": "R1  achat 21:00 -> 23:00 UTC (seance CME, 60 min en moyenne) couts x 2",
+    "n": 2378,
+    "moyenne": -9.83,
+    "t": -6.0384,
+    "t1": -2.3898,
+    "t2": -6.3305,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -1.7918,
+    "dsr": 0.0
+   },
+   {
+    "code": "TR1",
+    "nom": "    temoin : achat de 09:00 a 11:00 UTC les memes jours",
+    "n": 2063,
+    "moyenne": -7.9499,
+    "t": -3.2515,
+    "t1": -2.5597,
+    "t2": -2.0415,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.9655,
+    "dsr": 0.0
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "t de Welch >= 2 contre le temoin",
+   "gain moyen net > 0",
+   "gain net > 0 sans les 3 meilleurs trades",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 414
+ },
+ "creneaux_H13": {
+  "genere": "2026-10-20 11:07",
+  "titre": "NQ 1-A etendue a TSLA, AVGO, NFLX, COST, ADBE, AMD, INTC, CSCO (8-K EDGAR)",
+  "sous": "T+15 -> T+45 apres le 8-K (16:15-16:59 New York) ; NQ (MNQ) ; net en pb par trade ; moities avant / apres le 01/01/2021 ; 416 essais.",
+  "lignes": [
+   {
+    "code": "A",
+    "nom": "A   NQ 1-A d origine (6 valeurs, reference, pas un essai)",
+    "n": 162,
+    "moyenne": 3.2961,
+    "t": 2.3116,
+    "t1": 1.4516,
+    "t2": 1.916,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": 0.6873,
+    "dsr": 0.2857
+   },
+   {
+    "code": "V",
+    "nom": "V   les 6 + les 8 nouvelles",
+    "n": 317,
+    "moyenne": 1.3602,
+    "t": 1.7879,
+    "t1": 1.1104,
+    "t2": 1.4841,
+    "temoin": -1.28,
+    "welch": 3.0947,
+    "sharpe_an": 0.5367,
+    "dsr": 0.1401
+   },
+   {
+    "code": "R1",
+    "nom": "R1  les 8 nouvelles seules (jours sans les 6)",
+    "n": 156,
+    "moyenne": -0.5939,
+    "t": -0.8971,
+    "t1": -1.3683,
+    "t2": -0.6547,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.2703,
+    "dsr": 0.0001
+   },
+   {
+    "code": "T",
+    "nom": "    temoin : autres jours, 16:20 -> 16:50 dans le sens de 16:00 -> 16:20",
+    "n": 1138,
+    "moyenne": -1.28,
+    "t": -3.3153,
+    "t1": -3.1123,
+    "t2": -3.1426,
+    "temoin": null,
+    "welch": null,
+    "sharpe_an": -0.9956,
+    "dsr": 0.0
+   }
+  ],
+  "echecs": [
+   "t >= 3",
+   "meme signe et t >= 1,5 sur chaque moitie",
+   "Sharpe deflate >= 0.95"
+  ],
+  "retenue": false,
+  "fiable": false,
+  "n_essais": 416
+ },
+ "zones_Z1": {
+  "genere": "2026-10-20 11:22",
+  "code": "Z1",
+  "resultats": [
+   {
+    "code": "Z1",
+    "nom": "CL 15:30-16:00 dans le sens de la veille 16:00 -> 10:00",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -2.2837,
+     "sortino": -3.0948,
+     "perte_max": -0.6892,
+     "rendement_annuel": -0.0923,
+     "volatilite": 0.042,
+     "sharpe_p1": -1.5787,
+     "sharpe_p2": -3.1679,
+     "ic_bas": -3.0751,
+     "ic_haut": -1.6216,
+     "psr": 0.0,
+     "dsr": 0.0,
+     "sharpe_12m": -2.7791,
+     "sharpe_24m": -3.0952,
+     "vivante": false,
+     "fiable": false,
+     "trades": 2554,
+     "heures_an": 119.9651,
+     "par_100h": -0.1904,
+     "courte": true
+    }
+   },
+   {
+    "code": "Z1b",
+    "nom": "CL 15:30-16:00 dans le sens de la nuit (16:00 -> 9:30)",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -2.1711,
+     "sortino": -3.0713,
+     "perte_max": -0.6788,
+     "rendement_annuel": -0.0882,
+     "volatilite": 0.0421,
+     "sharpe_p1": -1.4864,
+     "sharpe_p2": -3.0352,
+     "ic_bas": -3.006,
+     "ic_haut": -1.4339,
+     "psr": 0.0,
+     "dsr": 0.0,
+     "sharpe_12m": -1.1764,
+     "sharpe_24m": -2.1839,
+     "vivante": false,
+     "fiable": false,
+     "trades": 2559,
+     "heures_an": 120.1999,
+     "par_100h": -0.1806,
+     "courte": true
+    }
+   }
+  ]
+ },
+ "zones_Z2": {
+  "genere": "2026-10-20 11:24",
+  "code": "Z2",
+  "resultats": [
+   {
+    "code": "Z2",
+    "nom": "ES achat 12:00 -> cloture, veilles de jours feries",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": 0.2878,
+     "sortino": 0.3981,
+     "perte_max": -0.0269,
+     "rendement_annuel": 0.0031,
+     "volatilite": 0.0109,
+     "sharpe_p1": 0.2387,
+     "sharpe_p2": 0.3253,
+     "ic_bas": -0.2636,
+     "ic_haut": 0.9132,
+     "psr": 0.8193,
+     "dsr": 0.0184,
+     "sharpe_12m": -1.3698,
+     "sharpe_24m": -0.4404,
+     "vivante": false,
+     "fiable": false,
+     "trades": 100,
+     "heures_an": 34.5659,
+     "par_100h": 0.0833,
+     "courte": true
+    }
+   },
+   {
+    "code": "Z2b",
+    "nom": "NQ achat 12:00 -> cloture, veilles de jours feries",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": 0.2483,
+     "sortino": 0.3345,
+     "perte_max": -0.0258,
+     "rendement_annuel": 0.0029,
+     "volatilite": 0.0119,
+     "sharpe_p1": 0.1372,
+     "sharpe_p2": 0.3181,
+     "ic_bas": -0.2872,
+     "ic_haut": 0.9023,
+     "psr": 0.7852,
+     "dsr": 0.0136,
+     "sharpe_12m": -1.4221,
+     "sharpe_24m": -0.1955,
+     "vivante": false,
+     "fiable": false,
+     "trades": 100,
+     "heures_an": 34.5659,
+     "par_100h": 0.0718,
+     "courte": true
+    }
+   }
+  ]
+ },
+ "zones_NE": {
+  "genere": "2026-10-20 11:38",
+  "code": "NE",
+  "resultats": [
+   {
+    "code": "N1",
+    "nom": "Nikkei : derniere demi-heure dans le sens de la veille -> ouverture + 30 min",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -1.1634,
+     "sortino": -1.6633,
+     "perte_max": -0.3809,
+     "rendement_annuel": -0.0408,
+     "volatilite": 0.0353,
+     "sharpe_p1": -0.7905,
+     "sharpe_p2": -1.568,
+     "ic_bas": -1.8238,
+     "ic_haut": -0.5619,
+     "psr": 0.0002,
+     "dsr": 0.0,
+     "sharpe_12m": -2.4685,
+     "sharpe_24m": -2.9099,
+     "vivante": false,
+     "fiable": false,
+     "trades": 2852,
+     "heures_an": 133.9626,
+     "par_100h": -0.0868,
+     "courte": true
+    }
+   },
+   {
+    "code": "N2",
+    "nom": "Nikkei : ORB 2023 a l ouverture locale",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -0.1977,
+     "sortino": -0.3561,
+     "perte_max": -0.1805,
+     "rendement_annuel": -0.0151,
+     "volatilite": 0.0661,
+     "sharpe_p1": -0.4002,
+     "sharpe_p2": -0.0381,
+     "ic_bas": -0.7951,
+     "ic_haut": 0.3874,
+     "psr": 0.258,
+     "dsr": 0.0001,
+     "sharpe_12m": -0.3936,
+     "sharpe_24m": -0.2979,
+     "vivante": false,
+     "fiable": false,
+     "trades": 2767,
+     "heures_an": 565.7132,
+     "par_100h": -0.0035,
+     "courte": false
+    }
+   },
+   {
+    "code": "E2",
+    "nom": "FTSE : derniere demi-heure dans le sens de la veille -> ouverture + 30 min",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -0.6959,
+     "sortino": -0.9852,
+     "perte_max": -0.2099,
+     "rendement_annuel": -0.0202,
+     "volatilite": 0.0288,
+     "sharpe_p1": -0.1741,
+     "sharpe_p2": -1.3994,
+     "ic_bas": -1.3217,
+     "ic_haut": -0.0878,
+     "psr": 0.0116,
+     "dsr": 0.0,
+     "sharpe_12m": -2.5781,
+     "sharpe_24m": -1.0211,
+     "vivante": false,
+     "fiable": false,
+     "trades": 2783,
+     "heures_an": 130.7215,
+     "par_100h": -0.0532,
+     "courte": true
+    }
+   },
+   {
+    "code": "E3",
+    "nom": "FTSE : ORB 2023 a l ouverture locale",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": 0.0431,
+     "sortino": 0.099,
+     "perte_max": -0.1927,
+     "rendement_annuel": 0.0006,
+     "volatilite": 0.0702,
+     "sharpe_p1": 0.4178,
+     "sharpe_p2": -0.3737,
+     "ic_bas": -0.63,
+     "ic_haut": 0.5942,
+     "psr": 0.5572,
+     "dsr": 0.0021,
+     "sharpe_12m": 0.6829,
+     "sharpe_24m": 0.0737,
+     "vivante": true,
+     "fiable": false,
+     "trades": 2763,
+     "heures_an": 792.1422,
+     "par_100h": 0.0005,
+     "courte": false
+    }
+   }
+  ]
+ },
+ "zones_A1": {
+  "genere": "2026-10-20 11:43",
+  "code": "A1",
+  "resultats": [
+   {
+    "code": "A1",
+    "nom": "argent : achat de la session asiatique apres une session americaine en hausse",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -0.29,
+     "sortino": -0.3919,
+     "perte_max": -0.4854,
+     "rendement_annuel": -0.0367,
+     "volatilite": 0.1086,
+     "sharpe_p1": -0.4443,
+     "sharpe_p2": -0.1684,
+     "ic_bas": -0.8839,
+     "ic_haut": 0.2996,
+     "psr": 0.1656,
+     "dsr": 0.0,
+     "sharpe_12m": 0.7643,
+     "sharpe_24m": 0.4205,
+     "vivante": true,
+     "fiable": false,
+     "trades": 1383,
+     "heures_an": 1039.3843,
+     "par_100h": -0.0028,
+     "courte": false
+    }
+   }
+  ]
+ },
+ "zones_J1": {
+  "genere": "2026-10-20 12:03",
+  "code": "J1",
+  "resultats": [
+   {
+    "code": "J1",
+    "nom": "Nikkei 15:45 -> 16:15 Tokyo dans le sens de cloture -> 15:45, jours de resultats",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -0.8892,
+     "sortino": -1.0802,
+     "perte_max": -0.0645,
+     "rendement_annuel": -0.0053,
+     "volatilite": 0.006,
+     "sharpe_p1": -0.2822,
+     "sharpe_p2": -1.3414,
+     "ic_bas": -1.4332,
+     "ic_haut": -0.3488,
+     "psr": 0.001,
+     "dsr": 0.0,
+     "sharpe_12m": -1.6514,
+     "sharpe_24m": -1.1704,
+     "vivante": false,
+     "fiable": false,
+     "trades": 140,
+     "heures_an": 6.5794,
+     "par_100h": -1.3515,
+     "courte": true
+    }
+   }
+  ]
+ },
+ "zones_D1": {
+  "genere": "2026-10-20 15:20",
+  "code": "D1",
+  "resultats": [
+   {
+    "code": "D1",
+    "nom": "DAX T+15 -> T+45 dans le sens de la cloture Xetra -> T+15, jours de resultats de SAP",
+    "statut": "rejetee",
+    "retenue": false,
+    "stats": {
+     "n": 2780,
+     "debut": "2016-01-04",
+     "fin": "2026-08-28",
+     "sharpe": -0.1743,
+     "sortino": -0.23,
+     "perte_max": -0.0111,
+     "rendement_annuel": -0.0004,
+     "volatilite": 0.0024,
+     "sharpe_p1": -0.1621,
+     "sharpe_p2": -0.1848,
+     "ic_bas": -0.7273,
+     "ic_haut": 0.3958,
+     "psr": 0.2784,
+     "dsr": 0.0002,
+     "sharpe_12m": -1.4469,
+     "sharpe_24m": -0.2375,
+     "vivante": false,
+     "fiable": false,
+     "trades": 40,
+     "heures_an": 1.8871,
+     "par_100h": -0.9235,
+     "courte": true
+    }
+   }
+  ]
  }
 }

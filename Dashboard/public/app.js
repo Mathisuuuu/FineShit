@@ -2,7 +2,10 @@
 // Toutes les valeurs affichees viennent des fichiers JSON exportes par le moteur Python (vectorbt, scipy).
 "use strict";
 
-const etat = { index: null, fiches: {}, id: null, onglet: "apercu", statique: false, trades: { page: 0, tri: "entree", sens: -1, filtre: "" } };
+const etat = { index: null, fiches: {}, id: null, page: "comparaison", onglet: "apercu", statique: false, rendements: null,
+  liste: { texte: "", mode: "toutes" }, comp: { tri: "sharpe", sens: -1, choix: null },
+  trades: { page: 0, tri: "entree", sens: -1, filtre: "" } };
+window.etat = etat;
 const ONGLETS = [["apercu", "Vue d'ensemble"], ["fonctionnement", "Fonctionnement"], ["vectorbt", "Statistiques vectorbt"],
   ["trades", "Trades"], ["tests", "Tests et Monte Carlo"]];
 const $ = (s, r = document) => r.querySelector(s);
@@ -114,32 +117,67 @@ async function chargerIndex() {
 }
 
 // ------------------------------------------------------------------ liste
+const MODES_LISTE = [["toutes", "Toutes"], ["intraday", "Futures intraday (prop firm)"], ["positives", "Sharpe ≥ 0,5"],
+  ["sans-alerte", "Le moins d'alertes"]];
+function statutBadge(x) {
+  if (x.statut === "validee") return '<span class="badge validee">Validée</span>';
+  if (x.statut === "candidate") return '<span class="badge candidate">Candidate</span>';
+  const v = String(x.verdict || "");
+  if (v.startsWith("PROMETTEUSE")) return '<span class="badge ok">Prometteuse</span>';
+  if (v.startsWith("POSITIVE")) return '<span class="badge info">Positive faible</span>';
+  if (v.startsWith("NEGATIVE")) return '<span class="badge alerte">Négative</span>';
+  return '<span class="badge info">Testée</span>';
+}
+window.badgeStatut = (st) => statutBadge({ statut: st });
+function strategiesFiltrees() {
+  const L = etat.index?.strategies || [];
+  const q = etat.liste.texte.trim().toLowerCase();
+  let out = L.filter((x) => !q || (x.titre + " " + (x.instruments || []).join(" ") + " " + (x.resume || "")).toLowerCase().includes(q));
+  if (etat.liste.mode === "intraday") out = out.filter((x) => x.futures && x.intraday);
+  if (etat.liste.mode === "positives") out = out.filter((x) => (x.kpi?.sharpe ?? -9) >= 0.5);
+  if (etat.liste.mode === "sans-alerte") out = out.slice().sort((a, b) => a.alertes / Math.max(1, a.tests) - b.alertes / Math.max(1, b.tests));
+  return out;
+}
+function rendreCartes() {
+  const box = $("#liste-strats");
+  if (!box) return;
+  const L = strategiesFiltrees();
+  box.innerHTML = L.map((x) => {
+    const k = x.kpi || {};
+    return `<a class="carte-strat ${etat.id === x.id ? "active" : ""}" href="#" data-route="s/${encodeURIComponent(x.id)}/${etat.onglet}">
+      <div class="nom"><span>${esc(x.titre)}</span>${statutBadge(x)}</div>
+      <div class="ligne"><span>Sharpe ${num(k.sharpe)}</span><span>perte max ${pct(k.perte_max)}</span>${x.futures && x.intraday ? '<span class="badge info">intraday</span>' : ""}</div>
+      <div class="ligne"><span class="badge ok">${x.ok} ok</span><span class="badge alerte">${x.alertes} alerte(s)</span><span>${esc((x.instruments || []).slice(0, 3).join(", "))}</span></div></a>`;
+  }).join("") || '<p class="discret">aucune stratégie</p>';
+  $("#liste-compte").textContent = `${L.length} / ${(etat.index?.strategies || []).length}`;
+}
 function rendreListe() {
   const nav = $("#liste");
-  const s = etat.index?.strategies || [];
-  const carte = (x) => {
-    const k = x.kpi || {};
-    const badge = x.statut === "validee" ? `<span class="badge validee">Validee</span>` : `<span class="badge candidate">Candidate</span>`;
-    return `<a class="carte-strat ${etat.id === x.id ? "active" : ""}" href="#" data-route="s/${encodeURIComponent(x.id)}/${etat.onglet}">
-      <div class="nom"><span>${esc(x.titre)}</span>${badge}</div>
-      <div class="ligne"><span>Sharpe ${num(k.sharpe)}</span><span>perte max ${pct(k.perte_max)}</span></div>
-      <div class="ligne"><span class="badge ok">${x.ok} ok</span><span class="badge alerte">${x.alertes} alerte(s)</span></div></a>`;
-  };
-  const val = s.filter((x) => x.statut === "validee");
-  const cand = s.filter((x) => x.statut !== "validee");
-  nav.innerHTML = `
-    <a class="carte-strat ${etat.id === null ? "active" : ""}" href="#" data-route="comparaison"><div class="nom"><span>Comparaison</span></div>
-      <div class="ligne">toutes les strategies, correlations, portefeuille combine</div></a>
-    <div class="titre-liste">Strategies validees (${val.length})</div>${val.map(carte).join("") || '<p class="discret">aucune</p>'}
-    <div class="titre-liste">Candidates a l'etude (${cand.length})</div>${cand.map(carte).join("") || '<p class="discret">aucune</p>'}
-    <div class="titre-liste">Archive</div>
-    <a class="carte-strat" href="donnees/recherche.html" target="_blank" rel="noopener"><div class="nom"><span>Archive de la recherche</span></div>
-      <div class="ligne">strategies testees dans les sessions locales (page autonome, nouvel onglet)</div></a>`;
+  const fixe = [["direct", "Groupe en direct (NinjaTrader)", "stratégies du Groupe branchées sur NinjaTrader : cibles, positions, garde-fous, journal"],
+    ["labo", "Laboratoire (en direct)", "hypothèses testées dans vectorbt, mois rempli avec le plus de stratégies fiables et non corrélées"],
+    ["comparaison", "Comparaison", "toutes les stratégies, corrélations, portefeuille combiné"],
+    ["prop", "Prop firm", "combinaison la plus fiable de futures intraday (statistiques vectorbt), règles du compte modifiables"],
+    ["profil", "Profil horaire", "heures couvertes par les stratégies fiables sur un an, plages vides et hypothèses testées"],
+    ["etudes", "Études sur papiers", "60 stratégies intraday et stratégies construites sur papiers"]];
+  if (!$("#liste-strats")) {
+    nav.innerHTML = `<div id="liste-fixe"></div>
+      <div class="titre-liste">Stratégies <span id="liste-compte"></span></div>
+      <div class="filtres-liste"><input type="search" id="liste-texte" placeholder="nom, contrat…" autocomplete="off" aria-label="Rechercher une stratégie">
+        <select id="liste-mode" aria-label="Filtrer les stratégies">${MODES_LISTE.map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div>
+      <div id="liste-strats"></div>`;
+    $("#liste-texte").addEventListener("input", (e) => { etat.liste.texte = e.target.value; rendreCartes(); });
+    $("#liste-mode").addEventListener("change", (e) => { etat.liste.mode = e.target.value; rendreCartes(); });
+  }
+  $("#liste-texte").value = etat.liste.texte;
+  $("#liste-mode").value = etat.liste.mode;
+  $("#liste-fixe").innerHTML = fixe.map(([k, t, d]) => `<a class="carte-strat archive-lien ${etat.id === null && etat.page === k ? "active" : ""}" href="#" data-route="${k}">
+    <div class="nom"><span>${t}</span></div><div class="ligne">${d}</div></a>`).join("");
+  rendreCartes();
 }
 
 // ------------------------------------------------------------------ pages
 function entete(f) {
-  const statut = f.statut === "validee" ? `<span class="badge validee">Validee le ${esc(f.valide_le)}</span>` : `<span class="badge candidate">Candidate, non validee</span>`;
+  const statut = f.statut === "validee" ? `<span class="badge validee">Validée le ${esc(f.valide_le)}</span>` : statutBadge({ statut: f.statut, verdict: f.verdict_runner });
   const onglets = ONGLETS.map(([k, l]) => `<a href="#" data-route="s/${encodeURIComponent(f.id)}/${k}" class="${etat.onglet === k ? "actif" : ""}">${l}</a>`).join("");
   return `<div class="entete"><h2>${esc(f.titre)}</h2>${statut}</div>
     <p class="resume">${esc(f.resume)} <span class="discret">· calcule le ${esc(f.genere_le)}</span></p>
@@ -391,44 +429,146 @@ function rendreGrille(f) {
   dessiner();
 }
 
+async function rendements() {
+  if (!etat.rendements) etat.rendements = await json(etat.statique ? "donnees/rendements.json" : "/api/annexe/rendements");
+  return etat.rendements;
+}
+const COLS_COMP = [["titre", "Stratégie", 0], ["statut", "Statut", 0], ["instruments", "Contrats", 0], ["sharpe", "Sharpe", 1],
+  ["sharpe_ic_bas", "IC 95 % bas", 1], ["dsr_programme", "Sharpe déflaté", 1], ["rendement_annuel", "Rendement annuel", 1],
+  ["volatilite", "Volatilité", 1], ["perte_max", "Perte max", 1], ["trades", "Trades", 1], ["intraday", "Futures intraday", 0],
+  ["alertes", "Alertes", 1]];
+function valComp(x, k) {
+  if (k === "instruments") return (x.instruments || []).join(", ");
+  if (k === "intraday") return x.futures && x.intraday ? 1 : 0;
+  if (k === "statut") return x.statut === "validee" ? 0 : x.statut === "candidate" ? 1 : 2;
+  if (x.kpi && k in x.kpi) return x.kpi[k];
+  return x[k];
+}
+function statsSerie(x) {
+  const v = x.filter((a) => a !== null && Number.isFinite(a));
+  if (v.length < 20) return { sharpe: null, dd: null, sd: null };
+  const m = v.reduce((a, b) => a + b, 0) / v.length;
+  const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1));
+  let c = 1, pic = 1, dd = 0;
+  v.forEach((a) => { c *= 1 + a; pic = Math.max(pic, c); dd = Math.max(dd, 1 - c / pic); });
+  return { sharpe: sd > 0 ? (m / sd) * Math.sqrt(252) : null, dd, sd };
+}
+
 async function pageComparaison() {
   const ix = etat.index;
   if (!ix || !ix.strategies.length) {
     $("#contenu").innerHTML = `<div class="panneau"><h3>Aucun resultat</h3><p>${esc(ix?.message || "")}</p>
-      <p>Depuis le dossier <code>Python/</code> : <code>python -m nexus tableau --cotations CHEMIN_VERS_COTATIONS</code>, puis recharger la page.</p></div>`;
+      <p>Depuis le dossier <code>Python/</code> : <code>python -m nexus tableau</code>, puis recharger la page.</p></div>`;
     return;
   }
-  const rows = ix.strategies.map((s) => `<tr><td><a href="#" data-route="s/${encodeURIComponent(s.id)}/apercu">${esc(s.titre)}</a></td>
-    <td>${s.statut === "validee" ? `<span class="badge validee">validee ${esc(s.valide_le)}</span>` : '<span class="badge candidate">candidate</span>'}</td>
-    <td class="n">${num(s.kpi.sharpe)}</td><td class="n">${num(s.kpi.sortino)}</td><td class="n">${pct(s.kpi.rendement_annuel)}</td>
-    <td class="n">${pct(s.kpi.volatilite)}</td><td class="n">${pct(s.kpi.perte_max)}</td><td class="n">${num(s.kpi.trades, 0)}</td>
-    <td><span class="badge ok">${s.ok}</span> <span class="badge alerte">${s.alertes}</span></td></tr>`).join("");
+  const L = strategiesFiltrees();
+  if (!etat.comp.choix) {
+    etat.comp.choix = new Set(ix.strategies.slice().sort((a, b) => (b.kpi?.sharpe ?? -9) - (a.kpi?.sharpe ?? -9)).slice(0, 8).map((x) => x.id));
+  }
+  const C = etat.comp;
+  const rows = L.slice().sort((a, b) => {
+    const x = valComp(a, C.tri), y = valComp(b, C.tri);
+    if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+    return (typeof x === "string" ? x.localeCompare(y, "fr") : x - y) * C.sens;
+  });
+  const cell = (x, k) => {
+    const v = valComp(x, k);
+    if (k === "titre") return `<td><a href="#" data-route="s/${encodeURIComponent(x.id)}/apercu">${esc(x.titre)}</a></td>`;
+    if (k === "statut") return `<td>${statutBadge(x)}</td>`;
+    if (k === "instruments") return `<td class="discret">${esc(v)}</td>`;
+    if (k === "intraday") return `<td>${v ? '<span class="badge ok">oui</span>' : '<span class="discret">non</span>'}</td>`;
+    if (["rendement_annuel", "volatilite", "perte_max", "dsr_programme"].includes(k)) return `<td class="n">${pct(v, k === "dsr_programme" ? 0 : 1)}</td>`;
+    if (k === "trades" || k === "alertes") return `<td class="n">${num(v, 0)}</td>`;
+    return `<td class="n ${v < 0 ? "negatif" : ""}">${num(v)}</td>`;
+  };
   $("#contenu").innerHTML = `<div class="entete"><h2>Comparaison</h2></div>
-    <p class="resume">Toutes les strategies exportees, leurs correlations et un portefeuille qui leur donne le meme risque. <span class="discret">${esc(ix.note || "")}</span></p>
-    <div class="panneau"><h3>Strategies</h3><table><thead><tr><th>Strategie</th><th>Statut</th><th class="n">Sharpe</th><th class="n">Sortino</th><th class="n">Rendement annuel</th>
-      <th class="n">Volatilite</th><th class="n">Perte max</th><th class="n">Trades</th><th>Tests</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="resume">Toutes les stratégies du tableau, calculées par les mêmes objets vectorbt et passées par les mêmes tests
+      (Sharpe déflaté : ${ix.essais_programme} essais cumulés du programme). Le filtre de la barre de gauche s'applique ici.
+      Coche des stratégies pour leurs corrélations et leur portefeuille combiné. <span class="discret">${esc(ix.note || "")}</span></p>
+    <div class="panneau"><h3>Stratégies (${rows.length})</h3><div class="table-defile"><table id="t-comp"><thead><tr><th></th>${COLS_COMP.map(([k, l, n]) =>
+      `<th class="${n ? "n" : ""}" data-k="${k}" style="cursor:pointer">${l}${C.tri === k ? (C.sens > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map((x) => `<tr><td><input type="checkbox" data-id="${esc(x.id)}" ${C.choix.has(x.id) ? "checked" : ""} aria-label="choisir"></td>
+        ${COLS_COMP.map(([k]) => cell(x, k)).join("")}</tr>`).join("")}</tbody></table></div>
+      <div class="outils"><span class="discret" id="comp-choix"></span><button class="bouton" id="comp-vider">Tout décocher</button>
+        <button class="bouton" id="comp-top">Les 8 meilleurs Sharpe</button></div></div>
     <div class="grille-2">
-      <div class="panneau"><h3>Correlation des rendements journaliers</h3><div id="g-corr" class="graph"></div></div>
-      <div class="panneau"><h3>Correlation des rendements mensuels</h3><div id="g-corrm" class="graph"></div></div>
+      <div class="panneau"><h3>Corrélation des rendements journaliers</h3><div id="g-corr" class="graph"></div></div>
+      <div class="panneau"><h3>Corrélation des rendements mensuels</h3><div id="g-corrm" class="graph"></div></div>
     </div>
-    ${ix.combine ? `<div class="panneau"><h3>Portefeuille combine a risque egal</h3><p class="sous">Sharpe ${num(ix.combine.sharpe)}, perte max ${pct(ix.combine.perte_max)} ;
-      chaque strategie seule est ramenee au meme risque pour comparer. ${esc(ix.combine.note || "")}</p><div id="g-comb" class="graph haut"></div></div>` : ""}`;
-  const c = couleurs();
+    <div class="panneau"><h3>Portefeuille combiné à risque égal</h3><p class="sous" id="comb-sous"></p><div id="g-comb" class="graph haut"></div></div>
+    ${(ix.non_testees || []).length ? `<div class="panneau"><h3>Non testées</h3><p class="sous">Programmes qui n'ont pas pu être lancés, avec la raison.</p>
+      <ul>${ix.non_testees.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></div>` : ""}`;
+  $("#t-comp").querySelectorAll("th[data-k]").forEach((th) => th.addEventListener("click", () => {
+    C.sens = C.tri === th.dataset.k ? -C.sens : (["titre", "instruments", "statut"].includes(th.dataset.k) ? 1 : -1); C.tri = th.dataset.k; pageComparaison();
+  }));
+  $("#t-comp").querySelectorAll("input[data-id]").forEach((cb) => cb.addEventListener("change", () => {
+    if (cb.checked) C.choix.add(cb.dataset.id); else C.choix.delete(cb.dataset.id);
+    dessinerChoix();
+  }));
+  $("#comp-vider").onclick = () => { C.choix.clear(); pageComparaison(); };
+  $("#comp-top").onclick = () => { C.choix = null; pageComparaison(); };
+  await dessinerChoix();
+}
+
+async function dessinerChoix() {
+  const ix = etat.index, C = etat.comp;
   const titres = Object.fromEntries(ix.strategies.map((s) => [s.id, s.titre]));
-  for (const [id, cm] of [["#g-corr", ix.correlation], ["#g-corrm", ix.correlation_mensuelle]]) {
-    if (!cm || !cm.ids.length) continue;
-    const lab = cm.ids.map((i) => titres[i] || i);
-    trace($(id), [{ z: cm.matrice, x: lab, y: lab, type: "heatmap", colorscale: echelle(c, c.accent), zmin: -1, zmax: 1,
-      text: cm.matrice.map((r) => r.map((v) => (v === null ? "" : virgule(v, 2)))), texttemplate: "%{text}", hovertemplate: "%{x} / %{y} : %{z:.2f}<extra></extra>" }],
-    { hovermode: "closest", margin: { l: 130, r: 10, t: 10, b: 80 } });
+  const ids = [...C.choix].filter((i) => titres[i]).slice(0, 25);
+  $("#comp-choix").textContent = `${ids.length} stratégie(s) cochée(s)${C.choix.size > 25 ? " (25 au plus dans les graphiques)" : ""}`;
+  if (ids.length < 2) {
+    ["#g-corr", "#g-corrm", "#g-comb"].forEach((g) => { if (window.Plotly && $(g)) window.Plotly.purge($(g)); });
+    $("#comb-sous").textContent = "Coche au moins deux stratégies.";
+    return;
   }
-  if (ix.combine) {
-    const k = ix.combine;
-    const tons = [c.vert, c.rouge, c.texte2, "#a855f7", "#0ea5e9"];
-    trace($("#g-comb"), [{ x: k.dates, y: k.valeur, mode: "lines", name: "combine", line: { color: c.accent, width: 2 } },
-      ...Object.entries(k.seules).map(([id, v], i) => ({ x: k.dates, y: v, mode: "lines", name: titres[id] || id, line: { color: tons[i % tons.length], width: 1 } }))],
-    { showlegend: true, yaxis: { tickformat: ".2f" } });
+  const R = await rendements();
+  const c = couleurs();
+  const n = R.dates.length;
+  const cor = (a, b) => {
+    let k = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+    for (let t = 0; t < a.length; t++) {
+      const x = a[t], y = b[t];
+      if (x == null || y == null) continue;
+      k++; sa += x; sb += y; saa += x * x; sbb += y * y; sab += x * y;
+    }
+    if (k < 60) return null;
+    const cv = sab / k - (sa / k) * (sb / k), va = saa / k - (sa / k) ** 2, vb = sbb / k - (sb / k) ** 2;
+    return va > 0 && vb > 0 ? cv / Math.sqrt(va * vb) : null;
+  };
+  const mois = (x) => {
+    const out = [];
+    let cur = null, acc = null;
+    for (let t = 0; t < n; t++) {
+      const m = R.dates[t].slice(0, 7);
+      if (m !== cur) { if (cur !== null) out.push(acc); cur = m; acc = null; }
+      if (x[t] != null) acc = (acc === null ? 1 : acc) * (1 + x[t]);
+    }
+    out.push(acc);
+    return out.map((v) => (v === null ? null : v - 1));
+  };
+  const lab = ids.map((i) => titres[i]);
+  for (const [g, f] of [["#g-corr", (i) => R.rendements[i]], ["#g-corrm", (i) => mois(R.rendements[i])]]) {
+    const z = ids.map((a) => ids.map((b) => cor(f(a), f(b))));
+    trace($(g), [{ z, x: lab, y: lab, type: "heatmap", colorscale: echelle(c, c.accent), zmin: -1, zmax: 1,
+      text: z.map((r) => r.map((v) => (v === null ? "" : virgule(v, 2)))), texttemplate: "%{text}", hovertemplate: "%{x} / %{y} : %{z:.2f}<extra></extra>" }],
+    { hovermode: "closest", margin: { l: 170, r: 10, t: 10, b: 120 }, xaxis: { tickangle: -35 } });
   }
+  // poids inverses a la volatilite, renormalises chaque jour sur les strategies qui existent ce jour-la
+  const sd = ids.map((i) => statsSerie(R.rendements[i]).sd || 1);
+  const mix = [];
+  for (let t = 0; t < n; t++) {
+    let s2 = 0, w = 0;
+    ids.forEach((i, j) => { const v = R.rendements[i][t]; if (v != null) { s2 += v / sd[j]; w += 1 / sd[j]; } });
+    mix.push(w > 0 ? s2 / w : null);
+  }
+  const st = statsSerie(mix);
+  const cumul = (x, k) => { let v = 1; return x.map((a) => { if (a != null) v *= 1 + a * k; return v; }); };
+  const tons = [c.vert, c.rouge, c.texte2, "#a855f7", "#0ea5e9", "#eab308", "#14b8a6", "#f97316"];
+  $("#comb-sous").textContent = `Sharpe ${num(st.sharpe)}, perte max ${pct(st.dd)} ; chaque stratégie seule est ramenée au même risque `
+    + "que le portefeuille pour comparer (poids inverses à la volatilité, recalculés chaque jour sur les stratégies présentes).";
+  trace($("#g-comb"), [{ x: R.dates, y: cumul(mix, 1), mode: "lines", name: "combiné", line: { color: c.accent, width: 2 } },
+    ...ids.map((i, j) => ({ x: R.dates, y: cumul(R.rendements[i], (st.sd || 1) / sd[j]), mode: "lines", name: titres[i],
+      line: { color: tons[j % tons.length], width: 1 } }))],
+  { showlegend: true, yaxis: { tickformat: ".2f" }, legend: { orientation: "h", y: -0.2 } });
 }
 
 // ------------------------------------------------------------------ navigation
@@ -442,6 +582,7 @@ async function route(r) {
   $("#liste").classList.remove("ouvert");
   try {
     if (h[0] === "s" && h[1]) {
+      etat.page = null;
       etat.id = decodeURIComponent(h[1]);
       etat.onglet = ONGLETS.some(([k]) => k === h[2]) ? h[2] : "apercu";
       rendreListe();
@@ -450,8 +591,14 @@ async function route(r) {
       ({ apercu: pageApercu, fonctionnement: pageFonctionnement, vectorbt: pageVectorbt, trades: pageTrades, tests: pageTests })[etat.onglet](f);
     } else {
       etat.id = null;
+      etat.page = ["prop", "etudes", "profil", "labo", "direct"].includes(h[0]) ? h[0] : "comparaison";
       rendreListe();
-      await pageComparaison();
+      if (etat.page === "prop") await Prop.page(etat.statique);
+      else if (etat.page === "etudes") await Etudes.page(etat.statique);
+      else if (etat.page === "profil") await Profil.page(etat.statique);
+      else if (etat.page === "labo") await Labo.page(etat.statique);
+      else if (etat.page === "direct") await Direct.page(etat.statique);
+      else await pageComparaison();
     }
   } catch (e) {
     $("#contenu").innerHTML = `<div class="panneau"><h3>Erreur</h3><p>${esc(e.message)}</p></div>`;
@@ -461,6 +608,13 @@ async function route(r) {
 async function charger() {
   [etat.index, etat.statique] = await chargerIndex();
   etat.fiches = {};
+  Prop.oublier();
+  Profil.oublier();
+  Labo.oublier();
+  Direct.oublier();
+  Etudes.oublier();
+  etat.rendements = null;
+  etat.comp.choix = null;
   $("#genere").textContent = etat.index.genere_le ? `resultats du ${etat.index.genere_le}` : "";
   $("#recalculer").hidden = etat.statique;
   await route();

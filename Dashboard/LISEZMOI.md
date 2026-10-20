@@ -1,25 +1,45 @@
 # Tableau de bord Nexus (Node.js)
 
-Tableau de bord local qui affiche la stratégie **validée** (S1 Noise Area NQ) et les candidates à l'étude
-(Gotobi 6J, ORB 5 min NQ, or la nuit GC, fiche 15 LETF NQ / ES) : la courbe de capital, les pertes, les
-rendements par année et par mois, **toutes les statistiques vectorbt** (`returns.stats()`, `drawdowns.stats()`,
-`trades.stats()`, `positions.stats()`, `orders.stats()`, `pf.stats()`), la liste des trades, et la batterie de tests :
+Un seul tableau de bord pour **toutes les stratégies** : la stratégie validée (S1 Noise Area NQ), les candidates
+étudiées dans les sessions cloud (Gotobi 6J, ORB 5 min NQ, or la nuit GC, fiche 15 LETF NQ / ES) et toutes les
+stratégies testées en local par le runner (`Python/nexus/perso/runner.py`, environ 70). Toutes passent par **les
+mêmes objets vectorbt** (`vbt.Portfolio`, accesseur `returns`) et **les mêmes tests**, et ont les mêmes pages :
+courbe de capital, pertes, rendements par année et par mois, toutes les statistiques vectorbt (`returns.stats()`,
+`drawdowns.stats()`, `trades.stats()`, `positions.stats()`, `orders.stats()`, `pf.stats()`), la liste des trades et
+la batterie de tests.
+
+Les stratégies du runner sont rejouées dans vectorbt à partir de leurs trades (`Python/nexus/tableau_runner.py`) :
+deux ordres par trade, aux prix exécutés par leur moteur, frais = P&L brut − P&L net ; le P&L vectorbt est celui du
+moteur, trade par trade (test « Rejeu vectorbt des trades du moteur »). Valorisation une fois par séance, à 17:00
+New York (fin de séance CME), aux cours des mêmes données que le moteur.
+
+Tests communs à toutes :
 
 | Famille | Tests |
 |---|---|
-| Comptabilité | rejeu vectorbt des exécutions du moteur, second programme indépendant, biais d'anticipation (prix futurs modifiés) |
-| Performance | Sharpe complet, avant / après publication, 2 dernières années, années positives |
-| Robustesse statistique | IC du Sharpe par bootstrap BCa (scipy), Sharpe probabiliste, Sharpe déflaté (vectorbt), test des signes (permutation scipy) |
+| Comptabilité | rejeu vectorbt des exécutions ou des trades du moteur, courbe vectorbt contre courbe du moteur |
+| Performance | Sharpe complet, avant / après la coupure (publication, sinon 01/01/2021), 2 dernières années, années positives |
+| Robustesse statistique | IC du Sharpe par bootstrap BCa (scipy), Sharpe probabiliste, **Sharpe déflaté du programme entier** (vectorbt, même nombre cumulé d'essais pour toutes, variance du Sharpe sous l'hypothèse nulle comme dans toute la recherche), test des signes (permutation scipy) |
 | Monte Carlo | perte max (ordre mélangé, tirage avec remise), gain total, éventail des trajectoires |
-| Sensibilité | coûts ×0 à ×3, latence, jambes ou variantes de la stratégie |
-| Placebo | mêmes heures, autres jours (Gotobi) ; témoins de l'or : or gardé en permanence, séance du COMEX seule, version intraday ; mêmes règles dans une autre demi-heure (LETF) |
-| Mécanisme | LETF : pente de la dernière demi-heure sur le rendement du jour et interaction avec le régime gamma (Newey-West), par période |
-| Sur-ajustement | réglage **figé** (rien n'est rechoisi) : stabilité sur 6 sous-périodes et par moitié, plateau de paramètres (carte de chaleur), PBO, walk-forward 3 ans / 6 mois, test SPA de Hansen (`arch`), Sharpe corrigé des essais multiples (Bonferroni, Holm, BHY via `statsmodels`), durée minimale de backtest, prime du choix du réglage, test sur hasard (marchés simulés sans momentum pour S1, faux jours gotobi pour le Gotobi, jours tirés au hasard pour l'ORB et la LETF, pause du COMEX déplacée dans la séance pour l'or) |
+| Sur-ajustement | stabilité sur 6 sous-périodes et par moitié, durée minimale de backtest |
 
-La page **Comparaison** montre toutes les stratégies côte à côte, leurs corrélations (journalières et
-mensuelles) et un portefeuille combiné à risque égal. Le lien **Archive de la recherche** (barre de gauche)
-ouvre `donnees/recherche.html` : la page autonome des 74 stratégies testées dans les sessions locales,
-écrite par `python -m nexus.perso.tableau` (depuis `Python/`).
+Les candidates des sessions cloud ont en plus leurs tests propres, qui demandent de relancer la stratégie : biais
+d'anticipation, sensibilité (coûts, latence, jambes), placebos, plateau de paramètres, PBO, walk-forward, test SPA,
+Sharpe corrigé des essais multiples, test sur hasard, Sharpe déflaté avec les essais de leur propre recherche.
+
+Pages :
+
+| Page | Contenu |
+|---|---|
+| Groupe en direct | état du Groupe branché sur NinjaTrader (`python -m nexus.live` → `donnees/live.json`, relu toutes les 3 s) : passerelle et compte, garde-fou actif, valeur liquidative et résultat du jour, stratégies (statut, cibles, état), cible nette et position par instrument, exécutions, journal ; lecture seule, le Groupe se modifie dans `Python/nexus/live/groupe.json` (`public/direct.js`) |
+| Comparaison | toutes les stratégies (tri par colonne, filtre de la barre de gauche), corrélations journalières et mensuelles et portefeuille combiné à risque égal des stratégies cochées, liste des non testées |
+| Prop firm | la combinaison la plus **fiable** de stratégies **futures intraday** (positions soldées avant 17:00 New York) : statistiques vectorbt de chaque stratégie et de chaque combinaison (Sharpe et son IC à 95 % par bootstrap, Sharpe de chaque moitié, Sharpe déflaté comptant toutes les combinaisons essayées, perte max), classement par la borne basse de l'IC du Sharpe, combinaison recommandée, validation de la méthode de choix hors échantillon (choix sur 2016-2020, résultat sur 2021-2026) ; seules les stratégies **courtes** (au plus 400 h en position par an) entrent dans les combinaisons, colonnes « heures / an » et « % par 100 h » (rendement annuel à 10 % de volatilité pour 100 heures en position), tri possible par rendement par heure ; règles du compte et filtres modifiables, taux de réussite de l'évaluation recalculé dans le navigateur (`public/prop.js`, données de `Python/nexus/prop_combinaisons.py`) |
+| Profil horaire | sur la dernière année, les heures (New York, pas de 30 min) où chaque stratégie futures intraday **fiable** est en position, la couverture de chaque créneau, les créneaux vides et les hypothèses testées pour les remplir (`public/profil.js`, données de `Python/nexus/profil_horaire.py`, lot `nexus/perso/creneaux.py`) |
+| Études sur papiers | les « 60 stratégies intraday » (anomalies brutes) et les stratégies construites sur papiers (`Python/recherche/resultats_60.json`, `public/etudes.js`) |
+| Une stratégie | vue d'ensemble, fonctionnement, statistiques vectorbt, trades, tests et Monte Carlo |
+
+La barre de gauche liste toutes les stratégies (recherche par nom ou contrat ; filtres : toutes, futures intraday,
+Sharpe ≥ 0,5, le moins d'alertes). Le badge indique le statut : validée, candidate, ou le verdict du runner.
 
 ## Lancer
 
@@ -27,10 +47,11 @@ Node.js 18 ou plus récent, aucune dépendance à installer. Côté Python, l'en
 (`pip install -r requirements.txt`, voir `Python/LISEZMOI.md` § 2).
 
 ```
-# 1. calculer les resultats (depuis le dossier Python/, environ 10 minutes ; lit ../Cotations par defaut)
+# 1. calculer les resultats (depuis le dossier Python/, environ 25 minutes ; lit ../Cotations par defaut)
 cd Python
 .venv\Scripts\python -m nexus tableau
-.venv\Scripts\python -m nexus.perso.tableau      # archive de la recherche locale (1 minute)
+#    --seulement R      : ne recalculer que les strategies du runner (les autres fiches sont reprises)
+#    --seulement S1,G1  : seulement ces strategies
 
 # 2. demarrer le serveur
 cd ..\Dashboard
@@ -48,14 +69,21 @@ indiquer le chemin du dossier Cotations et la commande Python.
 Options : `PORT=3001 node serveur.js`, `DONNEES=autre_dossier node serveur.js`. Le serveur n'écoute
 que sur la machine locale (127.0.0.1) ; `HOTE=0.0.0.0` l'ouvre au réseau local.
 
+Fichiers lus dans `donnees/` : `index.json` (liste), un fichier par stratégie (`/api/strategies/<id>`), et quatre
+annexes (`/api/annexe/<nom>`) : `rendements.json` (comparaison), `prop.json` (onglet Prop firm), `etudes.json`,
+`profil.json` (profil horaire). Les fiches Gotobi, ORB et « or la nuit conforme » ont une famille de tests « Prop firms » :
+la même stratégie avec le contrat qu'un compte de 50 000 à 150 000 $ peut tenir (micro MJY, MNQ, MGC).
+
 ## Ajouter une stratégie
 
+- **Stratégie du runner** : l'ajouter à `TESTS` dans `Python/nexus/perso/runner.py` et la lancer ; elle entre
+  dans le tableau au prochain `python -m nexus tableau` (ou `--seulement R`).
 - **Stratégie validée** : dans le moteur Python, la classe porte `VALIDATED = "AAAA-MM-JJ"` (voir
   `Python/nexus/strategies/s1_noiseareanq.py`). `python -m nexus tableau` l'exporte automatiquement,
   avec ses textes (`TITRE`, `RESUME`, `FONCTIONNEMENT`, `POURQUOI`, `SOURCES`), sa grille (`GRILLE`) et
   ses scénarios de sensibilité (`SENSIBILITE`).
-- **Candidate** : une fonction `fiche_...` dans `Python/nexus/tableau.py`, ajoutée à la liste `CANDIDATES`
-  (code pour `--seulement`, identifiant, fonction), comme le Gotobi (G1), l'ORB (O1), l'or (N1) et la
+- **Candidate avec tests propres** : une fonction `fiche_...` dans `Python/nexus/tableau.py`, ajoutée à la liste
+  `CANDIDATES` (code pour `--seulement`, identifiant, fonction), comme le Gotobi (G1), l'ORB (O1), l'or (N1) et la
   fiche 15 (L1).
 
 ## Données et licence
@@ -66,5 +94,5 @@ Le dossier `donnees/` contient des résultats calculés sur des cotations Databe
 ## Tests
 
 ```
-npm test        # serveur : API, chemins refuses, interface, recalcul, archive
+npm test        # serveur : API, chemins refuses, interface, recalcul, annexes (/api/annexe/<nom>)
 ```

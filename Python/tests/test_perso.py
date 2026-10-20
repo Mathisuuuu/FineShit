@@ -437,17 +437,6 @@ def test_nq1_heure_communique():
     assert h.iloc[0] == 16 * 60 + 30                             # le pic quotidien de 16:00 ne declenche pas
 
 
-def test_tableau_alpha_spy():
-    from nexus.perso.tableau import alpha_spy
-    idx = pd.bdate_range("2018-01-01", periods=1500)
-    rng = np.random.default_rng(3)
-    spy = pd.Series(rng.normal(0, 0.01, len(idx)), idx)
-    pnl = 40.0 + 5000.0 * spy + pd.Series(rng.normal(0, 100.0, len(idx)), idx)       # 40 $ par jour d alpha
-    a = alpha_spy(pnl, spy)
-    assert abs(a["alpha"] / 252 - 40.0) < 10 and a["t"] > 10 and 0.3 < a["corr"] < 0.6   # bruit 100 $, signal 50 $
-    assert alpha_spy(pnl.iloc[:30], spy)["t"] is None                                # trop court
-
-
 def test_derive_nocturne_outils():
     from nexus.perso.derive_nocturne import ecart_francfort, rsv_bvc
     e = ecart_francfort(pd.DatetimeIndex(["2024-01-10", "2024-03-20", "2024-07-10", "2024-10-30"]))
@@ -672,3 +661,322 @@ def test_fin_de_mois_strategie_couts():
     net, brut, cout = strategie(w, r, pd.Series(0.001, idx))
     assert list(brut.fillna(0).round(6)) == [0, 0, 0.01, 0.02, 0, 0]       # position du 2e jour : rendements des 3e et 4e
     assert list(cout.round(6)) == [0, 0, 0.001, 0, 0.001, 0]                # entree et sortie imputees le lendemain de l ordre
+
+
+def test_weekend_crypto_semaines_et_heures():
+    from types import SimpleNamespace
+    from nexus.perso.weekend_crypto import cout_ar, fenetres_futures, prix_crypto, semaines
+    from nexus.perso.soixante import jours_ouvres_us
+    jours = pd.DatetimeIndex([d for d in pd.bdate_range("2024-01-01", "2024-04-05")])
+    m0 = SimpleNamespace(t=pd.DatetimeIndex(jours).as_unit("ns").asi8)
+    ouvres = jours_ouvres_us(m0)
+    sem = semaines(ouvres)
+    assert pd.Timestamp("2024-01-15") not in sem.index                       # lundi ferie (Martin Luther King)
+    assert pd.Timestamp("2024-04-01") not in sem.index                       # vendredi saint le 29/03 : week-end exclu
+    assert pd.Timestamp("2024-01-22") in sem.index and sem.loc["2024-01-22", "dimanche"] == pd.Timestamp("2024-01-21")
+    # crypto : derniere barre FINIE au plus tard a l instant ; 16:00 ET = 21:00 UTC en hiver, 20:00 UTC en ete
+    idx = pd.DatetimeIndex(["2024-01-19 20:45", "2024-01-19 21:00", "2024-01-19 21:15"])
+    s = pd.Series([1.0, 2.0, 3.0], index=idx)
+    t = pd.DatetimeIndex(["2024-01-19 21:00", "2024-01-19 21:10", "2024-01-20 12:00"]).as_unit("ns").asi8
+    p = prix_crypto(s, t)
+    assert p[0] == 2.0 and p[1] == 2.0 and np.isnan(p[2])                    # plus d une heure : manquant
+    assert abs(cout_ar("ES", pd.Series([5000.0]))[0] - 2 * (0.25 + 2.5 / 50) / 5000) < 1e-15
+    # futures : prix a dimanche 18:00 ET = ouverture de la barre 18:00-18:01 (datee 18:01, 23:01 UTC en hiver)
+    fins = pd.DatetimeIndex(["2024-01-19 21:01", "2024-01-21 23:01", "2024-01-22 14:31", "2024-01-22 21:01"])
+    m = SimpleNamespace(t=fins.as_unit("ns").asi8, o=np.array([100.0, 98.0, 99.0, 97.0]), c=np.array([100.0, 98.0, 99.0, 97.0]),
+                        n=4, offset=np.zeros(4))
+    f = fenetres_futures(m, sem.loc[["2024-01-22"]])
+    assert abs(f["saut"].iloc[0] - (-0.02)) < 1e-12 and abs(f["V"].iloc[0] - (97 - 98) / 98) < 1e-12
+    assert abs(f["seance"].iloc[0] - (97 - 99) / 99) < 1e-12 and abs(f["total"].iloc[0] - (-0.03)) < 1e-12
+
+
+def test_dax_cloture_jours_fenetres_et_miroir():
+    from nexus.perso.dax_cloture import FDAX, Marche, fenetres, jours_xetra, miroir, trades_s19
+    j = jours_xetra("2024-12-20", "2025-01-03")
+    for d in ("2024-12-24", "2024-12-25", "2024-12-31", "2025-01-01"):
+        assert pd.Timestamp(d) not in j                                       # Xetra ferme
+    assert pd.Timestamp("2024-12-23") in j and pd.Timestamp("2025-01-02") in j
+    # deux jours d hiver (Berlin = UTC+1), barres 08:00-18:00 Berlin datees a leur fin, +0,1 point par minute
+    fins = pd.DatetimeIndex(list(pd.date_range("2024-01-15 07:01", "2024-01-15 17:00", freq="1min"))
+                            + list(pd.date_range("2024-01-16 07:01", "2024-01-16 17:00", freq="1min")))
+    c = 100.0 + 0.1 * np.arange(1, len(fins) + 1)
+    df = pd.DataFrame({"open": c - 0.1, "high": c + 0.05, "low": c - 0.15, "close": c, "volume": 1.0}, index=fins)
+    jours = pd.DatetimeIndex(["2024-01-15", "2024-01-16"])
+    f = fenetres(Marche(df), jours)
+    o = df["open"]
+    assert abs(f.loc["2024-01-16", "lh"] - math.log(o["2024-01-16 16:31"] / o["2024-01-16 16:01"])) < 1e-12
+    assert abs(f.loc["2024-01-16", "jour"] - math.log(o["2024-01-16 16:01"] / o["2024-01-16 08:01"])) < 1e-12
+    assert abs(f.loc["2024-01-16", "fh"] - math.log(o["2024-01-16 08:31"] / o["2024-01-15 16:31"])) < 1e-12
+    assert np.isnan(f.loc["2024-01-15", "fh"]) and np.isnan(f.loc["2024-01-16", "nuit_suiv"])
+    assert abs(f.loc["2024-01-15", "nuit_suiv"] - math.log(o["2024-01-16 08:01"] / o["2024-01-15 16:31"])) < 1e-12
+    # S19-B : achat a 17:00 (jour en hausse), taille plafonnee a 4, sortie a la barre de 17:29 ; le miroir vend
+    t = trades_s19(df)
+    assert len(t) == 2 and (t["direction"] == 1).all() and (t["qty"] == 4).all() and (t["reason"] == "fin-fenetre").all()
+    assert t["entry_time"].iloc[1] == pd.Timestamp("2024-01-16 16:00") and t["exit_time"].iloc[1] == pd.Timestamp("2024-01-16 16:30")
+    m = miroir(t)
+    assert list(m.index) == list(jours) and (m["sens"] == -1).all()
+    frais = 4 * (2 * FDAX.commission + 2 * FDAX.tick * FDAX.point_value)
+    brut_origine = (o["2024-01-16 16:30"] - o["2024-01-16 16:00"]) * 4 * FDAX.point_value     # prix sans glissement
+    assert abs(m["frais"].iloc[1] - frais) < 1e-9
+    assert abs(m["brut"].iloc[1] + brut_origine) < 1e-6 and abs(m["net"].iloc[1] + brut_origine + frais) < 1e-6
+    assert abs(m["r_net"].iloc[1] - m["net"].iloc[1] / (t["entry_price"].iloc[1] * FDAX.point_value)) < 1e-15
+
+
+def test_creneaux_rendement_et_sessions():
+    from types import SimpleNamespace
+    from nexus.perso.creneaux import rendement, sessions_or
+    # minutes UTC du 05/01/2016 au 07/01/2016, prix +0,1 par minute, echeance unique (decalage nul)
+    fins = pd.date_range("2016-01-05 00:01", "2016-01-07 23:59", freq="1min")
+    c = 1000.0 + 0.1 * np.arange(len(fins))
+    m = SimpleNamespace(t=fins.as_unit("ns").asi8, o=c - 0.1, c=c, n=len(c), offset=np.zeros(len(c)))
+    ta = pd.DatetimeIndex(["2016-01-06 00:00"]).as_unit("ns").asi8
+    tb = pd.DatetimeIndex(["2016-01-06 08:00"]).as_unit("ns").asi8
+    r = rendement(m, ta, tb)
+    o = pd.Series(m.o, index=fins)
+    assert abs(r[0] - (o["2016-01-06 08:01"] - o["2016-01-06 00:01"]) / o["2016-01-06 00:01"]) < 1e-12
+    m.rc = np.where(fins < pd.Timestamp("2016-01-06 04:00"), c - 5.0, c - 7.0)     # roulement a 04:00 : fenetre exclue
+    m._contrat = None
+    assert np.isnan(rendement(m, ta, tb)[0])
+    del m.rc
+    m._contrat = None
+    s = sessions_or(m)
+    d = pd.Timestamp("2016-01-06")
+    assert abs(s.loc[d, "us_prec"] - (o["2016-01-06 00:01"] - o["2016-01-05 14:31"]) / o["2016-01-05 14:31"]) < 1e-12
+    assert abs(s.loc[d, "europe"] - (o["2016-01-06 14:31"] - o["2016-01-06 08:01"]) / o["2016-01-06 08:01"]) < 1e-12
+    assert np.isnan(s.loc[pd.Timestamp("2016-01-05"), "us_prec"])
+
+
+def test_creneaux_saut_de_reouverture():
+    from types import SimpleNamespace
+    from nexus.perso.creneaux import reouvertures
+    # vendredi 08/01/2016 16:00-16:59 New York (UTC-5) a 1,0800, dimanche 10/01 18:00-21:30 : ouverture 1,0810 (+10 pips) puis
+    # retour lineaire a 1,0800 a 19:00
+    t1 = pd.date_range("2016-01-08 21:01", "2016-01-08 22:00", freq="1min")             # fins de barre UTC (16:00-17:00 NY)
+    t2 = pd.date_range("2016-01-10 23:01", "2016-01-11 02:30", freq="1min")             # 18:00-21:30 NY
+    idx = t1.append(t2)
+    o = np.r_[np.full(len(t1), 1.0800), 1.0810 - 0.0010 * np.clip(np.arange(len(t2)) / 60, 0, 1)]
+    m = SimpleNamespace(t=idx.as_unit("ns").asi8, o=o, c=o.copy(), n=len(o), offset=np.zeros(len(o)))
+    d = reouvertures(m, "6E")
+    r = d.loc[pd.Timestamp("2016-01-10")]
+    assert abs(r.pips - 10) < 1e-6 and r.sens == -1
+    assert abs(r.r19 - (1.0800 - 1.0810) / 1.0810) < 1e-9                               # vente gagnante : sens x r19 > 0
+    assert np.isnan(r.rfin)                                                              # pas de barre lundi 17:00
+
+
+def test_creneaux_orb_dax_regles():
+    from nexus.perso.creneaux import orb_dax
+    # un jour : bougie 9:00-9:05 haussiere (100 -> 101, plus bas 99,5), puis hausse reguliere jusqu a 17:30
+    mn = np.arange(9 * 60, 17 * 60 + 31)
+    o = 100.0 + np.r_[np.linspace(0, 1, 5), 1 + 0.01 * np.arange(len(mn) - 5)]
+    d = pd.DataFrame(dict(open=o, high=o + 0.2, low=o - 0.2, close=o + 0.05, jour=pd.Timestamp("2024-01-03"), mn=mn))
+    d.loc[d.mn == 9 * 60 + 2, "low"] = 99.5
+    t = orb_dax(d, pd.DatetimeIndex(["2024-01-03"]), 9 * 60, "za23").iloc[0]
+    assert t.sens == 1 and t.entree == o[5] and not t.stop_touche
+    assert t.sortie == o[mn == 17 * 60 + 30][0]
+    assert abs(t.f - min(0.01 / ((o[5] - 99.5) / o[5]), 4)) < 1e-12
+    # le meme jour avec une chute a 13:00 sous le plus bas de la bougie : sortie au stop
+    d2 = d.copy()
+    d2.loc[d2.mn == 13 * 60, ["open", "low"]] = [99.0, 98.9]
+    t2 = orb_dax(d2, pd.DatetimeIndex(["2024-01-03"]), 9 * 60, "za23").iloc[0]
+    assert t2.stop_touche and t2.sortie == 99.0                                        # ouverture deja sous le stop
+
+
+def test_creneaux_zone_de_bruit_dax():
+    from nexus.perso.creneaux import NB_MIN, zone_bruit
+    rng = np.random.default_rng(1)
+    n = 60
+    jours = pd.bdate_range("2024-01-02", periods=n)
+    base = 100 + np.cumsum(rng.normal(0, 0.5, n))
+    pas = rng.normal(0, 0.0004, (n, NB_MIN)).cumsum(axis=1)
+    C = base[:, None] * (1 + pas)
+    O = np.c_[base, C[:, :-1]]
+    H, L = np.maximum(O, C) * 1.0001, np.minimum(O, C) * 0.9999
+    # dernier jour : forte hausse reguliere des 9:00 -> au-dessus de la zone a chaque controle : acheteur toute la journee
+    C[-1] = base[-1] * (1 + 0.0001 * np.arange(1, NB_MIN + 1))
+    O[-1] = np.r_[base[-1], C[-1, :-1]]
+    H[-1], L[-1] = C[-1] * 1.00001, O[-1] * 0.99999
+    net, br, actif, _, _ = zone_bruit(O, H, L, C, jours, lookback=30, bande=1.2, lev_fixe=1.0)
+    j = jours[-1]
+    assert actif[j]
+    attendu = (O[-1, 510] - O[-1, 30]) / O[-1, 0]              # achete a 9:30, vendu a 17:30 ; taille fixee a l ouverture
+    assert abs(br[j] - attendu) < 1e-9
+    assert net[j] < br[j]                                      # un aller-retour paye
+    assert np.isnan(net[jours[10]])                             # pas assez d historique (30 seances)
+
+
+def test_creneaux_clotures_traversees():
+    from nexus.perso.creneaux import clotures_traversees
+    # mercredi 14:00 New York (19:00 UTC, hiver) -> lundi 10:00 : clotures mercredi, jeudi, vendredi (rachat dimanche 18:00)
+    c = clotures_traversees(pd.Timestamp("2024-01-10 19:00"), pd.Timestamp("2024-01-15 15:00"))
+    assert [d.strftime("%a") for d, _, _ in c] == ["Wed", "Thu", "Fri"]
+    assert c[0][1] == pd.Timestamp("2024-01-10 22:00") and c[0][2] == pd.Timestamp("2024-01-10 23:00")
+    assert c[2][2] == pd.Timestamp("2024-01-14 23:00")                               # dimanche 18:00 New York
+    assert clotures_traversees(pd.Timestamp("2024-01-10 15:00"), pd.Timestamp("2024-01-10 21:00")) == []
+
+
+def test_creneaux_bande_de_volatilite():
+    from types import SimpleNamespace
+    from nexus.perso.creneaux import bande_vol
+    # deux seances (New York = UTC-5) : veille cloture a 100 ; jour J ouvre a 100, monte a 102 a 10:00 (au-dessus de
+    # 100 x (1 + 16 % / 16) = 101), puis revient a 100,5 a la cloture -> vente a 10:01, gain (101,99 -> 100,5)
+    def seance(d, prix):
+        t = pd.date_range(f"{d} 14:31", f"{d} 21:00", freq="1min")     # 9:30-16:00 New York, fin de barre UTC
+        return t, prix(np.arange(len(t)))
+    t1, p1 = seance("2024-01-09", lambda k: np.full(len(k), 100.0))
+    t2, p2 = seance("2024-01-10", lambda k: np.where(k < 30, 100.0 + 2.0 * k / 30, 102.0 - 1.5 * (k - 30) / (len(k) - 31)))
+    t = t1.append(t2)
+    c = np.r_[p1, p2]
+    o = np.r_[c[:1], c[:-1]]
+    m = SimpleNamespace(t=t.as_unit("ns").asi8, o=o, c=c, n=len(c), offset=np.zeros(len(c)))
+    vol = pd.Series([16.0, 16.0], index=pd.DatetimeIndex(["2024-01-08", "2024-01-09"]))
+    b = bande_vol(m, vol)
+    r = b.loc[pd.Timestamp("2024-01-10")]
+    assert r.sens == -1 and r.r > 0 and abs(r.r - (o[len(p1) + np.argmax(p2 > 101.0) + 1] - c[-1]) / o[len(p1) + np.argmax(p2 > 101.0) + 1]) < 1e-12
+
+
+def test_creneaux_jambes_tokyo():
+    from types import SimpleNamespace
+    from nexus.perso.creneaux import jambes_tokyo
+    # minutes UTC du 08/01/2024 ; Tokyo = UTC+9 : 08:00 Tokyo = 23:00 UTC la veille, 09:55 = 00:55, 11:00 = 02:00
+    fins = pd.date_range("2024-01-07 22:01", "2024-01-08 03:00", freq="1min")
+    c = 100.0 + 0.01 * np.arange(len(fins))
+    m = SimpleNamespace(t=fins.as_unit("ns").asi8, o=c - 0.01, c=c, n=len(c), offset=np.zeros(len(c)))
+    j = jambes_tokyo(m, pd.DatetimeIndex(["2024-01-08"]))
+    o = pd.Series(m.o, index=fins)
+    a, b, f = o["2024-01-07 23:01"], o["2024-01-08 00:56"], o["2024-01-08 02:01"]
+    r = j.iloc[0]
+    assert abs(r.avant - (b - a) / a) < 1e-12 and abs(r.apres - (f - b) / b) < 1e-12
+    assert r.p8 == a and r.p955 == b
+
+
+def test_donchian_alt_heure_limite_16h10():
+    # barres 15 min d une seance CME (18:00 -> 17:00 New York, pause et week-end retires), marche en hausse : la position
+    # est vendue avant 16:10, jamais tenue entre 16:10 et 18:00, et rachetee a la reouverture (meme stop)
+    idx = pd.date_range("2024-03-04 00:00", "2024-04-26 00:00", freq="15min")          # fin de barre, UTC
+    et = idx.tz_localize("UTC").tz_convert("America/New_York").tz_localize(None)
+    mn = et.hour * 60 + et.minute
+    dow = (et - pd.Timedelta(hours=18)).dayofweek                                       # jour de la seance en cours
+    garde = ~((mn > 17 * 60) & (mn <= 18 * 60)) & (dow < 5)
+    idx = idx[garde]
+    rng = np.random.default_rng(11)
+    c = 100 + np.cumsum(rng.normal(0.02, 0.3, len(idx)))
+    rows = [(x, x + abs(rng.normal(0, 0.2)), x - abs(rng.normal(0, 0.2)), x + rng.normal(0, 0.05), 1) for x in c]
+    df = pd.DataFrame(rows, columns=["open", "high", "low", "close", "volume"], index=idx)
+    e = qf.Engine(df, INST)
+    e.run(U.DonchianAlt(e, entry_donchian=40, exit_donchian=15, atr_period=20, fin_de_seance=True, heure_limite=970))
+    assert len(e.trades) > 5
+    tz = lambda t: pd.Timestamp(t).tz_localize("UTC").tz_convert("America/New_York").tz_localize(None)
+    for t in e.trades:
+        a, b = tz(t.entry_time), tz(t.exit_time)
+        d = a.normalize()
+        while d <= b.normalize():
+            assert not (a < d + pd.Timedelta(hours=18) and b > d + pd.Timedelta(minutes=971)), (a, b)
+            d += pd.Timedelta(days=1)
+    assert any(t.reason == "heure limite" for t in e.trades) and any(t.tag == "Rachat" for t in e.trades)
+
+
+def test_binance_lecture_millisecondes_et_microsecondes(tmp_path):
+    import zipfile
+    from nexus.binance import lire_zip
+    for unite, f in (("ms", 1), ("us", 1000)):
+        t0 = int(pd.Timestamp("2025-01-01 00:00").value // 10 ** 6) * f
+        lignes = [f"{t0 + k * 60_000 * f},{100 + k},{101 + k},{99 + k},{100.5 + k},2.0,0,0,0,0,0,0" for k in range(3)]
+        z = tmp_path / f"x_{unite}.zip"
+        with zipfile.ZipFile(z, "w") as fh:
+            fh.writestr("x.csv", "\n".join(lignes))
+        d = lire_zip(str(z))
+        assert list(d.index) == list(pd.date_range("2025-01-01 00:01", periods=3, freq="1min"))   # fin de barre, UTC
+        assert d.close.iloc[1] == 101.5 and d.volume.iloc[0] == 2.0
+
+
+def test_creneaux_seance_cme_et_seances_crypto():
+    from nexus.perso.creneaux import rendements_seances, seance_cme
+    # fins de barre UTC (New York = UTC-4 en juin 2024) : vendredi 16:59, vendredi 17:30, samedi midi, dimanche 18:15,
+    # lundi 17:30, lundi 18:01
+    t = pd.DatetimeIndex(["2024-06-07 20:59", "2024-06-07 21:30", "2024-06-08 16:00", "2024-06-09 22:15",
+                          "2024-06-10 21:30", "2024-06-10 22:01"])
+    assert list(seance_cme(t)) == [True, False, False, True, False, True]
+    # seances : celle du lundi va du dimanche 18:00 au lundi 17:00 ; le week-end n est pas une seance
+    j = pd.date_range("2024-06-07", "2024-06-11", freq="D")
+    ps = pd.DataFrame(dict(c17=[10.0, 11.0, 12.0, 13.0, 14.0], o18=[1.0, 2.0, 4.0, 5.0, 6.0]), index=j)
+    r = rendements_seances(ps)
+    assert list(r.index) == [pd.Timestamp("2024-06-10"), pd.Timestamp("2024-06-11")]
+    assert r.iloc[0] == 13.0 / 4.0 - 1 and r.iloc[1] == 14.0 / 5.0 - 1
+
+
+def test_creneaux_expositions_zpb():
+    from nexus.perso.creneaux import expositions_zpb
+    rng = np.random.default_rng(2)
+    j = pd.date_range("2018-01-01", periods=900, freq="D")
+    hausse = pd.Series(100 * np.exp(np.cumsum(0.004 + rng.normal(0, 0.02, 900))), index=j)
+    baisse = pd.Series(100 * np.exp(np.cumsum(-0.004 + rng.normal(0, 0.02, 900))), index=j)
+    eh, eb = expositions_zpb(hausse), expositions_zpb(baisse)
+    assert (eh.iloc[:90] == 0).all()                                   # pas de volatilite sur 90 jours : rien
+    assert eh.iloc[400:].mean() > 0.5 and eb.iloc[400:].mean() < 0.1 and eh.max() <= 2.0
+    # 25 % de volatilite cible : une fenetre seule en position vaut (0,25 / vol) / 9
+    vol = hausse.pct_change().rolling(90).std() * np.sqrt(365)
+    assert eh.iloc[-1] <= (0.25 / vol.iloc[-1]) + 1e-12
+
+
+def test_moteur_frais_en_fraction_du_notionnel():
+    # micro bitcoin : 0,1 BTC par contrat, frais 3 pb du notionnel par cote, pas de glissement en plus
+    inst = qf.INSTRUMENTS["MBT"]
+    rows = [(50000.0, 50010.0, 49990.0, 50000.0, 1)] * 3 + [(51000.0, 51010.0, 50990.0, 51000.0, 1)] * 3
+    df = _bars(rows)
+    e = qf.Engine(df, inst, slippage_ticks=0)
+    e.run(Script(e, {1: lambda e: e.market(2), 4: lambda e: e.market(0)}))
+    t = e.trades[0]
+    brut = (t.exit_price - t.entry_price) * 2 * 0.1
+    frais = 3e-4 * 0.1 * 2 * (t.entry_price + t.exit_price)
+    assert abs(t.pnl - (brut - frais)) < 1e-9 and frais > 0
+
+
+def test_creneaux_fenetres_utc():
+    from nexus.perso.creneaux import fenetres_utc
+    # minutes du mercredi 05/06/2024 (UTC, fin de barre), prix +1 par minute ; New York = UTC-4 : 21:00-22:00 UTC est la
+    # pause du CME (17:00-18:00) : la fenetre 21:00-23:00 ne garde que 22:00-23:00
+    idx = pd.date_range("2024-06-05 20:01", "2024-06-05 23:30", freq="1min")
+    p = np.arange(len(idx), dtype=float) + 100
+    df = pd.DataFrame(dict(open=p - 0.5, high=p, low=p - 1, close=p, volume=1.0), index=idx)
+    w = fenetres_utc(df, 21 * 60, 23 * 60)
+    assert len(w) == 1 and w.debut.iloc[0] == 22 * 60 and w.fin.iloc[0] == 23 * 60 - 1
+    e, s_ = df.loc["2024-06-05 22:01", "open"], df.loc["2024-06-05 23:00", "close"]
+    assert w.entree.iloc[0] == e and w.sortie.iloc[0] == s_ and abs(w.r.iloc[0] - (s_ / e - 1)) < 1e-12
+    w2 = fenetres_utc(df, 21 * 60, 23 * 60, seance=False)
+    assert len(w2) == 1 and w2.debut.iloc[0] == 21 * 60
+
+
+def test_edgar_conventions_d_heure():
+    from nexus.perso.edgar import heure_new_york
+    # AAPL (New York decale deux fois) : 02:31:06Z le 27/01/2016 = 16:31:06 le 26/01 (hiver) ; 00:31:09Z le 27/04 = 16:31:09
+    assert heure_new_york("2016-01-27T02:31:06.000Z") == pd.Timestamp("2016-01-26 16:31:06")
+    assert heure_new_york("2016-04-27T00:31:09.000Z") == pd.Timestamp("2016-04-26 16:31:09")
+    # NFLX (UTC vrai) : 20:03:19Z le 16/07/2026 = 16:03:19 (ete) ; 21:07:54Z le 20/01/2026 = 16:07:54 (hiver)
+    assert heure_new_york("2026-07-16T20:03:19.000Z", double=False) == pd.Timestamp("2026-07-16 16:03:19")
+    assert heure_new_york("2026-01-20T21:07:54.000Z", double=False) == pd.Timestamp("2026-01-20 16:07:54")
+
+
+def test_zones_orb23_stop_et_cloture():
+    from types import SimpleNamespace
+    from nexus.perso import zones as Z
+    # deux seances de Tokyo (9:00 JST = 0:00 UTC), fin de barre UTC ; jour 1 : bougie haussiere puis hausse (sortie a la
+    # cloture de 15:00) ; jour 2 : bougie haussiere puis chute sous le plus bas de la bougie (sortie au stop)
+    t, o, h, l, c = [], [], [], [], []
+    for d, chute in (("2024-03-04", False), ("2024-03-05", True)):
+        for k in range(360):                                            # 9:00 -> 15:00 JST
+            p = 100 + 0.1 * k if (k < 5 or not chute) else 100.5 - 0.2 * (k - 5)
+            t.append(pd.Timestamp(d) + pd.Timedelta(minutes=k + 1)); o.append(p - 0.05); c.append(p); h.append(p + 0.02); l.append(p - 0.07)
+    m = SimpleNamespace(t=pd.DatetimeIndex(t).as_unit("ns").asi8, o=np.array(o), h=np.array(h), l=np.array(l), c=np.array(c), n=len(c),
+                        offset=np.zeros(len(c)))
+    Z.SEANCES["TEST"] = ("Asia/Tokyo", 9 * 60, lambda d: 15 * 60)
+    Z.FIN_DONNEES = pd.Timestamp("2024-03-05")
+    j0 = Z.jours_seance
+    Z.jours_seance = lambda m_, s_: (pd.DatetimeIndex(["2024-03-04", "2024-03-05"]), np.array([900, 900]))
+    try:
+        tr = Z.orb23(m, "TEST")
+    finally:
+        Z.jours_seance = j0
+    assert list(tr.sens) == [1, 1]
+    lo = min(l[360:365])
+    assert abs(tr.r.iloc[0] - (c[359] / o[5] - 1)) < 1e-12
+    assert abs(tr.r.iloc[1] - (lo / o[365] - 1)) < 1e-9 or tr.r.iloc[1] < 0
