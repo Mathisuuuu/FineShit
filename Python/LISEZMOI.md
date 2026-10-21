@@ -1139,105 +1139,98 @@ ou 1/N, régression bêta / alpha), familles courtes de variantes motivées, dé
 ≥ 90 %), PBO par famille, marchés de contrôle sans ré-optimisation. Les variantes retenues sont ajoutées au runner
 (lignes « (alternative) ») et passent donc dans le rapport prop et le tableau de bord.
 
-## 17. Groupe en direct sur NinjaTrader (`nexus/live`, AddOn `NexusPasserelle`)
+## 17. Groupe en direct sur NinjaTrader (stratégies NinjaScript `NexusGroupe*`, AddOn `NexusTableau`)
 
-Le Groupe tourne dans NinjaTrader par l'API NinjaScript, avec la logique des stratégies **en Python** (les mêmes
-règles que la recherche, jamais recopiées en C#) et NinjaTrader réduit à une passerelle :
+Depuis le 2026-10-21, le Groupe tourne **entièrement dans NinjaTrader**, en NinjaScript : plus de moteur Python ni
+de passerelle TCP en direct. La logique des stratégies est une bibliothèque C# sans type NinjaTrader, vérifiée ordre
+par ordre contre la recherche Python ; Python ne sert plus qu'à vérifier cette parité et à calculer les statistiques
+vectorbt du forward.
 
 ```
-NinjaTrader 8 ── AddOn NexusPasserelle.cs (TCP 127.0.0.1:41888, une ligne JSON par message)
-   │  barres 1 minute (historique de chauffe puis temps réel), exécutions, positions, battement de cœur
-   ▼
-python -m nexus.live ── moteur : registre groupe.json relu toutes les 5 s, chauffe, cibles nettes par instrument
-   │  « position cible » par instrument (ex. MNQ +3) ; la passerelle passe les ordres au marché
-   ▼
-Dashboard/donnees/live.json ── page « Groupe en direct » du tableau de bord (relue toutes les 3 s)
+AddOns\NexusGroupeLogique.cs ── NxS1Logique, NxGotobiLogique, calendriers (fériés et demi-séances NYSE, jours gotobi
+   │                             2015-2035, générés depuis le code Python validé)
+   ├─► Strategies\NexusGroupeS1.cs, NexusGroupeGotobi.cs (socle NexusGroupeBase.cs) : stratégies NinjaTrader
+   │      ordres au marché, journal dans Documents\NinjaTrader 8\Nexus\groupe\<stratégie>\
+   │      (meta.json, etat.json, barres.csv, decisions.jsonl, executions.jsonl)
+   └─► Tests\PariteGroupe (banc C# .NET 8) : rejoue 2016-2026 et compare chaque ordre à la recherche
+
+AddOns\NexusTableau.cs ── toutes les 2 s : live.json (page « Groupe en direct ») ; toutes les 15 min :
+                          Nexus\groupe\compte.jsonl (valeur du compte) ; fenêtre « Groupe » dans NinjaTrader
+python -m nexus.live.rapport ── statistiques vectorbt du forward -> Dashboard/donnees/groupe.json (page « Forward test »)
 ```
 
-**Groupe actuel** (`nexus/live/groupe.json`) : **S1** (Noise Area sur NQ, positions en MNQ) et **Gotobi** (6J).
-NQ 1-A (résultats des grandes capitalisations, 30 min après le 8-K, MNQ) a été retirée le 2026-10-20 à la
-demande de l'utilisateur.
+**Groupe actuel** : **S1** (Noise Area sur NQ, positions en MNQ) et **Gotobi** (6J), sur le compte de démo
+**DEMO8920103** (connexion « Simulation ») depuis le 2026-10-21. NQ 1-A (résultats des grandes capitalisations,
+30 min après le 8-K, MNQ) a été retirée le 2026-10-20 à la demande de l'utilisateur.
 
-### Installer et lancer (compte Sim101 d'abord)
+| Stratégie NinjaTrader | Instrument | Règles | Réglages par défaut |
+|---|---|---|---|
+| `NexusGroupeS1` | MNQ de l'échéance courante (données : NQ de la même échéance, 75 000 minutes de chauffe chargées par la stratégie) | décision à la clôture des minutes de contrôle 10:00 … 15:30 New York, sortie à 16:00 (13:00 les demi-séances) | capital 100 000 $, au plus 10 contrats |
+| `NexusGroupeGotobi` | 6J de l'échéance courante | jours gotobi : vente à 08:00, achat à 09:55, sortie à 11:00 (heure de Tokyo), au premier tick de la barre qui commence à l'heure prévue | capital 100 000 $, exposition 0,95, au plus 2 contrats |
 
-1. `powershell -ExecutionPolicy Bypass -File .\Installer.ps1` (copie aussi `AddOns\NexusPasserelle.cs`), puis
-   NinjaTrader → *New → NinjaScript Editor* → **F5**. L'AddOn démarre avec NinjaTrader et écoute sur
-   127.0.0.1:41888 ; il crée `Documents\NinjaTrader 8\Nexus\passerelle.json` au premier lancement.
-2. NinjaTrader connecté à un flux de données qui fournit l'historique 1 minute de NQ et 6J (la chauffe de S1
-   demande environ 75 000 minutes, soit 54 séances).
-3. Depuis `Python/` : `python -m nexus.live`. Le moteur se connecte (et se reconnecte seul), s'abonne aux
-   instruments, chauffe chaque stratégie sur l'historique, puis agit au point de décision suivant.
-4. Suivi : fenêtre **Groupe** de NinjaTrader (ci-dessous) ou page **Groupe en direct** du tableau de bord ; journal
-   `Python/.cache/live/journal_AAAAMMJJ.jsonl` ; journal de la passerelle
-   `Documents\NinjaTrader 8\Nexus\journal\passerelle_AAAAMMJJ.log`.
+### Installer et lancer
+
+1. `powershell -ExecutionPolicy Bypass -File .\Installer.ps1` (copie `AddOns\*.cs` et `Strategies\*.cs`), puis
+   NinjaTrader → *New → NinjaScript Editor* → ouvrir un fichier → **F5** (copier un `.cs` ne recompile pas ; si la
+   compilation reste bloquée, redémarrer NinjaTrader).
+2. Se connecter (connexion « Simulation »), puis Control Center → onglet **Strategies** → *New Strategy* :
+   `NexusGroupeS1` sur MNQ et `NexusGroupeGotobi` sur 6J, échéance courante, compte de démo, puis cocher *Enabled*.
+   Après un redémarrage de NinjaTrader, il faut se reconnecter et réactiver les stratégies depuis cet onglet.
+3. L'AddOn `NexusTableau` démarre avec NinjaTrader. Il crée `Documents\NinjaTrader 8\Nexus\tableau.json` au premier
+   lancement : `compte` (nom du compte suivi) et `sortie` (chemin de `live.json` ; par défaut
+   `Documents\FichesEtCode\Dashboard\donnees\live.json` si ce dossier existe, sinon `Nexus\groupe\live.json`).
+4. Rapport du forward : `python -m nexus.live.rapport [--groupe "Documents/NinjaTrader 8/Nexus/groupe"] [--sortie ../Dashboard/donnees]`.
+   Sur le serveur, la tâche planifiée « Nexus - Rapport du Groupe » le relance toutes les 15 min.
 
 ### Fenêtre « Groupe » dans NinjaTrader (Control Center → *New* → **Groupe**)
 
-| Zone | Contenu |
+Compte suivi (simulé ou non, connecté ou non), valeur liquidative et résultat du jour, une ligne par stratégie du
+Groupe (état, position, cible), journal, et le bouton **Tout arrêter / Reprendre** : il crée ou supprime le fichier
+`Nexus\KILL_SWITCH`, et tant qu'il existe, les stratégies mettent tout à plat et ne passent aucun ordre. Activer ou
+désactiver une stratégie se fait dans l'onglet *Strategies* du Control Center.
+
+### Garde-fous (`Strategies\NexusGroupeBase.cs`)
+
+| Garde-fou | Effet |
 |---|---|
-| En-tête | passerelle (en écoute ou non), Python (connecté, dernier message), compte (simulation ou réel), garde-fou actif, suspension, coupure ; valeur liquidative et résultat depuis 18:00 ET |
-| **Tout arrêter / Reprendre** | écrit `"actif"` dans `passerelle.json` : tout à plat, aucun ordre jusqu'à « Reprendre » ; à la reprise, chaque stratégie retrouve sa position cible du moment |
-| Stratégies du Groupe | une ligne par entrée de `groupe.json`, désactivées comprises : statut (active, chauffe, désactivée, erreur), cible, état ; bouton **Activer / Désactiver** (la commande part à Python, qui modifie `"actif"` dans `groupe.json`) |
-| Instruments | cible nette, position réelle (« ordre en cours » tant qu'elles diffèrent), plafond |
-| Journal | 80 derniers messages de la passerelle |
+| `CompteSimule()` | seuls les comptes simulés sont acceptés : Simulator / Playback, connexion en mode Simulation ou démo, ou connexion nommée « Simulation » avec un compte `DEMO*` (elle se déclare `mode=Live`). Un compte réel est **refusé** (aucun ordre) sauf si la propriété « Autoriser un compte réel » est cochée |
+| « Contrats au plus » | plafond de position par stratégie (S1 : 10, Gotobi : 2) |
+| fichier `Nexus\KILL_SWITCH` | présent : position ramenée à 0, aucun ordre (interrupteur global commun aux stratégies Nexus) |
+| réconciliation | la position du compte est ramenée à la position voulue par ordres au marché (mode non géré) ; un retournement = deux ordres envoyés ensemble ; aucun nouvel ordre tant qu'un ordre est en cours |
 
-Le bouton **Flatten** de NinjaTrader ne suffit pas : la passerelle ramène chaque instrument à sa cible dans la seconde.
-Pour arrêter le Groupe, utiliser **Tout arrêter**, ou fermer le moteur Python (tout à plat à la déconnexion).
+Il n'y a pas d'heure de coupure à part : S1 est à plat à 16:00 New York et Gotobi trade de 19:00 à 22:00 New York (matin
+de Tokyo), donc les deux sont à plat entre 16:10 et 18:00 (limite de Topstep, MyFundedFutures, FundedNext). Dédier le compte au Groupe :
+chaque stratégie ramène son instrument à sa position voulue, y compris après un ordre manuel.
 
-### Garde-fous (dans NinjaTrader, indépendants de Python : `passerelle.json`, relu à chaque modification)
+### Parité avec la recherche (`python -m nexus.live.parite_ninjascript`, données Cotations 2016-2026)
 
-| Réglage | Défaut | Effet |
-|---|---|---|
-| `compte` | `Sim101` | seul compte utilisé ; un compte non simulé est **refusé** (aucun ordre) tant que `compte_reel_autorise` n'est pas à `true` |
-| `max_contrats` | NQ 1, MNQ 10, 6J 2, MJY 20… | plafond de position par racine ; la cible est écrêtée (`max_contrats_defaut` pour les autres) |
-| `coupure_et` / `reprise_et` | 16:10 / 18:00 | tout à plat entre ces heures de New York (limite Topstep ; S1 finit à 16:00) |
-| `perte_jour_max` | 0 (désactivé) | perte de valeur liquidative depuis 18:00 ET : tout à plat, Groupe suspendu jusqu'à la séance suivante |
-| `delai_coeur_s` | 30 | sans message de Python pendant 30 s (ou à la déconnexion) : tout à plat |
-| fichier `Nexus\KILL_SWITCH` | absent | présent : tout à plat (interrupteur global commun aux stratégies Nexus) |
-| `actif` | `true` | `false` (bouton « Tout arrêter » de la fenêtre Groupe) : tout à plat, aucun ordre |
-
-Chaque verrou remet les cibles de la passerelle à 0. Quand il est levé (reprise de 18:00, « Reprendre », Python
-reconnecté), le moteur renvoie les cibles du moment de chaque stratégie. Exception : après une **perte du jour** ou
-l'**interrupteur global**, le Groupe reste suspendu jusqu'à la séance suivante. Dédier le compte au Groupe : la
-passerelle ramène chaque instrument géré à sa cible, y compris après un ordre manuel.
-Les contrats sont résolus par le calendrier de roulement de NinjaTrader (`NQ` → `NQ 12-26`), historique
-`MergeBackAdjusted`.
-
-### Ajouter une stratégie (sans rien redémarrer)
-
-1. Un fichier Python avec une classe dérivée de `nexus.live.strategie.StrategieLive` : `abonnements()` (instruments
-   et barres de chauffe), `sur_barre(instrument, barre)` et/ou `sur_horloge(t)`, et `self.ctx.cible(instrument, qté)`.
-   La stratégie ne parle jamais à NinjaTrader ; le moteur additionne les cibles de toutes les stratégies par
-   instrument.
-2. Une entrée dans `nexus/live/groupe.json` : `{"nom": ..., "classe": "module:Classe", "actif": true, "params": {...}}`.
-   Le moteur la charge dans les 5 s, s'abonne à ses instruments, la chauffe sur l'historique et l'active.
-   Retirer l'entrée ou mettre `"actif": false` met ses cibles à 0 aussitôt. Une entrée modifiée (paramètres ou
-   code) est remplacée dès que ses positions sont à plat. Une stratégie qui lève une exception passe en
-   « erreur », cibles à 0, sans arrêter les autres.
-3. Avant de l'ajouter : la rejouer dans le moteur avec `nexus.live.rejeu.rejouer` et comparer à ses trades de
-   recherche (vectorbt), comme `--verifier` le fait pour S1 et Gotobi.
-
-### Parité avec la recherche (`python -m nexus.live --verifier`, données Cotations 2016-2026)
-
-Les stratégies en direct sont rejouées minute par minute dans le vrai moteur. La passerelle est simulée : une cible
-modifiée à l'instant t est exécutée à l'ouverture de la barre suivante.
+La logique NinjaScript (`AddOns\NexusGroupeLogique.cs`) est compilée dans le banc `Tests\PariteGroupe` (SDK .NET 8)
+et rejouée sur les barres 1 minute de la recherche (mêmes rolls ajustés). Résultat du 2026-10-21 :
 
 | Stratégie | Référence | Résultat |
 |---|---|---|
-| S1 | `S1_NoiseAreaNQ.backtest` (même capital du jour) | 3 656 événements sur 3 656 identiques (jour, heure, position et nombre de contrats) ; 21 demi-séances du calendrier = 21 des données |
-| Gotobi | `gotobi.signaux` | 2 239 sur 2 239 identiques ; 2 ventes de plus en direct (15/06/2020 et 15/06/2026 à 08:00 Tokyo, aucune barre 6J avant 08:14-08:38 : la recherche saute le jour, un ordre au marché serait exécuté) |
+| S1 | `S1_NoiseAreaNQ.backtest` (même capital du jour) | 3 656 ordres sur 3 656 identiques (jour, heure, position) |
+| Gotobi | `gotobi.signaux` | 2 239 ordres sur 2 239 identiques (instant et sens) |
 
-Seule différence de prix attendue : la sortie de fin de séance de S1. En direct, elle se fait à l'ouverture de la
-minute de 16:00 ; dans le backtest, à la clôture de la minute 15:59-16:00.
+Conventions : S1 décide à la clôture de la barre et exécute à l'ouverture de la suivante ; Gotobi décide au début de
+la première barre qui commence à l'heure prévue et exécute à son ouverture. Seule différence de prix attendue : la
+sortie de fin de séance de S1, à l'ouverture de la minute de 16:00 en direct, à la clôture de la minute 15:59-16:00
+dans le backtest.
 
-`python -m nexus.live --essai` : essai de bout en bout sans NinjaTrader (vrai client TCP, vrai moteur, fausse
-passerelle) : chauffe, exécutions, ajout et retrait à chaud, cibles additionnées, commandes Activer / Désactiver de
-la fenêtre Groupe, garde-fou de perte du jour.
+### Ajouter une stratégie au Groupe
 
-**Non vérifié ici** : la passerelle et la fenêtre Groupe dans NinjaTrader lui-même. Elles compilent sans erreur
-contre les DLL 8.1.8.3, mais aucune n'a été ouverte ni aucun ordre passé depuis cette machine. Premier essai : Sim101,
-marché ouvert. Vérifier dans la fenêtre Groupe (ou le journal de la passerelle) l'abonnement à NQ et 6J, puis
-l'arrivée des barres et les cibles.
+1. Écrire sa logique dans `AddOns\NexusGroupeLogique.cs` (classe sans type NinjaTrader, comme `NxS1Logique`).
+2. L'ajouter au banc `Tests\PariteGroupe` et à `nexus/live/parite_ninjascript.py`, puis vérifier que tous ses
+   ordres sont identiques à ceux de la recherche.
+3. Écrire la stratégie NinjaTrader dérivée de `NexusGroupeBase` (elle fixe `CibleVoulue` et appelle `Reconcilier()`),
+   compiler, puis l'activer sur le compte de démo.
+
+### Ancien moteur Python (`python -m nexus.live`)
+
+Avant le 2026-10-21, la logique tournait en Python (`nexus/live/moteur.py`, registre `nexus/live/groupe.json`) et
+un AddOn `NexusPasserelle` (TCP 127.0.0.1:41888) passait les ordres. Cet AddOn n'existe plus. Les modules Python
+restent pour le rejeu et les tests : `python -m nexus.live --verifier` (parité du moteur Python avec la recherche) et
+`--essai` (essai de bout en bout avec une fausse passerelle) ; `tests/test_live.py` les couvre.
 
 ## 18. Tests
 
@@ -1283,7 +1276,7 @@ nexus/
   gotobi.py orb.py or_nuit.py letf.py   candidates minute construites dans vectorbt (§ 10 à 13)
   p1.py prop.py  groupe P1 (criblage intraday) et simulation des challenges de prop firms
   tableau.py     export du tableau de bord Node.js (statistiques vectorbt, tests, corrélations)
-  live/          Groupe en direct sur NinjaTrader : moteur, client de la passerelle, stratégies, rejeu (§ 17)
+  live/          Groupe en direct : rapport du forward, parité NinjaScript, ancien moteur Python et rejeu (§ 17)
   perso/         stratégies NinjaScript personnelles, anomalies, moteur intrajournalier (§ 16)
 outils/          recalcul indépendant de la fiche 16, catalogue SSRN
 recherche/       rapports de chaque étude (resultats_*.txt, resultats_60.json, resultats_strategies.*)

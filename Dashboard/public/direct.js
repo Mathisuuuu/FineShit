@@ -1,7 +1,7 @@
 // Tableau de bord Nexus : page « Groupe en direct ». Etat du compte demo et des strategies NinjaScript du Groupe, publie par
-// l AddOn NexusPasserelle : passerelle, garde-fous, strategies du Groupe, cibles et positions, executions, journal.
-// Donnees : Python/nexus/live -> donnees/live.json, relu toutes les 3 secondes. Lecture seule : le Groupe se modifie
-// dans Python/nexus/live/groupe.json (relu par le moteur toutes les 5 s, sans redemarrage).
+// l AddOn NexusTableau (AddOns/NexusTableau.cs) : compte, verrou, strategies du Groupe, cibles et positions, executions,
+// journal. Donnees : donnees/live.json, ecrit par l AddOn toutes les 2 s et relu toutes les 3 s (la cle "passerelle" garde
+// le nom de l ancien format). Lecture seule : les strategies s activent dans l onglet Strategies de NinjaTrader.
 "use strict";
 
 const Direct = (function () {
@@ -41,8 +41,8 @@ const Direct = (function () {
     var verrou = D.suspension ? "Groupe suspendu : " + D.suspension : (P.verrou ? P.verrou : "aucun");
     var compte = P.compte ? esc(P.compte) + (P.simulation ? " (simulation)" : " (REEL)") : "–";
     var alerte = P.hello && P.simulation === false
-      ? '<div class="panneau encadre-reco"><h3>Compte non simule</h3><p>La passerelle refuse tout ordre sur ce compte tant que '
-        + '"compte_reel_autorise" n est pas a true dans Documents\\NinjaTrader 8\\Nexus\\passerelle.json.</p></div>' : "";
+      ? '<div class="panneau encadre-reco"><h3>Compte non simule</h3><p>Les strategies du Groupe refusent tout ordre sur ce compte '
+        + 'tant que leur propriete « Autoriser un compte reel » n est pas cochee.</p></div>' : "";
     var lignesS = S.map(function (x) {
       var c = Object.keys(x.cibles || {}).map(function (k) { return esc(k) + " " + signe(x.cibles[k]); }).join(", ") || "à plat";
       var e = x.etat || {};
@@ -74,7 +74,7 @@ const Direct = (function () {
       tout arrêter : fenêtre <strong>Groupe</strong> (Control Center → New → Groupe).</p>
       ${alerte}
       <div class="kpis">
-        <div class="kpi"><div class="v">${P.connecte ? "reliee" : "absente"}</div><div class="l">passerelle NinjaTrader</div></div>
+        <div class="kpi"><div class="v">${P.connecte ? "connectee" : "absente"}</div><div class="l">connexion NinjaTrader</div></div>
         <div class="kpi"><div class="v">${compte}</div><div class="l">compte</div></div>
         <div class="kpi"><div class="v">${esc(verrou)}</div><div class="l">garde-fou actif</div></div>
         <div class="kpi"><div class="v">${nb(P.valeur_liquidative, 0)} $</div><div class="l">valeur liquidative</div></div>

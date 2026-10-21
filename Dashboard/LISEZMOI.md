@@ -31,7 +31,8 @@ Pages :
 
 | Page | Contenu |
 |---|---|
-| Groupe en direct | état du Groupe branché sur NinjaTrader (`python -m nexus.live` → `donnees/live.json`, relu toutes les 3 s) : passerelle et compte, garde-fou actif, valeur liquidative et résultat du jour, stratégies (statut, cibles, état), cible nette et position par instrument, exécutions, journal ; lecture seule, le Groupe se modifie dans `Python/nexus/live/groupe.json` (`public/direct.js`) |
+| Groupe en direct | état du Groupe dans NinjaTrader (AddOn `NexusTableau` → `donnees/live.json`, écrit toutes les 2 s, relu toutes les 3 s) : connexion et compte, verrou actif, valeur liquidative et résultat du jour, stratégies NinjaScript (statut, cible, état), cible et position par instrument, exécutions, journal des décisions ; lecture seule, les stratégies s'activent dans l'onglet *Strategies* de NinjaTrader (`public/direct.js`) |
+| Forward test | statistiques vectorbt du compte démo (`python -m nexus.live.rapport` → `donnees/groupe.json`, tâche « Nexus - Rapport du Groupe » toutes les 15 min) : courbe, risque, Monte Carlo, corrélation, trades, ordres (`public/groupe.js`) |
 | Comparaison | toutes les stratégies (tri par colonne, filtre de la barre de gauche), corrélations journalières et mensuelles et portefeuille combiné à risque égal des stratégies cochées, liste des non testées |
 | Prop firm | la combinaison la plus **fiable** de stratégies **futures intraday** (positions soldées avant 17:00 New York) : statistiques vectorbt de chaque stratégie et de chaque combinaison (Sharpe et son IC à 95 % par bootstrap, Sharpe de chaque moitié, Sharpe déflaté comptant toutes les combinaisons essayées, perte max), classement par la borne basse de l'IC du Sharpe, combinaison recommandée, validation de la méthode de choix hors échantillon (choix sur 2016-2020, résultat sur 2021-2026) ; seules les stratégies **courtes** (au plus 400 h en position par an) entrent dans les combinaisons, colonnes « heures / an » et « % par 100 h » (rendement annuel à 10 % de volatilité pour 100 heures en position), tri possible par rendement par heure ; règles du compte et filtres modifiables, taux de réussite de l'évaluation recalculé dans le navigateur (`public/prop.js`, données de `Python/nexus/prop_combinaisons.py`) |
 | Profil horaire | sur la dernière année, les heures (New York, pas de 30 min) où chaque stratégie futures intraday **fiable** est en position, la couverture de chaque créneau, les créneaux vides et les hypothèses testées pour les remplir (`public/profil.js`, données de `Python/nexus/profil_horaire.py`, lot `nexus/perso/creneaux.py`) |
@@ -88,7 +89,8 @@ Sur le serveur Windows qui fait tourner NinjaTrader, le tableau de bord est joig
 - **Sans HTTPS** : le mot de passe circule en clair sur le réseau. Choisir un mot de passe propre à ce tableau de
   bord.
 - Sur le serveur, `donnees/` ne contient que l'index et les fiches du Groupe (les autres résultats, tirés des
-  données sous licence, restent sur le PC). `live.json` y est écrit par `python -m nexus.live`.
+  données sous licence, restent sur le PC). `live.json` y est écrit par l'AddOn `NexusTableau` (chemin réglé par `sortie` dans
+  `Documents\NinjaTrader 8\Nexus\tableau.json`) et `groupe.json` par `python -m nexus.live.rapport`.
 - Démarrage automatique : tâche planifiée « Nexus - Tableau de bord » (au lancement du serveur, compte SYSTEM,
   relancée en cas d'arrêt) et règle de pare-feu « Nexus - tableau de bord (3000) ».
 

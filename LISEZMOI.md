@@ -43,7 +43,7 @@ bibliothèques branchées sur **toutes** les stratégies, plus deux outils exéc
 | 15 LETF rebalancing NQ/ES | `Nexus15_LetfRebalancing.cs` (+ `AddOns\NexusLetf.cs`) | Nexus15_LetfRebalancing | 1 min |
 | A HMM 3 états | `AddOns\NexusModuleA_RegimeHmm.cs` + outil `NexusA_RegimeMonitor.cs` | NexusA_RegimeMonitor | Jour |
 | B Kelly + plafonds | `AddOns\NexusModuleB_Sizing.cs` (dans toutes les stratégies) | — | — |
-| Groupe en direct (S1 + Gotobi, logique en Python) | `AddOns\NexusPasserelle.cs` (passerelle TCP locale) + `Python/nexus/live` | AddOn NexusPasserelle (démarre avec NinjaTrader) ; fenêtre *New → Groupe* | 1 min |
+| Groupe en direct (S1 + Gotobi) | `NexusGroupeS1.cs`, `NexusGroupeGotobi.cs` (socle `NexusGroupeBase.cs`, logique `AddOns\NexusGroupeLogique.cs`) + `AddOns\NexusTableau.cs` | NexusGroupeS1 (MNQ), NexusGroupeGotobi (6J) ; AddOn NexusTableau, fenêtre *New → Groupe* | 1 min |
 | C Disjoncteurs, exécution, validation | `AddOns\NexusModuleC_RiskValidation.cs` + socle + outil `NexusC_PortfolioMonitor.cs` | NexusC_PortfolioMonitor | — |
 
 Socle commun : `AddOns\NexusCore.cs` (maths, ADF/MacKinnon, OU, Black-Scholes, CSV, JSON),
@@ -215,12 +215,14 @@ dernières : les propriétés sont enregistrées en clair dans les workspaces.
 - Activer le journal (« TempsReelSeulement » par défaut), lancer `NexusC_PortfolioMonitor`, commencer
   sur Sim101 puis sur un petit montant (objectif : réalité de l'exécution, pas le profit).
 
-- **Groupe en direct** (S1 + Gotobi) : l'AddOn `NexusPasserelle` diffuse les barres 1 minute au moteur Python
-  (`python -m nexus.live`) et exécute ses positions cibles sur **Sim101** par défaut, avec ses propres garde-fous
-  (compte réel refusé sauf autorisation, plafond de contrats, coupure 16:10 ET, perte du jour, battement de cœur,
-  interrupteur global). Fenêtre **Groupe** (Control Center → *New* → Groupe) : état, stratégies avec Activer /
-  Désactiver, positions, journal, bouton « Tout arrêter ». Ajouter une stratégie = un fichier Python + une ligne
-  dans `Python/nexus/live/groupe.json`, sans redémarrer NinjaTrader. Détails : `Python/LISEZMOI.md`, § 17.
+- **Groupe en direct** (S1 + Gotobi) : deux stratégies NinjaScript, `NexusGroupeS1` sur MNQ et `NexusGroupeGotobi`
+  sur 6J, sur le compte de démo **DEMO8920103** depuis le 2026-10-21. Leur logique (`AddOns\NexusGroupeLogique.cs`)
+  donne exactement les mêmes ordres que la recherche Python sur 2016-2026 (`python -m nexus.live.parite_ninjascript`).
+  Garde-fous : compte réel refusé sauf autorisation, plafond de contrats, interrupteur global (`Nexus\KILL_SWITCH`).
+  L'AddOn `NexusTableau` écrit `live.json` pour le tableau de bord et ouvre la fenêtre **Groupe** (Control Center →
+  *New* → Groupe : compte, stratégies, journal, bouton « Tout arrêter ») ; `python -m nexus.live.rapport` calcule les
+  statistiques vectorbt du forward. Activer / désactiver une stratégie : onglet *Strategies* du Control Center.
+  Détails : `Python/LISEZMOI.md`, § 17.
 
 ## 9. Choix d'interprétation (signalés aussi dans les en-têtes)
 
