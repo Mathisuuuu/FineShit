@@ -242,3 +242,63 @@ def test_gotobi_parite_avec_la_recherche():
 
 def test_essai_de_bout_en_bout():
     assert essai(log=lambda *_: None)
+
+
+def test_archive_ninjatrader_et_journal_des_ordres(tmp_path):
+    """Le moteur demande l historique 1 minute a NinjaTrader une fois par jour, l archive en Parquet, et consigne toutes
+    les cibles, ordres et executions."""
+    lien = Lien()
+    t = {"v": int(pd.Timestamp("2026-10-20 17:00", tz="America/New_York").value // 1_000_000)}
+    reg = {"strategies": [dict(nom="A", classe="nexus.live.essai:StrategieEssai", params=dict(instrument="X", q=1))]}
+    m = Moteur(reg, lien=lien, horloge=lambda: t["v"], etat=None, journal_dir=str(tmp_path), log=None)
+    m.archive_cfg.update(barres=1000, rapport=False)
+    m.charger_registre()
+    _brancher(m, lien)
+    m.tic()
+    dem = [x for x in lien.envoyes if x["type"] == "subscribe" and x["id"] == "archive:X"]
+    assert dem and dem[0]["barres"] == 1000
+    m.sur_message({"type": "history", "id": "archive:X", "barres": [[120_000, 1, 2, 0.5, 1.5, 10], [180_000, 1.5, 2, 1, 1.8, 5]]})
+    m.sur_message({"type": "history_done", "id": "archive:X", "n": 2})
+    a = pd.read_parquet(tmp_path / "archive" / "X.parquet")
+    assert list(a["t"]) == [120_000, 180_000] and {"type": "unsubscribe", "id": "archive:X"} in lien.envoyes
+    assert m.abos["X"].historique == []                                     # l archive ne touche pas aux strategies
+    n = len(lien.envoyes)
+    m.tic()
+    assert not [x for x in lien.envoyes[n:] if x.get("id") == "archive:X"]  # deja a jour aujourd hui
+    m.sur_barre("X", Barre(t["v"], 1, 1, 1, 1.0, 1))
+    m.sur_barre("X", Barre(t["v"] + 60_000, 1, 1, 1, 2.0, 1))
+    m.sur_message({"type": "order", "instrument": "X 12-26", "ordre": "1", "etat": "Filled", "rempli": 1, "prix_moyen": 2.0, "texte": ""})
+    m.sur_message({"type": "execution", "instrument": "X 12-26", "qty": 1, "prix": 2.0, "t": t["v"], "ordre": "1", "nom": "Nexus A"})
+    lus = {f: [json.loads(x) for x in (tmp_path / f).read_text(encoding="utf-8").splitlines()]
+           for f in ("cibles.jsonl", "ordres.jsonl", "executions.jsonl")}
+    assert lus["cibles.jsonl"][-1]["qty"] == 1 and lus["ordres.jsonl"][0]["etat"] == "Filled" and lus["executions.jsonl"][0]["prix"] == 2.0
+
+
+def test_gotobi_suit_le_flux_differe():
+    """Cours differes de 10 min (compte demo NinjaTrader) : Gotobi vend a 8:00 du fil de donnees, soit 8:10 a l horloge."""
+    from nexus.live.strategies.gotobi import Gotobi
+
+    class Ctx:
+        en_chauffe = False
+        t = 0
+        cibles = []
+        def maintenant(self): return self.t
+        def cible(self, i, q, motif=""): self.cibles.append((self.t, q))
+        def derniere(self, i): return None
+        def info(self, i): return {}
+        def journal(self, *a, **k): pass
+
+    c = Ctx()
+    g = Gotobi("G", dict(negocie="6J", contrats=1), c)
+    h8 = int(pd.Timestamp("2025-01-10 08:00", tz="Asia/Tokyo").value // 1_000_000)   # jour gotobi
+    for k in range(-30, 1):                                                         # barres recues avec 10 min de retard
+        b = Barre(h8 - 600_000 + k * 60_000, 1, 1, 1, 0.0066, 1)
+        c.t = b.t + 600_000
+        g.sur_barre("6J", b)
+    assert g.retard == 600_000
+    c.t = h8
+    g.sur_horloge(h8)
+    assert c.cibles == []                                                           # 8:00 reelle = 7:50 du fil : rien
+    c.t = h8 + 600_000
+    g.sur_horloge(h8 + 600_000)
+    assert c.cibles == [(h8 + 600_000, -1)]                                         # 8:00 du fil : vente

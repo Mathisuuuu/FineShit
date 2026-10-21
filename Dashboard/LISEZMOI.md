@@ -67,7 +67,30 @@ dossier `Cotations` du dépôt s'ils existent ; sinon, copier `config.exemple.js
 indiquer le chemin du dossier Cotations et la commande Python.
 
 Options : `PORT=3001 node serveur.js`, `DONNEES=autre_dossier node serveur.js`. Le serveur n'écoute
-que sur la machine locale (127.0.0.1) ; `HOTE=0.0.0.0` l'ouvre au réseau local.
+que sur la machine locale (127.0.0.1) par défaut.
+
+### Accès à distance (serveur du Groupe)
+
+Sur le serveur Windows qui fait tourner NinjaTrader, le tableau de bord est joignable depuis n'importe où à
+`http://<IP du serveur>:3000`, **avec mot de passe** :
+
+| Réglage (`config.json`, non suivi par git) | Effet |
+|---|---|
+| `"hote": "0.0.0.0"`, `"port": 3000` | écoute sur l'IP publique ; le serveur **refuse de démarrer** sans `acces.json` |
+| `"strategies": ["S1_NoiseAreaNQ", "Gotobi_6J"]` | seules ces fiches sont visibles, les autres sont introuvables (404) |
+| `"pages": ["direct"]` | seule la page « Groupe en direct » (compte démo) est visible ; recalcul désactivé |
+
+- Mot de passe : `node mot-de-passe.js` (identifiant + mot de passe d'au moins 12 caractères, saisis à la main).
+  Il écrit `acces.json` : identifiant, sel et empreinte scrypt, jamais le mot de passe. Redémarrer ensuite le
+  tableau de bord.
+- Authentification HTTP Basic sur toutes les pages. Après 5 essais ratés depuis une même adresse, celle-ci est
+  bloquée 15 minutes.
+- **Sans HTTPS** : le mot de passe circule en clair sur le réseau. Choisir un mot de passe propre à ce tableau de
+  bord.
+- Sur le serveur, `donnees/` ne contient que l'index et les fiches du Groupe (les autres résultats, tirés des
+  données sous licence, restent sur le PC). `live.json` y est écrit par `python -m nexus.live`.
+- Démarrage automatique : tâche planifiée « Nexus - Tableau de bord » (au lancement du serveur, compte SYSTEM,
+  relancée en cas d'arrêt) et règle de pare-feu « Nexus - tableau de bord (3000) ».
 
 Fichiers lus dans `donnees/` : `index.json` (liste), un fichier par stratégie (`/api/strategies/<id>`), et quatre
 annexes (`/api/annexe/<nom>`) : `rendements.json` (comparaison), `prop.json` (onglet Prop firm), `etudes.json`,

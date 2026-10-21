@@ -153,12 +153,14 @@ function rendreCartes() {
 }
 function rendreListe() {
   const nav = $("#liste");
-  const fixe = [["direct", "Groupe en direct (NinjaTrader)", "stratégies du Groupe branchées sur NinjaTrader : cibles, positions, garde-fous, journal"],
+  const fixe = [["groupe", "Forward test (NinjaTrader)", "résultats du compte démo : courbe, risque, Monte Carlo, corrélation, trades sur les actifs, tous les ordres (calculs vectorbt)"],
+    ["direct", "Groupe en direct (NinjaTrader)", "stratégies du Groupe branchées sur NinjaTrader : cibles, positions, garde-fous, journal"],
     ["labo", "Laboratoire (en direct)", "hypothèses testées dans vectorbt, mois rempli avec le plus de stratégies fiables et non corrélées"],
     ["comparaison", "Comparaison", "toutes les stratégies, corrélations, portefeuille combiné"],
     ["prop", "Prop firm", "combinaison la plus fiable de futures intraday (statistiques vectorbt), règles du compte modifiables"],
     ["profil", "Profil horaire", "heures couvertes par les stratégies fiables sur un an, plages vides et hypothèses testées"],
-    ["etudes", "Études sur papiers", "60 stratégies intraday et stratégies construites sur papiers"]];
+    ["etudes", "Études sur papiers", "60 stratégies intraday et stratégies construites sur papiers"]]
+    .filter(([k]) => !etat.index?.pages || etat.index.pages.includes(k));     // tableau restreint (serveur distant)
   if (!$("#liste-strats")) {
     nav.innerHTML = `<div id="liste-fixe"></div>
       <div class="titre-liste">Stratégies <span id="liste-compte"></span></div>
@@ -591,13 +593,16 @@ async function route(r) {
       ({ apercu: pageApercu, fonctionnement: pageFonctionnement, vectorbt: pageVectorbt, trades: pageTrades, tests: pageTests })[etat.onglet](f);
     } else {
       etat.id = null;
-      etat.page = ["prop", "etudes", "profil", "labo", "direct"].includes(h[0]) ? h[0] : "comparaison";
+      etat.page = ["prop", "etudes", "profil", "labo", "direct", "groupe"].includes(h[0]) ? h[0] : "comparaison";
+      const permises = etat.index?.pages;
+      if (permises && !permises.includes(etat.page)) etat.page = permises[0] || "direct";
       rendreListe();
       if (etat.page === "prop") await Prop.page(etat.statique);
       else if (etat.page === "etudes") await Etudes.page(etat.statique);
       else if (etat.page === "profil") await Profil.page(etat.statique);
       else if (etat.page === "labo") await Labo.page(etat.statique);
       else if (etat.page === "direct") await Direct.page(etat.statique);
+      else if (etat.page === "groupe") await Groupe.page(etat.statique);
       else await pageComparaison();
     }
   } catch (e) {
@@ -612,11 +617,14 @@ async function charger() {
   Profil.oublier();
   Labo.oublier();
   Direct.oublier();
+  Groupe.oublier();
   Etudes.oublier();
   etat.rendements = null;
   etat.comp.choix = null;
   $("#genere").textContent = etat.index.genere_le ? `resultats du ${etat.index.genere_le}` : "";
-  $("#recalculer").hidden = etat.statique;
+  $("#recalculer").hidden = etat.statique || !!etat.index.pages;
+  document.documentElement.classList.toggle("sobre", !!etat.index.pages);   // tableau distant : noir et blanc
+  document.documentElement.classList.toggle("sans-liste", !!etat.index.pages && !(etat.index.strategies || []).length);
   await route();
 }
 

@@ -88,3 +88,46 @@ test("annexes communes servies en JSON (prop firm, comparaison, etudes)", async 
     vide.srv.close();
   }
 });
+
+test("acces a distance : mot de passe obligatoire et blocage apres 5 essais rates", async () => {
+  const { creerAcces, verifier } = require("../serveur.js");
+  const acces = creerAcces("mathis", "un-mot-de-passe-de-test");
+  assert.ok(verifier(acces, "mathis", "un-mot-de-passe-de-test"));
+  assert.ok(!verifier(acces, "mathis", "faux"));
+  assert.ok(!JSON.stringify(acces).includes("un-mot-de-passe-de-test"));
+  const { srv, base } = await demarrer({ donnees: path.join(__dirname, "fixtures"), config: { python: "python3", cotations: "" }, acces });
+  const basic = (u, p) => ({ authorization: "Basic " + Buffer.from(`${u}:${p}`).toString("base64") });
+  try {
+    const sans = await fetch(`${base}/api/strategies`);
+    assert.equal(sans.status, 401);
+    assert.match(sans.headers.get("www-authenticate"), /^Basic /);
+    assert.equal((await fetch(`${base}/`)).status, 401);
+    assert.equal((await fetch(`${base}/api/strategies`, { headers: basic("mathis", "un-mot-de-passe-de-test") })).status, 200);
+    assert.equal((await fetch(`${base}/api/strategies`, { headers: basic("autre", "un-mot-de-passe-de-test") })).status, 401);
+    for (let k = 0; k < 4; k++) await fetch(`${base}/api/strategies`, { headers: basic("mathis", "faux") });
+    const bloque = await fetch(`${base}/api/strategies`, { headers: basic("mathis", "un-mot-de-passe-de-test") });
+    assert.equal(bloque.status, 429);
+  } finally {
+    srv.close();
+  }
+});
+
+test("tableau restreint (serveur distant) : seulement les fiches et pages permises", async () => {
+  const config = { python: "python3", cotations: "", strategies: ["Exemple_Test"], pages: ["direct"] };
+  const { srv, base } = await demarrer({ donnees: path.join(__dirname, "fixtures"), config });
+  const autre = await demarrer({ donnees: path.join(__dirname, "fixtures"), config: { ...config, strategies: ["Autre"] } });
+  try {
+    const ix = await (await fetch(`${base}/api/strategies`)).json();
+    assert.deepEqual(ix.strategies.map((s) => s.id), ["Exemple_Test"]);
+    assert.deepEqual(ix.pages, ["direct"]);
+    assert.equal((await fetch(`${base}/api/strategies/Exemple_Test`)).status, 200);
+    assert.equal((await (await fetch(`${autre.base}/api/strategies`)).json()).strategies.length, 0);
+    assert.equal((await fetch(`${autre.base}/api/strategies/Exemple_Test`)).status, 404);
+    const prop = await (await fetch(`${base}/api/annexe/prop`)).json();
+    assert.equal(prop.erreur, "annexe inconnue");
+    assert.equal((await fetch(`${base}/api/recalculer`, { method: "POST", body: "{}" })).status, 403);
+  } finally {
+    srv.close();
+    autre.srv.close();
+  }
+});

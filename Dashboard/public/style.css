@@ -283,3 +283,62 @@ dialog pre { background: var(--surface-2); padding: 10px; border-radius: 8px; ma
 .direct-groupe .direct { color: var(--vert); font-size: 13px; font-weight: 600; margin-left: 8px; }
 .direct-groupe .kpi .v { font-size: 16px; overflow-wrap: anywhere; }
 .journal-direct { max-height: 360px; overflow-y: auto; font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Groupe (donnees NinjaTrader, calculs vectorbt) */
+.graph.haut { height: 460px; }
+.groupe h4 { margin: 14px 0 6px; font-size: 13px; }
+.onglets-groupe { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.onglets-groupe .actif { background: var(--texte); color: var(--surface); }
+.groupe td.num { text-align: right; font-family: var(--police-chiffres); }
+
+/* Tableau distant : clair et sobre ; la couleur est reservee a ce qui compte (gains, pertes, etats, la combinaison) */
+:root.sobre, :root.sobre:not([data-theme="light"]) {
+  --fond: #f5f6f8; --surface: #ffffff; --surface-2: #f2f4f7; --bord: #e4e7ec; --texte: #101828; --texte-2: #667085;
+  --accent: #2f6fed; --accent-doux: #eaf1ff; --vert: #12a150; --vert-doux: #e8f7ef; --rouge: #e5484d; --rouge-doux: #fdeeee;
+  --orange: #d97706; --orange-doux: #fdf3e2; --gris-doux: #f2f4f7; --ombre: 0 1px 2px rgba(16, 24, 40, .05); color-scheme: light;
+}
+.sobre body { background: var(--fond); }
+.sobre .barre { background: var(--surface); border-bottom: 1px solid var(--bord); }
+.sobre nav#liste { background: var(--fond); border-right: 1px solid var(--bord); }
+.sobre .carte-strat { background: var(--surface); border: 1px solid var(--bord); border-left: 3px solid transparent; border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
+.sobre .carte-strat:hover { box-shadow: 0 2px 8px rgba(16, 24, 40, .08); border-color: var(--bord); }
+.sobre .carte-strat.active { background: var(--surface); border-left-color: var(--accent); border-color: var(--bord); }
+.sobre .panneau { border: 1px solid var(--bord); border-radius: 12px; padding: 16px 18px; box-shadow: var(--ombre); margin-bottom: 16px; }
+.sobre .panneau h3 { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--texte-2); margin-bottom: 10px; }
+.sobre .entete h2 { font-size: 24px; font-weight: 650; letter-spacing: -.01em; }
+.sobre .kpis { gap: 12px; }
+.sobre .kpi { border: 1px solid var(--bord); border-radius: 12px; padding: 12px 14px; transition: transform .15s, box-shadow .15s; }
+.sobre .kpi:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 24, 40, .08); }
+.sobre .kpi .v { font-size: 22px; font-weight: 650; }
+.sobre .kpi .l { text-transform: uppercase; letter-spacing: .04em; font-size: 11px; margin-top: 2px; }
+.sobre .kpi.pos .v, .sobre .pos { color: var(--vert); }
+.sobre .kpi.neg .v, .sobre .neg { color: var(--rouge); }
+.sobre .kpi.accent { border-color: var(--accent); background: var(--accent-doux); }
+.sobre .kpi.accent .v { color: var(--accent); }
+.sobre th { text-transform: uppercase; letter-spacing: .04em; font-size: 11px; color: var(--texte-2); border-bottom: 1px solid var(--bord); background: var(--surface); }
+.sobre td { border-bottom: 1px solid var(--surface-2); }
+.sobre tbody tr:hover td { background: var(--surface-2); }
+.sobre .bouton { border-radius: 999px; padding: 5px 12px; border: 1px solid var(--bord); background: var(--surface); transition: all .15s; }
+.sobre .bouton:hover { border-color: var(--accent); color: var(--accent); }
+.sobre .onglets-groupe .actif, .sobre .bouton.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sobre .badge.ok, .sobre .badge.validee { background: var(--vert-doux); color: var(--vert); }
+.sobre .badge.alerte { background: var(--rouge-doux); color: var(--rouge); }
+
+/* Bandeau en direct et navigation de la page Groupe */
+.direct-bandeau { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; background: var(--surface); border: 1px solid var(--bord);
+  border-radius: 12px; padding: 10px 14px; margin: 6px 0 14px; font-size: 13px; }
+.direct-bandeau .etiq { color: var(--texte-2); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; margin-right: 4px; }
+.direct-bandeau b { font-family: var(--police-chiffres); font-weight: 600; }
+.point { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--texte-2); vertical-align: middle; }
+.point.vert { background: var(--vert); box-shadow: 0 0 0 3px var(--vert-doux); animation: pulse 2s infinite; }
+.point.rouge { background: var(--rouge); box-shadow: 0 0 0 3px var(--rouge-doux); }
+.point.orange { background: var(--orange); box-shadow: 0 0 0 3px var(--orange-doux); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 5px var(--vert-doux); } }
+.etat-garde { color: var(--orange); font-weight: 600; }
+.nav-groupe { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0; margin-bottom: 8px;
+  background: var(--fond); border-bottom: 1px solid var(--bord); }
+.nav-groupe a { text-decoration: none; color: var(--texte-2); font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid transparent; }
+.nav-groupe a:hover { color: var(--accent); border-color: var(--bord); background: var(--surface); }
+.groupe section { scroll-margin-top: 96px; }
+.groupe .titre-section { font-size: 15px; font-weight: 650; margin: 22px 0 10px; color: var(--texte); }
+.sans-liste .titre-liste, .sans-liste .filtres-liste, .sans-liste #liste-strats { display: none; }

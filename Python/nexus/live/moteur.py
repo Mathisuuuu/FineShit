@@ -13,6 +13,12 @@ Registre (groupe.json) relu toutes les 5 s :
   - entree modifiee (parametres, ou fichier de la classe) : remplacee des que ses cibles sont toutes a 0
     (jamais de sortie forcee d une position en cours pour un changement de reglage).
 
+Donnees NinjaTrader conservees (dossier .cache/live, si journal_dir) :
+  - archive/<instrument>.parquet : historique 1 minute le plus long que NinjaTrader fournit (demande une fois par jour,
+    apres "heure_et" de la cle "archive" du registre, ou au demarrage s il manque), puis lancement du rapport du Groupe
+    (python -m nexus.live.rapport : rejeu des strategies + vectorbt -> Dashboard/donnees/groupe.json) ;
+  - cibles.jsonl, ordres.jsonl, executions.jsonl : toutes les cibles envoyees et tous les ordres et executions du compte.
+
 Fenetre « Groupe » de NinjaTrader : le moteur lui envoie l etat du Groupe toutes les 2 s (etat_groupe) et recoit ses
 commandes (commande activer / desactiver), appliquees en modifiant "actif" dans groupe.json : le registre reste la
 seule source de verite, que la modification vienne de NinjaTrader ou d un editeur de texte.
@@ -23,6 +29,7 @@ import importlib
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import time
 import traceback
@@ -30,6 +37,8 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
+import numpy as np
 
 from .protocole import MINUTE_MS, Barre, barre, heure, ms, racine
 from .strategie import StrategieLive
@@ -158,6 +167,11 @@ class Moteur:
         self._erreur_registre = ""
         self._en_lot = 0
         self._prochain_groupe = 0
+        self.archive_cfg = dict(barres=0, heure_et="16:20", rapport=True, intervalle_min=15)   # barres > 0 : historique demande a NinjaTrader
+        self._archive_t: dict[str, int] = {}
+        self._prochain_direct = 0
+        self.archives: dict[str, dict] = {}
+        self._rapport = None
 
     # ------------------------------------------------------------------ journal et etat
     def journal(self, texte: str, **donnees) -> None:
@@ -225,6 +239,8 @@ class Moteur:
                 d = json.load(fh)
             self._mtime_registre = mt
             self._spec_registre = list(d.get("strategies", []))
+            if isinstance(d.get("archive"), dict):
+                self.archive_cfg.update(d["archive"])
             if self._erreur_registre:
                 self.journal("registre de nouveau lisible")
             self._erreur_registre = ""
@@ -380,6 +396,127 @@ class Moteur:
     def _envoyer(self, msg: dict) -> None:
         if self.lien is not None:
             self.lien.envoyer(msg)
+        if msg.get("type") == "target":
+            self._consigner("cibles.jsonl", msg)
+
+    def _consigner(self, fichier: str, m: dict) -> None:
+        """Ajoute un message de la passerelle (ou une cible envoyee) au registre permanent des ordres."""
+        if not self.journal_dir:
+            return
+        try:
+            os.makedirs(self.journal_dir, exist_ok=True)
+            x = dict(m, t_moteur=self.maintenant, heure_et=heure(self.maintenant, NY).strftime("%Y-%m-%d %H:%M:%S"))
+            with open(os.path.join(self.journal_dir, fichier), "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(x, ensure_ascii=False) + "\n")
+        except OSError:
+            pass
+
+    # ------------------------------------------------------------------ archive de l historique NinjaTrader
+    @property
+    def dossier_archive(self) -> str | None:
+        return os.path.join(self.journal_dir, "archive") if self.journal_dir else None
+
+    def _moment_archive(self) -> int:
+        """Dernier instant ou l archive devait etre rafraichie (aujourd hui a heure_et ET, sinon la veille)."""
+        n = heure(self.maintenant, NY)
+        h, mi = (int(x) for x in str(self.archive_cfg.get("heure_et", "16:20")).split(":"))
+        d = datetime(n.year, n.month, n.day, h, mi, tzinfo=NY)
+        if n < d:
+            d -= timedelta(days=1)
+        return ms(d)
+
+    def _verifier_archives(self) -> None:
+        if not self.dossier_archive or not self.passerelle.get("hello") or not self.archive_cfg.get("barres"):
+            return
+        moment = self._moment_archive()
+        for inst in list(self.abos):
+            st = self.archives.get(inst, {})
+            if st.get("etat") == "demande" and self.maintenant - st.get("depuis", 0) < 3_600_000:
+                continue
+            f = os.path.join(self.dossier_archive, f"{inst}.parquet")
+            if os.path.exists(f) and os.path.getmtime(f) * 1000 >= moment:
+                continue
+            self.archives[inst] = dict(etat="demande", depuis=self.maintenant, morceaux=[])
+            self._envoyer(dict(type="subscribe", id=f"archive:{inst}", instrument=inst, barres=int(self.archive_cfg["barres"])))
+            self.journal(f"archive {inst} : historique 1 minute demande a NinjaTrader ({int(self.archive_cfg['barres']):,} barres au plus)")
+
+    def _enregistrer_direct(self) -> None:
+        """Forward test : toutes les intervalle_min minutes, ajoute a l archive les barres NinjaTrader recues en direct,
+        consigne l etat du compte demo (compte.jsonl) et relance le rapport du Groupe."""
+        if not self.dossier_archive or not self.passerelle.get("hello") or self.maintenant < self._prochain_direct:
+            return
+        if not self.abos or not all(a.pret for a in self.abos.values()):
+            return                                                          # attendre l historique de chauffe
+        self._prochain_direct = self.maintenant + int(self.archive_cfg.get("intervalle_min", 15)) * 60_000
+        for inst, a in self.abos.items():
+            neuves = [b for b in a.historique if b.t > self._archive_t.get(inst, 0)]
+            if not neuves:
+                continue
+            try:
+                self._ecrire_archive(inst, [np.array([[b.t, b.o, b.h, b.l, b.c, b.v] for b in neuves], dtype=float)])
+                self._archive_t[inst] = neuves[-1].t
+            except Exception as ex:                                     # noqa: BLE001
+                self.journal(f"archive {inst} : ecriture impossible ({ex!r})")
+        P = self.passerelle
+        self._consigner("compte.jsonl", dict(type="compte", compte=P.get("compte"), valeur_liquidative=P.get("valeur_liquidative"),
+                                             resultat_jour=P.get("resultat_jour"), verrou=P.get("verrou"),
+                                             positions={k: v for k, v in self.positions.items() if v}))
+        self._lancer_rapport()
+
+    def _sur_archive(self, m: dict) -> None:
+        inst = str(m.get("id", ""))[len("archive:"):]
+        st = self.archives.get(inst)
+        t = m.get("type")
+        if st is None or st.get("etat") != "demande":
+            return
+        if t == "history":
+            if m.get("barres"):
+                st["morceaux"].append(np.asarray(m["barres"], dtype=float))
+        elif t == "error":
+            st["etat"] = "erreur"
+            self.journal(f"archive {inst} : {m.get('msg')}")
+        elif t == "history_done":
+            self._envoyer(dict(type="unsubscribe", id=f"archive:{inst}"))
+            try:
+                n = self._ecrire_archive(inst, st.pop("morceaux"))
+                st["etat"] = "recue"
+                self.journal(f"archive {inst} : {n}")
+            except Exception as ex:                                     # noqa: BLE001
+                st["etat"] = "erreur"
+                self.journal(f"archive {inst} : ecriture impossible ({ex!r})")
+            if all(self.archives.get(i, {}).get("etat") in ("recue", "erreur") for i in self.abos):
+                self._lancer_rapport()
+
+    def _ecrire_archive(self, inst: str, morceaux: list) -> str:
+        import pandas as pd
+        os.makedirs(self.dossier_archive, exist_ok=True)
+        a = np.concatenate(morceaux) if morceaux else np.empty((0, 6))
+        df = pd.DataFrame(a, columns=["t", "open", "high", "low", "close", "volume"])
+        f = os.path.join(self.dossier_archive, f"{inst}.parquet")
+        if os.path.exists(f):
+            df = pd.concat([pd.read_parquet(f), df], ignore_index=True)       # garde l historique deja archive
+        df["t"] = df["t"].astype("int64")
+        df = df.drop_duplicates("t", keep="last").sort_values("t").reset_index(drop=True)
+        tmp = f + ".tmp"
+        df.to_parquet(tmp, index=False)
+        os.replace(tmp, f)
+        if not len(df):
+            return "aucune barre recue"
+        return (f"{len(df):,} barres archivees, du {heure(int(df.t.iloc[0]), NY):%Y-%m-%d %H:%M} au "
+                f"{heure(int(df.t.iloc[-1]), NY):%Y-%m-%d %H:%M} ET (fin de barre)")
+
+    def _lancer_rapport(self) -> None:
+        if not self.archive_cfg.get("rapport", True) or not self.journal_dir:
+            return
+        if self._rapport is not None and self._rapport.poll() is None:
+            return
+        try:
+            opts = dict(creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)) if os.name == "nt" else {}
+            self._rapport = subprocess.Popen([sys.executable, "-m", "nexus.live.rapport"], cwd=PY_DIR,
+                                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **opts)
+            self.journal("rapport du forward lance (executions du compte demo + vectorbt)")
+        except OSError as ex:
+            self.journal(f"rapport du Groupe impossible a lancer : {ex!r}")
 
     # ------------------------------------------------------------------ evenements
     def sur_barre(self, instrument: str, b: Barre) -> None:
@@ -411,6 +548,9 @@ class Moteur:
     def sur_message(self, m: dict) -> None:
         self.maintenant = self.horloge()
         t = m.get("type")
+        if str(m.get("id", "")).startswith("archive:"):
+            self._sur_archive(m)
+            return
         if t == "_connecte":
             self.passerelle.update(connecte=True, hello=False)
             self._envoyer(dict(type="hello", client="nexus.live", version=1))
@@ -420,6 +560,10 @@ class Moteur:
             self.passerelle.update(connecte=False, hello=False)
             for a in self.abos.values():
                 a.demandees, a.pret = 0, False
+            for st in self.archives.values():
+                if st.get("etat") == "demande":
+                    st["etat"] = ""
+                    st.pop("morceaux", None)
         elif t == "hello":
             self.passerelle.update({k: v for k, v in m.items() if k != "type"}, hello=True, connecte=True)
             sim = m.get("simulation")
@@ -463,10 +607,12 @@ class Moteur:
         elif t == "position":
             self.positions[racine(m.get("instrument", ""))] = int(m.get("qty", 0))
         elif t == "execution":
+            self._consigner("executions.jsonl", m)
             x = dict(t=m.get("t"), instrument=m.get("instrument"), qty=m.get("qty"), prix=m.get("prix"), ordre=m.get("ordre"))
             self.executions.append(x)
             self.journal(f"execution {m.get('instrument')} {m.get('qty'):+d} a {m.get('prix')}", **{k: v for k, v in x.items() if k != "t"})
         elif t == "order":
+            self._consigner("ordres.jsonl", m)
             if m.get("etat") in ("Rejected", "Cancelled"):
                 self.journal(f"ordre {m.get('etat')} sur {m.get('instrument')} : {m.get('texte')}")
         elif t == "target_ack":
@@ -597,6 +743,8 @@ class Moteur:
         if self.maintenant >= self._prochain_groupe:
             self._prochain_groupe = self.maintenant + 2000
             self._envoyer_etat_groupe()
+            self._verifier_archives()
+            self._enregistrer_direct()
         if self.etat_path and self.maintenant >= self._prochain_etat:
             self._prochain_etat = self.maintenant + 2000
             self.ecrire_etat()

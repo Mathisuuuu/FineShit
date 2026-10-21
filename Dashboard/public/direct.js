@@ -1,4 +1,4 @@
-// Tableau de bord Nexus : page « Groupe en direct ». Etat du moteur Python (python -m nexus.live) relie a NinjaTrader par
+// Tableau de bord Nexus : page « Groupe en direct ». Etat du compte demo et des strategies NinjaScript du Groupe, publie par
 // l AddOn NexusPasserelle : passerelle, garde-fous, strategies du Groupe, cibles et positions, executions, journal.
 // Donnees : Python/nexus/live -> donnees/live.json, relu toutes les 3 secondes. Lecture seule : le Groupe se modifie
 // dans Python/nexus/live/groupe.json (relu par le moteur toutes les 5 s, sans redemarrage).
@@ -12,7 +12,7 @@ const Direct = (function () {
   function signe(v) { return v == null ? "–" : (v > 0 ? "+" + v : String(v)); }
   async function lire(statique) {
     var r = await fetch((statique ? "donnees/live.json" : "/api/annexe/live") + "?t=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) throw new Error("live.json absent : lancer python -m nexus.live (depuis Python/), NinjaTrader ouvert");
+    if (!r.ok) throw new Error("live.json absent : NinjaTrader (AddOn NexusTableau) ne publie pas encore l état du compte démo");
     return r.json();
   }
 
@@ -66,14 +66,12 @@ const Direct = (function () {
     var journal = (D.journal || []).slice().reverse().map(function (x) {
       return `<div><span class="discret">${esc(x.heure)} ET</span> ${x.strategie ? "<strong>[" + esc(x.strategie) + "]</strong> " : ""}${esc(x.texte)}</div>`;
     }).join("");
-    $("#contenu").innerHTML = `<div class="archive direct-groupe"><div class="entete"><h2>Groupe en direct <span class="direct">● ${P.connecte ? "relie a NinjaTrader" : "passerelle deconnectee"}</span></h2>
-      <span class="discret">mis a jour le ${esc(D.genere || "–")} ET · relu toutes les 3 s</span></div>
-      <p class="resume">Le moteur Python (<code>python -m nexus.live</code>) calcule les strategies sur les barres 1 minute envoyees par NinjaTrader et
-      envoie a l AddOn <strong>NexusPasserelle</strong> une position cible nette par instrument ; NinjaTrader passe les ordres au marche et applique ses
-      garde-fous (compte simule seulement, plafond de contrats, coupure de fin de journee, perte du jour, battement de coeur, interrupteur global).
-      Pour <strong>ajouter, retirer ou desactiver</strong> une strategie : modifier <code>Python/nexus/live/groupe.json</code> (relu toutes les 5 s,
-      sans redemarrer ni le moteur ni NinjaTrader), ou utiliser la fenetre <strong>Groupe</strong> de NinjaTrader (Control Center → New → Groupe :
-      Activer / Desactiver, Tout arreter).</p>
+    $("#contenu").innerHTML = `<div class="archive direct-groupe"><div class="entete"><h2>Groupe en direct <span class="direct">● ${P.connecte ? "NinjaTrader connecté" : "NinjaTrader déconnecté"}</span></h2>
+      <span class="discret">mis à jour le ${esc(D.genere || "–")} ET · relu toutes les 3 s</span></div>
+      <p class="resume">Les stratégies du Groupe tournent <strong>dans NinjaTrader</strong> (NinjaScript <code>NexusGroupeS1</code>, <code>NexusGroupeGotobi</code>)
+      sur le compte démo ; l'AddOn <strong>NexusTableau</strong> publie cet état toutes les 2 s. Garde-fous dans les stratégies : compte simulé seulement,
+      plafond de contrats, interrupteur global. Activer ou désactiver une stratégie : onglet <strong>Strategies</strong> du Control Center ;
+      tout arrêter : fenêtre <strong>Groupe</strong> (Control Center → New → Groupe).</p>
       ${alerte}
       <div class="kpis">
         <div class="kpi"><div class="v">${P.connecte ? "reliee" : "absente"}</div><div class="l">passerelle NinjaTrader</div></div>

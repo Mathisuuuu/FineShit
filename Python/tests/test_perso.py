@@ -980,3 +980,23 @@ def test_zones_orb23_stop_et_cloture():
     lo = min(l[360:365])
     assert abs(tr.r.iloc[0] - (c[359] / o[5] - 1)) < 1e-12
     assert abs(tr.r.iloc[1] - (lo / o[365] - 1)) < 1e-9 or tr.r.iloc[1] < 0
+
+
+def test_fin_de_mois_taux_fenetres():
+    import pandas as pd
+    from nexus.perso.fin_de_mois_taux import fenetre, quotidien, rang_fin
+    idx = pd.bdate_range("2024-01-24", "2024-02-29")
+    x = pd.Series(1.0, index=idx)
+    j = rang_fin(idx)
+    assert j.loc["2024-01-31"] == 1 and j.loc["2024-01-30"] == 2 and j.loc["2024-02-29"] == 1
+    v = fenetre(x, 2, 1)                                   # deux seances par mois : T-1 et T
+    assert list(v.index) == [pd.Timestamp("2024-01-31"), pd.Timestamp("2024-02-29")] and (v == 2.0).all()
+    q = quotidien(x, 2, 1, cout=1.0)                       # 1 pb a l entree et 1 pb a la sortie
+    assert q.loc["2024-01-30"] == 0.0 and q.loc["2024-01-31"] == 0.0 and q.loc["2024-01-29"] == 0.0
+
+
+def test_t_attendu():
+    from nexus.perso.soixante import t_attendu
+    # cas de fin_de_mois_taux : ~8 pb publies sur 2015-2019, 2 pb de couts, ecart-type ~50 pb, 129 mois
+    assert 1.3 < t_attendu(8.0, 2.0, 50.0, 129) < 1.5
+    assert t_attendu(8.0, 2.0, 0.0, 129) != t_attendu(8.0, 2.0, 0.0, 129)   # nan

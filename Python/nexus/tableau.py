@@ -43,7 +43,7 @@ VERSION = 2
 # Nombre CUMULE d essais du programme de recherche (sessions cloud + locales, voir la memoire « methode-strategie-papiers »)
 # et variance des Sharpe annualises des essais : le Sharpe deflate de TOUTES les strategies du tableau est calcule avec ces
 # deux valeurs (memes tests pour toutes). La variance est remplacee a l export par celle des strategies exportees.
-ESSAIS_PROGRAMME = 427
+ESSAIS_PROGRAMME = 430
 VAR_SHARPE_PROGRAMME = 0.5
 
 

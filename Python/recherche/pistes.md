@@ -113,6 +113,49 @@ contrats qui se tradent la nuit en micro.
   dans le texte payant (manuscrit de Glasgow sous embargo jusqu'en 2027) : les choisir nous-mêmes sur CL serait de la
   fouille de données. À tester sur CL dès que la règle publiée est lisible.
 
+## Lot du 2026-10-21 (après le calcul de puissance obligatoire)
+
+### C1. Retournement de l'enchère de clôture, ES / NQ, 16:00 → 16:10 New York — ABANDONNÉE à la lecture (aucun essai)
+
+Verdict du 2026-10-21 après lecture complète de Bogousslavsky-Muravyev (version de juin 2021, publiée JFM 2023) et de
+Bender-Clapham-Schwemmlein (EFMA 2023) : le calcul de puissance ci-dessous reposait sur une hypothèse fausse.
+- L'écart de l'enchère est mesuré sur le PRIX D'ENCHÈRE de chaque action (8,1 pb en moyenne, surtout le
+  demi-écart), mais agrégé sur l'indice il ne vaut que 0,93 pb (3,6 pb pour SPY / QQQ) : « trop petit pour un
+  portefeuille diversifié ». Les futures ES / NQ ne passent pas par l'enchère : ils suivent le prix médian continu,
+  pas le prix d'enchère ; la distorsion ne leur est pas transmise.
+- Le mouvement de 15:55-16:00 est « surtout efficient » : 19 % seulement s'inverse, et d'ici le lendemain matin.
+- Le papier EFMA porte sur des actions européennes (23 % du rendement d'enchère inversé la nuit), pas sur un indice.
+- Puissance refaite avec les chiffres des papiers : effet brut ≤ 0,5-1,8 pb par jour contre 1,1 pb de coûts ;
+  t attendu < 1 sur les jours lourds. Sous le seuil de 3 : pas de test, pas d'essai compté (règle du 2026-10-21).
+Leçon : faire le calcul de puissance avec l'effet MESURÉ par le papier sur le même objet (ici l'indice), jamais
+avec une approximation tirée de nos données.
+
+Texte d'origine de la piste (conservé) :
+- Cause : l'enchère de clôture du NYSE concentre une part croissante du volume (fonds indiciels, rééquilibrages,
+  échéances, fins de mois) ; le prix de clôture est poussé puis se corrige (Bogousslavsky-Muravyev, *Journal of
+  Financial Markets* 2023 : écart de clôture inversé de moitié peu après la clôture, en entier la nuit ; volume
+  d'enchère maximal les jours de rééquilibrage d'indice, d'échéance d'options et de fin de mois ; EFMA 2023 sur
+  l'Europe : 23 % du rendement de l'enchère inversé la nuit). Les futures ES / NQ cotent après 16:00 : on peut
+  prendre le retournement dans les 10 minutes, avant la limite de 16:10 des prop firms.
+- Jamais testé chez nous (BM23 n'a servi qu'à la clôture du DAX, `dax_cloture.py`).
+- Calcul de puissance (`t_attendu`, seulement |mouvement| et écart-type, jamais leur lien), hypothèse prudente : la
+  moitié du mouvement de la DERNIÈRE minute (15:59-16:00) s'inverse de 16:00 à 16:10, coûts 1,1 pb aller-retour :
+  ES jours lourds (fins de mois, quatre sorcières, Russell ; 175 jours) t ≈ 3,3 ; ES tous les jours (2 658) t ≈ 5,3 ;
+  NQ jours lourds t ≈ 2,7 ; NQ tous les jours t ≈ 4,5. Passe le seuil de 3 pour ES.
+- Temps en position : 10 minutes par jour joué (3 h/an sur les jours lourds, 42 h/an tous les jours).
+- À figer dans le protocole avant le calcul : jours (V = jours lourds, cause la plus forte ; R0 = tous les jours),
+  signal (signe de 15:59-16:00 ou de 15:50-16:00), sortie 16:09 (marge avant 16:10), témoin (16:10-16:20, hors
+  enchère), réplique NQ, lecture complète de BM23 et du papier EFMA avant d'écrire les règles.
+
+### Écartées au crible du 2026-10-21
+| Piste | Raison |
+|---|---|
+| Retournement de fin de journée (Baltussen-Da-Soebhag 2025) | déjà mesuré sur ES / NQ dans `gamma_intraday` / LETF (pente −0,017, t −1,5) |
+| Retournement nuit / jour (Della Corte-Kosowski) | famille S06 (fade de l'overnight) déjà rejetée |
+| Première heure des devises après le saut de 18:00 (SSRN 7135159, 2026) | H2 de `creneaux.py` déjà rejetée |
+| Prépublications 2026 sur le NQ intraday (régimes, LSTM, ICT, Gann...) | famille saturée chez nous ; chaque essai abaisse le Sharpe déflaté |
+| Brent intraday, ZN / ZB | pas de données (Brent) ou clé Databento absente |
+
 ## Écartées après lecture
 
 | Piste | Raison |

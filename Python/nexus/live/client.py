@@ -73,6 +73,13 @@ class ClientPasserelle:
                 self._arret.wait(attente)
                 attente = min(attente * 2, 15.0)
                 continue
+            if s.getsockname() == s.getpeername():
+                # auto-connexion TCP : sans passerelle a l ecoute, Windows peut donner au client le port vise lui-meme ;
+                # le client parlerait a lui-meme et bloquerait le port de NinjaTrader
+                s.close()
+                self._arret.wait(attente)
+                attente = min(attente * 2, 15.0)
+                continue
             attente, deja_dit = 1.0, False
             s.settimeout(None)
             s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)

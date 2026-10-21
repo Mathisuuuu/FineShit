@@ -1,6 +1,6 @@
 """Protocole de la passerelle NinjaTrader (AddOns/NexusPasserelle.cs).
 
-TCP sur 127.0.0.1 (port 51888 par defaut), une ligne JSON UTF-8 par message, champ "type" obligatoire.
+TCP sur 127.0.0.1 (port 41888 par defaut, hors de la plage des ports ephemeres de Windows 49152-65535), une ligne JSON UTF-8 par message, champ "type" obligatoire.
 
 Python -> NinjaTrader
   hello       {client, version}
@@ -35,7 +35,7 @@ import json
 from datetime import datetime, timezone
 from typing import NamedTuple
 
-PORT = 51888
+PORT = 41888                     # hors de la plage ephemere de Windows (49152-65535) : pas d auto-connexion du client
 VERSION = 1
 MINUTE_MS = 60_000
 

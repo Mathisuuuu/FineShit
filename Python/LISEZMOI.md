@@ -1032,6 +1032,25 @@ Lignées pré-FOMC (Pan & Peng 2026 : dérive des obligations à 10 ans la veill
 Halloween (Jacobsen & Zhang : +4,5 %/an, données jusqu'en 2011) lues mais non testées : trop peu de puissance sur
 10 ans, et le pré-FOMC actions a déjà échoué trois fois chez nous.
 
+`python -m nexus.perso.fin_de_mois_taux` → `recherche/resultats_fin_de_mois_taux.txt` (2026-10-21, piste T3 de
+`recherche/pistes_taux.md`). Hartley & Schwarz 2019 (1990-2018) : toute la prime de terme des obligations du Trésor se
+gagne les 2-3 derniers jours du mois (Sharpe ≈ 1), achats des assureurs au rééquilibrage mensuel des indices ; le
+volume du dernier jour a encore grossi depuis 2020 (NY Fed 2024). Test gratuit en journalier : IEF (7-10 ans) et TLT
+(20 ans et plus) moins le T-bill, Yahoo, 2016-2026 ; 2019-2026 = hors échantillon du papier. Règle figée V : achat à
+la clôture de T-2, vente à la clôture de T. V sur IEF : +9,4 pb brut par mois (t 2,1), +7,4 net, 2019-2026 +10,2 net
+(t 1,8), Sharpe vectorbt 0,51, IC 95 % [−0,09 ; 1,10], déflaté 0,10 (430 essais) → **rejetée** ; TLT plus faible
+(0,32). L'effet existe encore mais il est trop petit pour nos critères. Référence R3 (achat en T-3) : t 3,6, Sharpe
+0,94, IC [0,32 ; 1,46], les deux moitiés positives, mais déflaté 0,61 : non retenue (référence vue après coup, pas la
+règle figée). Pas de version futures sans minutes ZN / ZB (Databento, clé absente).
+
+`python -m nexus.perso.orb_robustesse` → `recherche/resultats_orb_robustesse.txt` (2026-10-21). Contrôles de l'ORB NQ
+à règles figées, en plus des 29 tests de la fiche (pas de nouvel essai) : exécution dans la barre d'entrée (10 trades
+ambigus ; perte de 1 R imposée : Sharpe 0,56 ; convention de chemin OHLC : aucun stop touché après l'entrée, résultat
+inchangé), pertes au-delà du stop (pire −2,85 R, 1,4 % des pertes), distribution en R (18,5 % de gagnants, +6,3 R /
+−1,0 R, série de 27 pertes, perte max 28,8 R, les 5 % meilleurs trades font plus que tout le gain), achats et ventes
+séparés (achats faibles depuis 2021), filtre de volume (jours écartés +0,17 R contre +0,33 R, Welch 1,3), terciles
+d'ATR, jours de la semaine, pertes journalières.
+
 `python -m nexus.perso.weekend_crypto` → `recherche/resultats_weekend_crypto.txt` (2026-10-19, piste 1 de
 `recherche/pistes.md`). Mourey, Shahrour & Şoiman (*FRL* 2025) : un week-end négatif des cryptomonnaies annonce un
 lundi négatif des actions. Signal : BTC du vendredi 16:00 au dimanche 18:00 ET ; 246 week-ends, 2021-2026. Le constat
@@ -1126,7 +1145,7 @@ Le Groupe tourne dans NinjaTrader par l'API NinjaScript, avec la logique des str
 règles que la recherche, jamais recopiées en C#) et NinjaTrader réduit à une passerelle :
 
 ```
-NinjaTrader 8 ── AddOn NexusPasserelle.cs (TCP 127.0.0.1:51888, une ligne JSON par message)
+NinjaTrader 8 ── AddOn NexusPasserelle.cs (TCP 127.0.0.1:41888, une ligne JSON par message)
    │  barres 1 minute (historique de chauffe puis temps réel), exécutions, positions, battement de cœur
    ▼
 python -m nexus.live ── moteur : registre groupe.json relu toutes les 5 s, chauffe, cibles nettes par instrument
@@ -1143,7 +1162,7 @@ demande de l'utilisateur.
 
 1. `powershell -ExecutionPolicy Bypass -File .\Installer.ps1` (copie aussi `AddOns\NexusPasserelle.cs`), puis
    NinjaTrader → *New → NinjaScript Editor* → **F5**. L'AddOn démarre avec NinjaTrader et écoute sur
-   127.0.0.1:51888 ; il crée `Documents\NinjaTrader 8\Nexus\passerelle.json` au premier lancement.
+   127.0.0.1:41888 ; il crée `Documents\NinjaTrader 8\Nexus\passerelle.json` au premier lancement.
 2. NinjaTrader connecté à un flux de données qui fournit l'historique 1 minute de NQ et 6J (la chauffe de S1
    demande environ 75 000 minutes, soit 54 séances).
 3. Depuis `Python/` : `python -m nexus.live`. Le moteur se connecte (et se reconnecte seul), s'abonne aux

@@ -3,8 +3,10 @@
 Memes regles et meme calendrier que la recherche (jours_gotobi de nexus/gotobi.py : 5, 10, 15, 20, 25 et dernier
 jour ouvre du mois, jour non ouvre -> jour ouvre precedent, feries japonais) ; heures de Tokyo :
   08:00  vente de 6J ; 09:55  retournement a l achat ; 11:00  sortie.
-Chaque ordre part a l heure prevue (horloge), au plus tard 10 minutes apres (tolerance de la recherche) ; une jambe
-manquee (moteur lance trop tard) n est pas rattrapee. La sortie de 11:00 part toujours si une position reste.
+Chaque ordre part a l heure prevue DU FIL DE DONNEES : horloge reelle moins le retard mesure du flux (mediane des 20
+dernieres barres : nul en temps reel, ~10 min avec les cours differes du compte demo NinjaTrader), donc execute a
+l ouverture de la barre suivante comme dans la recherche, et au meme decalage que les cours : coherent avec un broker. Au plus tard 10 minutes apres
+(tolerance de la recherche) ; une jambe manquee (moteur lance trop tard) n est pas rattrapee. La sortie de 11:00 part toujours si une position reste.
 Taille : notionnel = capital x exposition (95 000 $ pour 100 000 $) au dernier cours, arrondi au contrat (6J :
 12,5 millions de yen) ; parametre "contrats" pour une taille fixe.
 """
@@ -42,6 +44,7 @@ class Gotobi(StrategieLive):
         self.faits: set = set()
         self.q = 0
         self.cible = 0
+        self.retards: list[int] = []
 
     def abonnements(self):
         return {self.donnees: int(self.params.get("barres_chauffe", 1500))}
@@ -64,7 +67,23 @@ class Gotobi(StrategieLive):
         self.cible = q
         self.ctx.cible(self.negocie, q, motif)
 
+    def sur_barre(self, instrument, b):
+        """Mesure le retard du flux (heure reelle - fin de la barre recue) : nul en temps reel, ~10 min en differe."""
+        if instrument != self.donnees or self.ctx is None or self.ctx.en_chauffe:
+            return
+        r = self.ctx.maintenant() - b.t
+        if 0 <= r <= 2 * 3_600_000:                                       # un rattrapage apres coupure n est pas un retard
+            self.retards.append(r)
+            del self.retards[:-20]
+
+    @property
+    def retard(self) -> int:
+        return int(sorted(self.retards)[len(self.retards) // 2]) if self.retards else 0
+
     def sur_horloge(self, t):
+        self._avancer(t - self.retard)                                # heure du fil de donnees (flux differe compris)
+
+    def _avancer(self, t):
         n = heure(t, TOKYO)
         d = n.date()
         self._calendrier(d.year)
@@ -105,5 +124,16 @@ class Gotobi(StrategieLive):
 
     def etat(self):
         prochains = sorted(j for j in self.jours if self.jour is None or j >= self.jour)[:3]
-        return dict(jour_tokyo=str(self.jour), gotobi=self.jour in self.jours, jambes_faites=sorted(self.faits), contrats=self.q,
-                    cible=self.cible, prochains_jours=[str(j) for j in prochains])
+        aujourd_hui = self.jour in self.jours
+        suivant = next((j for j in prochains if j > self.jour or (j == self.jour and "entree" not in self.faits)), None) if self.jour else None
+        entree = None
+        if suivant is not None:
+            h = datetime.combine(suivant, self.heures["entree"], TOKYO)
+            entree = f"{h:%Y-%m-%d %H:%M} Tokyo ({h.astimezone(ZoneInfo('Europe/Paris')):%d/%m %H:%M} Paris)"
+        try:
+            estimee = self._taille()
+        except Exception:                                                 # noqa: BLE001
+            estimee = None
+        return dict(jour_tokyo=str(self.jour), jour_gotobi_a_tokyo=aujourd_hui, jambes_faites=sorted(self.faits),
+                    contrats=self.q if aujourd_hui else 0, cible=self.cible, prochaine_entree=entree,
+                    taille_estimee=estimee, retard_flux_min=round(self.retard / 60_000, 1), prochains_jours=[str(j) for j in prochains])

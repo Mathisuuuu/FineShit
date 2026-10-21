@@ -126,6 +126,14 @@ def cout_bp(root: str, prix: float, creux: bool) -> float:
 # =============================================================================
 #  Criteres de validation (vue d ensemble, fixes avant le test)
 # =============================================================================
+def t_attendu(effet_pb: float, cout_pb: float, ecart_type_pb: float, n_trades: int) -> float:
+    """Calcul de puissance AVANT le test (methode, 2026-10-21) : t attendu du gain net par trade si l effet publie
+    se maintient sur nos donnees. Sous 3 (sous 2 pour < 60 cas), on ne depense pas l essai."""
+    if ecart_type_pb <= 0 or n_trades < 2:
+        return math.nan
+    return (effet_pb - cout_pb) / ecart_type_pb * math.sqrt(n_trades)
+
+
 def tstat(x: pd.Series) -> float:
     x = pd.Series(x).dropna()
     return float(x.mean() / (x.std(ddof=1) / math.sqrt(len(x)))) if len(x) > 2 and x.std(ddof=1) > 0 else math.nan
