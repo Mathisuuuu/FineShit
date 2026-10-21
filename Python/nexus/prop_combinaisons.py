@@ -42,8 +42,15 @@ COUPURE = pd.Timestamp("2021-01-01")
 SIGMA_REF = 0.01                 # a la taille x1, chaque strategie vaut 1 % du compte d ecart-type journalier
 TAILLE_MAX = 4
 CORR_MAX, CONFLIT_MAX = 0.3, 0.02
-HEURES_MAX = 400.0               # strategie courte : au plus 400 h en position par an (demande du 2026-10-20 : le moins de
-                                 # temps possible, rendement par heure) ; les plus longues restent affichees, hors combinaisons
+HEURES_MAX = math.inf            # plus de plafond d heures en position (critere 19 valide le 2026-10-21 ; c etait 400 h/an
+                                 # depuis le 2026-10-20) : classement au rendement par heure, conflit de contrat <= CONFLIT_MAX
+# Seules les strategies qui passent les 24 criteres de la methode (CLAUDE.md, valides le 2026-10-21) entrent dans les
+# combinaisons ; les autres restent affichees. Source : tableau « Ce qui tient » de CLAUDE.md et les verdicts des modules.
+RETENUES_METHODE = frozenset({
+    "S1_NoiseAreaNQ",                                                   # validee le 2026-10-15, deflate 0,96
+    "Gotobi_6J",                                                        # deflate 0,97 ; en 6J (le micro MJY echoue)
+    "R_boombitch_taille_inverse_a_la_volatilite_conforme_a_la_seanc",  # H5 de creneaux.py : RETENUE (Welch 2,81)
+})
 B_BOOT, B_BOOT_WF = 1000, 500
 SEED = 11
 MIN_SEANCES = 250
@@ -247,19 +254,22 @@ def validation_choix(R: pd.DataFrame, positions_conf: pd.DataFrame, regles: dict
 #  Annexe complete
 # =============================================================================
 def analyser(R: pd.DataFrame, corr: pd.DataFrame, conf: pd.DataFrame, essais: int, regles_ref: dict, mults, log=print,
-             heures: dict | None = None) -> dict:
+             heures: dict | None = None, retenues=RETENUES_METHODE) -> dict:
     """R : rendements journaliers des candidates (NaN hors de leur periode). -> statistiques des strategies, de toutes
     les combinaisons, recommandation et validation du choix. heures : heures en position par an de chaque candidate ;
-    seules les strategies courtes (<= HEURES_MAX) entrent dans les combinaisons et la validation."""
+    seules les strategies courtes (<= HEURES_MAX) et retenues par la methode (`retenues`, None : toutes) entrent dans
+    les combinaisons et la validation."""
     ids = list(R.columns)
     h = heures or {}
     membres = {i: mesures(R[i], essais) for i in ids}
     for i in ids:
         hi = h.get(i, math.nan)
         membres[i].update(heures_an=hi, courte=bool(heures is None or (math.isfinite(hi) and hi <= HEURES_MAX)),
+                          retenue=bool(retenues is None or i in retenues),
                           par_100h=membres[i]["sharpe"] * 0.10 / hi * 100 if math.isfinite(hi) and hi > 0 else math.nan)
     vols = {i: float(R[i].std(ddof=1)) for i in ids}
-    pool = [i for i in ids if math.isfinite(membres[i]["sharpe"]) and membres[i]["sharpe"] > 0 and membres[i]["courte"]]
+    pool = [i for i in ids if math.isfinite(membres[i]["sharpe"]) and membres[i]["sharpe"] > 0 and membres[i]["courte"]
+            and membres[i]["retenue"]]
     combos = enumerer(pool, corr, conf)
     n_essais = essais + len(combos)
     log(f"  prop : {len(ids)} candidates, {len(pool)} au Sharpe > 0, {len(combos)} combinaisons (essais comptes : {n_essais})")
@@ -281,8 +291,10 @@ def analyser(R: pd.DataFrame, corr: pd.DataFrame, conf: pd.DataFrame, essais: in
         s = serie_combo(R, vols, reco["ids"])
         k, rs = meilleure_taille(regles_ref["compte"] * s.to_numpy(), regles_ref, mults)
         reco = dict(ids=reco["ids"], taille=k, reussite=rs, regles=regles_ref)
-    val = validation_choix(R, conf, regles_ref, mults, essais, log, autorises=set(pool) if heures is not None else None)
+    val = validation_choix(R, conf, regles_ref, mults, essais, log, autorises=set(pool) if heures is not None or retenues is not None else None)
     return dict(membres=membres, combinaisons=lignes, recommandee=reco, validation=val, essais_combinaisons=n_essais,
-                filtres=dict(corr_max=CORR_MAX, conflit_max=CONFLIT_MAX, taille_max=TAILLE_MAX, heures_max=HEURES_MAX),
+                filtres=dict(corr_max=CORR_MAX, conflit_max=CONFLIT_MAX, taille_max=TAILLE_MAX,
+                             heures_max=HEURES_MAX if math.isfinite(HEURES_MAX) else None,
+                             retenues=sorted(retenues) if retenues is not None else None),
                 coupure=COUPURE.strftime("%Y-%m-%d"),
                 bootstrap=B_BOOT)

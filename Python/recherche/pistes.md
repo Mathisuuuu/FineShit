@@ -156,7 +156,15 @@ Texte d'origine de la piste (conservé) :
 | Prépublications 2026 sur le NQ intraday (régimes, LSTM, ICT, Gann...) | famille saturée chez nous ; chaque essai abaisse le Sharpe déflaté |
 | Brent intraday, ZN / ZB | pas de données (Brent) ou clé Databento absente |
 
-## Écartées après lecture
+## Lot du 2026-10-21 au soir (lecture et calcul de puissance seulement, aucun essai)
+
+| Piste | Source (lue) | Verdict à la lecture |
+|---|---|---|
+| Retournement du dollar autour des fixings BCE / Londres sur 6E | Krohn, Mueller & Whelan, *JF* 2024 (version de travail lue en entier) | sur futures CME, coûts complets : Sharpe 0,61 pour le fix BCE (long dollar 2:00 → 8:15 ET, court 8:15 → 17:00) ; t attendu ≈ 0,61 × √10,6 ≈ 2,0 < 3 et 15 h par jour en position (≈ 3 800 h/an) ; les fenêtres courtes sont « plus que compensées par les coûts » selon les auteurs |
+| Surcouche « fast alpha » (attendre une barre 5 min contraire avant d'entrer / sortir) sur S1 | Zarattini & Pagani, QuanTips n° 2, 02/2026 (note de praticiens lue en entier) | Sharpe 0,87 → 0,99 sur SPY 2007-2026, sans hors échantillon ni test du gain ; l'écart de 0,12 n'est pas mesurable avec t ≥ 3 sur 10 ans ; modifierait S1 figée |
+| Tendance intraday du bitcoin selon la séance (Asie / États-Unis) | articles de blog (Concretum, Amberdata) ; « Bitcoin on Wall Street Time » (volatilité seulement) | aucune règle publiée ni rendement testé ; H12 (Padyšák-Vojtko, Wen) déjà rejetée |
+| Effet de nuit et momentum intraday sur l'or et l'argent chinois | *Global Finance Journal* 2025 | marchés de Shanghai ; sur GC, même famille que or la nuit, H1, A1 (déjà testées) |
+| Pression du roulement trimestriel des E-mini | aucune source académique trouvée | écartée |
 
 | Piste | Raison |
 |---|---|

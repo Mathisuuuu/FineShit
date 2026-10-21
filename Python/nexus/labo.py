@@ -9,7 +9,7 @@ perte max), heures en position, profil par demi-heure sur un an, zone horaire.
 Une strategie est retenue pour la combinaison si elle est :
   - fiable : borne basse de l IC du Sharpe > 0 et Sharpe > 0 sur 2016-2020 et 2021-2026 ;
   - toujours vivante : Sharpe > 0 sur les 24 derniers mois de donnees ;
-  - courte : au plus HEURES_MAX heures en position par an (nexus.prop_combinaisons) ;
+  - courte : au plus HEURES_MAX heures en position par an (nexus.prop_combinaisons ; sans plafond depuis le 2026-10-21) ;
 et la combinaison (jusqu a 4, correlation <= 0,3, conflit de contrat <= 2 %) est classee par la borne basse de l IC du
 Sharpe, comme l onglet Prop firm. Le fichier est recrit a chaque etape (ecriture atomique) : la page le relit toutes les
 5 secondes.
@@ -80,7 +80,7 @@ def etat() -> dict:
             return json.load(fh)
     return dict(genere=None, en_cours=None, journal=[], strategies=[], combinaison=None, par_zone={},
                 zones=[dict(code=c, nom=n, debut=a, fin=b) for c, n, a, b in ZONES],
-                criteres=dict(heures_max=PC.HEURES_MAX, corr_max=PC.CORR_MAX, conflit_max=PC.CONFLIT_MAX, taille_max=PC.TAILLE_MAX))
+                criteres=dict(heures_max=PC.HEURES_MAX if math.isfinite(PC.HEURES_MAX) else None, corr_max=PC.CORR_MAX, conflit_max=PC.CONFLIT_MAX, taille_max=PC.TAILLE_MAX))
 
 
 def ecrire(e: dict) -> None:

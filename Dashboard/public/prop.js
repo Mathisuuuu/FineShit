@@ -155,9 +155,14 @@ const Prop = (function () {
       (avant / apres le ${esc(P.coupure || "2021-01-01")}) : ${nFiables} sur ${nCand}. Les combinaisons sont classees par la <strong>borne
       basse de l'IC du Sharpe</strong> (ce que l'historique permet de garantir), pas par le meilleur resultat passe ; le Sharpe deflate
       compte ${nf0.format(P.essais_combinaisons || 0)} essais (programme de recherche + toutes les combinaisons essayees).
-      Seules les strategies <strong>courtes</strong> (au plus ${nf0.format((P.filtres || {}).heures_max || 400)} h en position par an) entrent
-      dans les combinaisons : les plus longues restent dans la liste, marquees « trop longue ». <em>% par 100 h</em> : rendement annuel
-      a 10 % de volatilite, pour 100 heures en position (le temps a surveiller).</p>
+      ${(P.filtres || {}).heures_max != null
+        ? `Seules les strategies <strong>courtes</strong> (au plus ${nf0.format(P.filtres.heures_max)} h en position par an) entrent
+      dans les combinaisons : les plus longues restent dans la liste, marquees « trop longue ».`
+        : `Aucun plafond d'heures en position : deux strategies d'une combinaison ne doivent simplement pas tenir le meme contrat en
+      meme temps (conflit de contrat au plus ${nf0.format(((P.filtres || {}).conflit_max || 0) * 100)} % du temps).`}
+      ${(P.filtres || {}).retenues ? `Seules les strategies qui passent les <strong>24 criteres de la methode</strong> entrent dans les
+      combinaisons (${P.filtres.retenues.length} sur ${nCand}) ; les autres restent dans la liste, marquees « hors methode ».` : ""}
+      <em>% par 100 h</em> : rendement annuel a 10 % de volatilite, pour 100 heures en position (le temps a surveiller).</p>
       <div id="p-reco"></div>
       <div class="panneau"><div class="outils">
         <div><div class="note">Compte</div><div class="segment" id="p-presets" role="group" aria-label="Taille du compte">
@@ -207,12 +212,13 @@ const Prop = (function () {
     var tb = document.querySelector("#p-cands tbody");
     tb.innerHTML = P.candidats.slice().sort(function (a, b) {
       var x = a.stats || {}, y = b.stats || {};
-      return ((y.fiable && y.courte !== false) - (x.fiable && x.courte !== false)) || (y.fiable - x.fiable)
+      return ((y.retenue !== false) - (x.retenue !== false))
+        || ((y.fiable && y.courte !== false) - (x.fiable && x.courte !== false)) || (y.fiable - x.fiable)
         || ((y.ic_bas == null ? -9 : y.ic_bas) - (x.ic_bas == null ? -9 : x.ic_bas));
     }).map(function (c) {
       var m = c.stats || {};
       return `<tr class="fixe"><td><a href="#" data-route="s/${encodeURIComponent(c.id)}/apercu">${esc(c.titre)}</a><div class="src">${badgeStatut(c.statut)}</div></td>
-        <td>${badgeFiable(m.fiable)}</td><td>${esc((c.instruments || []).join(", "))}</td><td class="src">${esc(m.debut || c.debut)} → ${esc(m.fin || c.fin)}</td>
+        <td>${badgeFiable(m.fiable)}${m.retenue === false ? '<div class="src"><span class="puce moyen"><i>!</i>hors methode</span></div>' : ""}</td><td>${esc((c.instruments || []).join(", "))}</td><td class="src">${esc(m.debut || c.debut)} → ${esc(m.fin || c.fin)}</td>
         <td class="num ${m.sharpe < 0 ? "neg" : ""}">${nb(m.sharpe, 2)}<div class="src">${ic(m)}</div></td>
         <td class="num">${nb(m.sharpe_p1, 2)} / ${nb(m.sharpe_p2, 2)}</td><td class="num">${pc(m.psr, 0)}</td>
         <td class="num">${pc(m.dsr, 1)}</td><td class="num">${pc(m.perte_max, 1)}</td>
