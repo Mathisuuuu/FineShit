@@ -73,8 +73,12 @@ les idées intraday documentées sont épuisées : il faut des données nouvelle
 
 - **Clé Databento** (absente) : chiffrer SANS ACHETER (`python -m nexus.databento_dl cout NQ.v.0 2010-01-01 2016-01-01`),
   attendre l'accord sur le prix, puis rejouer l'ORB figée sur 2010-2015 (pas un nouvel essai).
-- Données gratuites qui attendent l'accord de l'utilisateur : Binance (crypto 2017-2020, piste MBT), HistData
-  (Nikkei JPXJPY, argent XAGUSD). Inventaire : `Python/recherche/pistes_contrats_manquants.md`.
+- Binance (BTC / ETH 2017-2026) et HistData (Nikkei JPXJPY, argent XAGUSD…) sont **déjà téléchargés**
+  (`Python/.cache/`, 2026-10-20) **et déjà testés** : micro bitcoin fiable mais rejeté (Welch 1,39, 486 h/an) ;
+  Nikkei et argent rejetés (`resultats_creneaux.txt`, `resultats_zones.txt`). Ne pas les relancer. Version courte
+  du micro bitcoin : close le 2026-10-21 (Zarattini-Pagani-Barbon 2025 lu en entier : aucune version courte, tous ses
+  modèles tiennent 3 300 à 3 900 h/an).
+  Avant de proposer une piste, vérifier `.cache/` et `recherche/`. Inventaire : `Python/recherche/pistes_contrats_manquants.md`.
 - Prop firms (2026-10-21) : Topstep la plus sûre (NKD permis, pas de nuit) ; seule Phidias Premium permet NKD + or +
   nuit ; proposition en cours : simuler le challenge Phidias Premium avec l'or de nuit.
 
