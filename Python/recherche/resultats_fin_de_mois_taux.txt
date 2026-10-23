@@ -1,0 +1,65 @@
+Execution 1 (2026-10-21) : arretee par une erreur d assemblage des resultats (cle 'net' en double) APRES le calcul de V ;
+chiffres de V identiques a ceux ci-dessous. Correction sans effet sur aucun calcul, puis execution 2 (ci-dessous).
+
+
+=== ETAPE 1 - IEF : rendement excedentaire moyen par seance j-avant-la-fin (pb), 2016-01-04 -> 2026-09-30
+  j= 1  n 129 |  +6.84 (t +2.18) | 16-20  +8.03 (t +2.15) | 21-26  +5.81 (t +1.18) | 19-26  +7.15 (t +1.74)
+  j= 2  n 129 |  +2.53 (t +0.83) | 16-20  +0.16 (t +0.05) | 21-26  +4.59 (t +0.92) | 19-26  +5.00 (t +1.28)
+  j= 3  n 129 | +10.20 (t +2.83) | 16-20 +17.32 (t +4.75) | 21-26  +4.01 (t +0.68) | 19-26  +6.28 (t +1.38)
+  j= 4  n 129 |  -0.81 (t -0.26) | 16-20  -2.26 (t -0.62) | 21-26  +0.44 (t +0.09) | 19-26  -0.23 (t -0.06)
+  j= 5  n 129 |  +4.18 (t +1.17) | 16-20  +6.69 (t +1.69) | 21-26  +2.00 (t +0.35) | 19-26  +4.56 (t +1.01)
+  j= 6  n 129 |  -0.27 (t -0.09) | 16-20  +2.75 (t +0.77) | 21-26  -2.91 (t -0.62) | 19-26  -0.30 (t -0.08)
+  j= 7  n 129 |  +4.02 (t +1.23) | 16-20  +4.85 (t +1.44) | 21-26  +3.30 (t +0.62) | 19-26  +4.74 (t +1.10)
+  j= 8  n 129 |  -0.79 (t -0.22) | 16-20  +5.23 (t +0.98) | 21-26  -6.03 (t -1.29) | 19-26  +1.30 (t +0.28)
+  j= 9  n 129 | -10.46 (t -3.14) | 16-20  -2.11 (t -0.58) | 21-26 -17.72 (t -3.39) | 19-26 -13.28 (t -3.17)
+  j=10  n 129 |  -3.15 (t -0.95) | 16-20  -4.43 (t -1.07) | 21-26  -2.03 (t -0.40) | 19-26  -3.29 (t -0.79)
+  autres jours (j > 3) :  -1.70 pb (t -1.96)
+
+=== ETAPE 1 - TLT : rendement excedentaire moyen par seance j-avant-la-fin (pb), 2016-01-04 -> 2026-09-30
+  j= 1  n 129 |  +7.02 (t +0.96) | 16-20 +15.08 (t +1.78) | 21-26  +0.01 (t +0.00) | 19-26  +3.60 (t +0.38)
+  j= 2  n 129 |  +4.72 (t +0.81) | 16-20  -5.03 (t -0.66) | 21-26 +13.20 (t +1.53) | 19-26 +10.72 (t +1.47)
+  j= 3  n 129 | +15.42 (t +1.96) | 16-20 +31.93 (t +3.25) | 21-26  +1.06 (t +0.09) | 19-26  +7.27 (t +0.75)
+  j= 4  n 129 |  -1.93 (t -0.27) | 16-20  -8.33 (t -0.91) | 21-26  +3.64 (t +0.33) | 19-26  +0.12 (t +0.01)
+  j= 5  n 129 |  +9.62 (t +1.24) | 16-20 +15.36 (t +1.75) | 21-26  +4.64 (t +0.37) | 19-26 +10.87 (t +1.10)
+  j= 6  n 129 |  -0.94 (t -0.14) | 16-20  +2.90 (t +0.34) | 21-26  -4.28 (t -0.42) | 19-26  +0.35 (t +0.04)
+  j= 7  n 129 |  +8.65 (t +1.12) | 16-20 +15.69 (t +1.60) | 21-26  +2.52 (t +0.22) | 19-26 +10.57 (t +1.03)
+  j= 8  n 129 |  +2.71 (t +0.30) | 16-20 +21.12 (t +1.43) | 21-26 -13.30 (t -1.28) | 19-26  +6.70 (t +0.58)
+  j= 9  n 129 | -13.42 (t -1.67) | 16-20  +1.03 (t +0.10) | 21-26 -25.99 (t -2.19) | 19-26 -17.01 (t -1.67)
+  j=10  n 129 |  -6.61 (t -0.83) | 16-20 -16.59 (t -1.35) | 21-26  +2.07 (t +0.20) | 19-26  -6.84 (t -0.67)
+  autres jours (j > 3) :  -2.66 pb (t -1.36)
+
+=== ETAPE 2 - strategies (rendement net par trade, pb ; couts 1 pb par cote)
+  V      IEF  t=2  n 129 | brut  +9.38 (t +2.11) | 16-20  +8.20 (t +1.41) | 21-26 +10.40 (t +1.57) | temoin  -4.58 | net  +7.38 | stress  +5.38
+         19-26 net +10.15 (t +1.78) | apres pub.  +9.78 (t +1.63) | % mois > 0 55 | DSR 0.095
+         vectorbt : Sharpe +0.51 IC95 [-0.09 ; +1.10] | 16-20 +0.56 | 21-26 +0.50 | 19-26 +0.64
+           [--] t >= 3
+           [--] meme signe et t >= 1,5 sur 2016-2020 et 2021-2026
+           [--] t de Welch >= 2 contre le temoin
+           [OK] gain moyen net > 0
+           [OK] gain net > 0 sans les 3 meilleurs jours
+  R0     IEF  t=1  n 129 | brut  +6.84 (t +2.18) | 16-20  +8.03 (t +2.15) | 21-26  +5.81 (t +1.18) | temoin  -3.15 | net  +4.84 | stress  +2.84
+         19-26 net  +5.15 (t +1.25) | apres pub.  +4.46 (t +1.02) | % mois > 0 57 | DSR 0.074
+         vectorbt : Sharpe +0.47 IC95 [-0.15 ; +1.03] | 16-20 +0.71 | 21-26 +0.32 | 19-26 +0.45
+           [--] t >= 3
+           [--] meme signe et t >= 1,5 sur 2016-2020 et 2021-2026
+           [OK] t de Welch >= 2 contre le temoin
+           [OK] gain moyen net > 0
+           [OK] gain net > 0 sans les 3 meilleurs jours
+  R3     IEF  t=3  n 129 | brut +19.58 (t +3.61) | 16-20 +25.52 (t +3.84) | 21-26 +14.41 (t +1.73) | temoin  -4.75 | net +17.58 | stress +15.58
+         19-26 net +16.43 (t +2.39) | apres pub. +15.77 (t +2.14) | % mois > 0 62 | DSR 0.606
+         vectorbt : Sharpe +0.94 IC95 [+0.32 ; +1.46] | 16-20 +1.63 | 21-26 +0.57 | 19-26 +0.81
+           [OK] t >= 3
+           [OK] meme signe et t >= 1,5 sur 2016-2020 et 2021-2026
+           [OK] t de Welch >= 2 contre le temoin
+           [OK] gain moyen net > 0
+           [OK] gain net > 0 sans les 3 meilleurs jours
+  V_TLT  TLT  t=2  n 129 | brut +11.74 (t +1.30) | 16-20 +10.05 (t +0.78) | 21-26 +13.21 (t +1.03) | temoin  -9.56 | net  +9.74 | stress  +7.74
+         19-26 net +12.32 (t +1.04) | apres pub. +10.44 (t +0.84) | % mois > 0 52 | DSR 0.027
+         vectorbt : Sharpe +0.32 IC95 [-0.27 ; +0.92] | 16-20 +0.31 | 21-26 +0.33 | 19-26 +0.37
+           [--] t >= 3
+           [--] meme signe et t >= 1,5 sur 2016-2020 et 2021-2026
+           [--] t de Welch >= 2 contre le temoin
+           [OK] gain moyen net > 0
+           [OK] gain net > 0 sans les 3 meilleurs jours
+
+VERDICT V : REJETEE (criteres + DSR >= 0.95, N = 430) ; fiabilite vectorbt : non

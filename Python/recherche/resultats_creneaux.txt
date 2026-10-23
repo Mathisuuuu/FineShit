@@ -1,0 +1,372 @@
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 381.
+
+H1 - OR : MOMENTUM D UNE SESSION A L AUTRE (Wei 2026), GC, sessions Asie 00:00-08:00 et Europe 08:00-14:30 UTC
+Seances : 2765 (05/01/2016 -> 28/08/2026)
+ETAPE 1 - rendement moyen par session (pb par jour, t) et lien avec la session precedente
+  2016-2020                    us +2.41 (t +1.39) | asie -0.31 (t -0.26) | europe +1.43 (t +0.92) | corr. US -> Asie -0.100 (signe identique 48%) | Asie -> Europe +0.023
+  2021-2026                    us +2.69 (t +1.46) | asie +1.36 (t +0.91) | europe +1.02 (t +0.57) | corr. US -> Asie -0.017 (signe identique 47%) | Asie -> Europe +0.009
+  periode du papier 07/2024 -> us +5.39 (t +1.39) | asie +2.87 (t +0.85) | europe +4.30 (t +1.21) | corr. US -> Asie +0.019 (signe identique 46%) | Asie -> Europe -0.008
+ETAPE 2 - strategies nettes (1 tick + 2,50 $ par cote)
+  V   achat Asie si la session US precedente a monte          1354 trades | net  -1.28 pb (t -0.95) | moities t -1.98 / +0.37 | Sharpe -0.29 [-0.89 ; +0.31] moities -0.87 / +0.15 | deflate 0.00 | perte max -28.2% | non fiable
+  V   couts 2 ticks                                           1354 trades | net  -2.42 pb (t -1.80) | moities t -2.80 / -0.06 | Sharpe -0.54 [-1.15 ; +0.05] moities -1.23 / -0.02 | deflate 0.00 | perte max -36.5% | non fiable
+  temoin : achat Asie apres une session US en baisse          1314 trades | net  -0.51 pb (t -0.36) | moities t -0.44 / -0.14 | Sharpe -0.11 [-0.68 ; +0.45] moities -0.20 / -0.06 | deflate 0.00 | perte max -15.0% | non fiable
+  R1  regle acheteuse du papier (Asie + Europe, sans US)      2062 trades | net  +0.94 pb (t +0.70) | moities t -0.55 / +1.37 | Sharpe +0.21 [-0.37 ; +0.84] moities -0.24 / +0.57 | deflate 0.01 | perte max -36.4% | non fiable
+  R0  achat Asie tous les jours (derive, sans signal)         2726 trades | net  -0.86 pb (t -0.89) | moities t -1.77 / +0.18 | Sharpe -0.27 [-0.91 ; +0.30] moities -0.78 / +0.07 | deflate 0.00 | perte max -36.3% | non fiable
+CRITERES H1 (V) (1354 trades) : brut +0.16 pb (t +0.12) | 2016-2020 -1.67 (t -0.94) | 2021-2026 +1.83 (t +0.91) | temoin 0.94 (Welch -0.40) | net -1.28 | net sans 3 meilleurs -1.98
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 381 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H1 (V) : REJETEE
+(calcule en 4 s le 2026-10-19 22:47)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 384.
+
+H2 - DEVISES : CONTRE-PIED DU SAUT DE REOUVERTURE DE 18:00 (Tolusic 2026), 6E 6B 6A 6J, 18:00 -> 19:00 New York
+Reouvertures : 2771 (04/01/2016 -> 27/08/2026)
+ETAPE 1 - sauts et retour dans l heure (pente du rendement 18:00-19:00 sur le saut, en pb par pip ; t de Newey-West)
+  6E : 2016-2020 : |saut| moyen 3.8 pips, >= 1 pip 67%, pente -0.014 (t -0.25) | 2021-2026 : |saut| moyen 2.7 pips, >= 1 pip 49%, pente -0.067 (t -1.12)
+  6B : 2016-2020 : |saut| moyen 7.1 pips, >= 1 pip 75%, pente -0.052 (t -1.16) | 2021-2026 : |saut| moyen 3.5 pips, >= 1 pip 61%, pente -0.121 (t -1.79)
+  6A : 2016-2020 : |saut| moyen 4.0 pips, >= 1 pip 69%, pente -0.240 (t -3.69) | 2021-2026 : |saut| moyen 2.3 pips, >= 1 pip 47%, pente -0.090 (t -0.88)
+  6J : 2016-2020 : |saut| moyen 5.6 pips, >= 1 pip 80%, pente +0.036 (t +0.46) | 2021-2026 : |saut| moyen 4.8 pips, >= 1 pip 75%, pente -0.025 (t -0.52)
+ETAPE 2 - strategies nettes (1 tick + 2,50 $ par cote), portefeuille a parts egales des quatre devises
+  V   contre-pied saut >= 1 pip, 18:00 -> 19:00               6843 trades | net  -1.19 pb (t -10.77) | moities t -6.27 / -9.09 | Sharpe -2.75 [-3.34 ; -2.13] moities -2.38 / -3.12 | deflate 0.00 | perte max -18.5% | non fiable
+  V   couts 2 ticks                                           6843 trades | net  -2.47 pb (t -22.38) | moities t -14.13 / -17.69 | Sharpe -5.65 [-6.49 ; -4.89] moities -5.32 / -5.99 | deflate 0.00 | perte max -34.5% | non fiable
+  temoin : micro-saut de 20:00, 20:00 -> 21:00                5019 trades | net  -1.52 pb (t -9.35) | moities t -5.36 / -7.82 | Sharpe -2.54 [-3.22 ; -1.90] moities -2.15 / -2.88 | deflate 0.00 | perte max -18.1% | non fiable
+  R1  meme entree tenue jusqu a 16:59                         6663 trades | net  -1.21 pb (t -1.70) | moities t -1.09 / -1.32 | Sharpe -0.45 [-1.07 ; +0.18] moities -0.41 / -0.49 | deflate 0.00 | perte max -22.5% | non fiable
+  R0  contre-pied de tous les sauts, 18:00 -> 19:00           9234 trades | net  -1.26 pb (t -14.05) | moities t -7.31 / -12.87 | Sharpe -3.62 [-4.30 ; -2.94] moities -2.77 / -4.52 | deflate 0.00 | perte max -25.3% | non fiable
+    replique 6E : 1520 trades, net -0.81 pb (t -4.70), brut +0.43 pb, moities t -4.69 / -2.30
+    replique 6B : 1768 trades, net -1.22 pb (t -6.38), brut +0.93 pb, moities t -4.74 / -4.29
+    replique 6A : 1513 trades, net -1.09 pb (t -3.82), brut +1.03 pb, moities t -1.94 / -3.71
+    replique 6J : 2042 trades, net -1.51 pb (t -6.91), brut +0.25 pb, moities t -2.57 / -7.12
+CRITERES H2 (V) (6843 trades) : brut +0.64 pb (t +5.81) | 2016-2020 +0.77 (t +4.96) | 2021-2026 +0.50 (t +3.19) | temoin 0.28 (Welch +1.85) | net -1.19 | net sans 3 meilleurs -1.22
+  [x] t >= 3
+  [x] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 384 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H2 (V) : REJETEE
+(calcule en 9 s le 2026-10-19 22:50)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 387.
+
+H3 - DAX : CASSURE DU RANGE D OUVERTURE DE XETRA (Zarattini & Aziz 2023), bougie 9:00-9:05 Berlin, sortie 17:30
+Jours de Xetra avec barres : 3204 (02/01/2014 -> 28/08/2026)
+ETAPE 1 - rendement 9:05 -> 17:30 dans le sens de la bougie d ouverture (pb, 1 contrat, sans stop ni couts)
+  bougie 9:00            3179 jours | moyenne +1.57 pb (t +1.00) | 2014-2020 +2.63 (t +1.16) | 2021-2026 +0.29 (t +0.14)
+  bougie 12:00 (temoin)  3079 jours | moyenne +0.78 pb (t +0.64) | 2014-2020 +1.62 (t +0.91) | 2021-2026 -0.28 (t -0.17)
+ETAPE 2 - strategies nettes (1 tick + 2,50 $ par cote ; taille = 1 % de risque, levier 4 au plus)
+  V   ORB 2023 (bougie 9:00, stop au range)                   3169 trades | net  +0.49 pb (t +0.16) | moities t +0.92 / -0.88 | Sharpe +0.04 [-0.51 ; +0.61] moities +0.34 / -0.37 | deflate 0.00 | perte max -78.9% | non fiable
+      stop touche 80% des jours, levier moyen 3.81
+  V   couts 2 ticks                                           3169 trades | net  -4.29 pb (t -1.41) | moities t -0.01 / -2.23 | Sharpe -0.39 [-0.98 ; +0.19] moities -0.00 / -0.93 | deflate 0.00 | perte max -92.5% | non fiable
+  temoin : meme regle, bougie 12:00                           3046 trades | net  -5.51 pb (t -2.67) | moities t -0.57 / -3.90 | Sharpe -0.75 [-1.44 ; -0.17] moities -0.22 / -1.63 | deflate 0.00 | perte max -87.9% | non fiable
+  R1  ORB 2024 sans filtre de volume (stop 10 % ATR)          2968 trades | net  +2.60 pb (t +0.80) | moities t +1.65 / -0.86 | Sharpe +0.22 [-0.31 ; +0.75] moities +0.62 / -0.36 | deflate 0.02 | perte max -72.6% | non fiable
+  R0  anomalie brute, 1 contrat, sans stop                    3179 trades | net  +0.07 pb (t +0.04) | moities t +0.60 / -0.71 | Sharpe +0.01 [-0.49 ; +0.55] moities +0.23 / -0.30 | deflate 0.00 | perte max -45.2% | non fiable
+CRITERES H3 (V) (3169 trades) : brut +6.14 pb (t +2.02) | 2016-2020 +8.69 (t +2.01) | 2021-2026 +3.03 (t +0.72) | temoin 0.28 (Welch +1.60) | net +0.49 | net sans 3 meilleurs -0.80
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 387 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H3 (V) : REJETEE
+(calcule en 42 s le 2026-10-19 22:54)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 390.
+
+H4 - DAX : ZONE DE BRUIT (REGLE DE S1) SUR LA SEANCE DE XETRA, controles 9:30 ... 17:00, sortie 17:30 Berlin
+Seances completes : 2878 (02/01/2014 -> 28/08/2026)
+ETAPE 1 - controles hors de la zone (avec le filtre de TWAP) : 21.5% ; rendement de l intervalle suivant dans le sens de la cassure : +0.10 pb (t +0.39, 8277 intervalles)
+  V   reglage S1 (sigma 30 seances, bande x1,2, TWAP)         1353 trades | net  +0.69 pb (t +0.22) | moities t +1.01 / -1.02 | Sharpe +0.07 [-0.50 ; +0.66] moities +0.38 / -0.47 | deflate 0.00 | perte max -36.8% | non fiable
+  V   couts 2 ticks                                           1353 trades | net  -2.73 pb (t -0.88) | moities t +0.25 / -1.83 | Sharpe -0.26 [-0.83 ; +0.36] moities +0.09 / -0.85 | deflate 0.00 | perte max -50.8% | non fiable
+  temoin : achat 9:30 -> 17:30 tous les jours                 2411 trades | net  -0.51 pb (t -0.15) | moities t -0.68 / +0.65 | Sharpe -0.04 [-0.63 ; +0.51] moities -0.26 / +0.30 | deflate 0.00 | perte max -66.3% | non fiable
+  R1  reglage du papier (sigma 14 seances, bande x1)          1600 trades | net  +0.81 pb (t +0.28) | moities t +0.98 / -0.91 | Sharpe +0.08 [-0.50 ; +0.68] moities +0.37 / -0.43 | deflate 0.00 | perte max -43.9% | non fiable
+  R0  cassure seule (sans TWAP), levier 1                     1573 trades | net  -1.37 pb (t -0.87) | moities t -0.15 / -1.32 | Sharpe -0.26 [-0.84 ; +0.35] moities -0.06 / -0.62 | deflate 0.00 | perte max -32.1% | non fiable
+CRITERES H4 (V) (1353 trades) : brut +4.73 pb (t +1.53) | 2016-2020 +7.82 (t +1.91) | 2021-2026 -0.17 (t -0.04) | temoin 2.08 (Welch +0.58) | net +0.69 | net sans 3 meilleurs -0.61
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 390 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H4 (V) : REJETEE
+(calcule en 6 s le 2026-10-19 22:57)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 393.
+
+H5 - NQ : BOOMBITCH (TURTLE DONCHIAN 160/60, 15 MIN) RENDU CONFORME : VENTE A 16:59, RACHAT A 18:00
+  V boombitch  taille inverse a la volatilite (alternative) : 2491 trades  18% traversent 17:00 (457 clotures) ; P&L d origine +132 374 $  dont sauts de reouverture -2 205 $ ; conforme +126 919 $
+  V   taille inverse a la vol. (300 $), conforme              2491 trades | net  +5.10 pb (t +4.77) | moities t +3.71 / +3.03 | Sharpe +1.42 [+0.86 ; +1.97] moities +1.58 / +1.27 | deflate 0.98 | perte max -7.2% | FIABLE
+      meme strategie NON conforme (reference)                 2491 trades | net  +5.10 pb (t +4.77) | moities t +3.71 / +3.03 | Sharpe +1.50 [+0.94 ; +2.05] moities +1.70 / +1.30 | deflate 0.99 | perte max -7.1% | FIABLE
+  R1 boombitch (Turtle Donchian 160/60  M15) : 2491 trades  18% traversent 17:00 (457 clotures) ; P&L d origine +21 942 $  dont sauts de reouverture -644 $ ; conforme +21 581 $
+  R1  boombitch d origine (1 MNQ), conforme                   2491 trades | net  +0.87 pb (t +3.29) | moities t +3.02 / +2.39 | Sharpe +0.95 [+0.39 ; +1.44] moities +1.25 / +0.95 | deflate 0.67 | perte max -3.1% | FIABLE
+  R0 boombitch  filtre de tendance 200 j (alternative) : 1952 trades  18% traversent 17:00 (347 clotures) ; P&L d origine +20 037 $  dont sauts de reouverture -136 $ ; conforme +19 410 $
+  R0  filtre de tendance 200 j, conforme                      1952 trades | net  +0.99 pb (t +3.50) | moities t +3.74 / +2.31 | Sharpe +1.04 [+0.49 ; +1.58] moities +1.57 / +0.95 | deflate 0.78 | perte max -3.1% | FIABLE
+  temoin : 1 MNQ de 18:00 a 16:59 chaque seance               2753 trades | net  +1.46 pb (t +1.98) | moities t +2.14 / +1.26 | Sharpe +0.60 [-0.00 ; +1.19] moities +0.95 / +0.52 | deflate 0.16 | perte max -11.1% | non fiable
+CRITERES H5 (V) (2491 trades) : brut +5.10 pb (t +4.77) | 2016-2020 +6.10 (t +3.71) | 2021-2026 +4.22 (t +3.03) | temoin 1.46 (Welch +2.81) | net +5.10 | net sans 3 meilleurs +4.68
+  [x] t >= 3
+  [x] meme signe et t >= 1,5 sur chaque moitie
+  [x] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [x] gain net > 0 sans les 3 meilleurs trades
+  [x] Sharpe deflate >= 0.95 pour 393 essais : 0.98
+  [x] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H5 (V) : RETENUE
+(calcule en 8 s le 2026-10-19 23:05)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 401.
+
+H6 - REPLIQUE DE H5 (DONCHIAN 160/60, 15 MIN, RISQUE 300 $, CONFORME A LA SEANCE) SUR LES HUIT AUTRES CONTRATS
+  ES (MES)  2943 trades  P&L -8 774 $                         2943 trades | net  -0.30 pb (t -0.34) | moities t -1.65 / +1.05 | Sharpe -0.10 [-0.68 ; +0.46] moities -0.73 / +0.44 | deflate 0.00 | perte max -30.5% | non fiable
+      temoin +0.68 pb (Welch -1.02) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs trades ; Sharpe deflate
+  YM (MYM)  2785 trades  P&L +81 749 $                        2785 trades | net  +2.94 pb (t +2.91) | moities t +3.05 / +1.04 | Sharpe +0.88 [+0.32 ; +1.44] moities +1.35 / +0.43 | deflate 0.54 | perte max -15.3% | FIABLE
+      temoin +0.48 pb (Welch +2.33) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; Sharpe deflate | FIABLE (tableau de bord)
+  GC (MGC)  2665 trades  P&L +51 446 $                        2665 trades | net  +1.93 pb (t +1.99) | moities t +0.65 / +2.16 | Sharpe +0.60 [-0.03 ; +1.17] moities +0.29 / +0.89 | deflate 0.18 | perte max -14.6% | non fiable
+      temoin +0.41 pb (Welch +1.35) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; t de Welch >= 2 contre le temoin ; Sharpe deflate
+  CL (MCL)  2837 trades  P&L -84 054 $                        2837 trades | net  -2.96 pb (t -3.43) | moities t -1.73 / -3.17 | Sharpe -1.04 [-1.66 ; -0.45] moities -0.77 / -1.31 | deflate 0.00 | perte max -63.3% | non fiable
+      temoin -0.41 pb (Welch -2.83) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs trades ; Sharpe deflate
+  6E (M6E)  2602 trades  P&L -213 352 $                       2602 trades | net  -8.20 pb (t -8.12) | moities t -5.87 / -5.62 | Sharpe -2.37 [-3.05 ; -1.73] moities -2.43 / -2.32 | deflate 0.00 | perte max -88.7% | non fiable
+      temoin -0.38 pb (Welch -7.70) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs trades ; Sharpe deflate
+  6B (M6B)  2761 trades  P&L -250 408 $                       2761 trades | net  -9.07 pb (t -9.77) | moities t -5.42 / -8.32 | Sharpe -2.86 [-3.56 ; -2.25] moities -2.31 / -3.34 | deflate 0.00 | perte max -92.2% | non fiable
+      temoin -0.24 pb (Welch -9.47) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs trades ; Sharpe deflate
+  6J (MJY)  2324 trades  P&L -196 559 $                       2324 trades | net  -8.46 pb (t -7.32) | moities t -4.64 / -5.67 | Sharpe -2.15 [-2.90 ; -1.49] moities -2.00 / -2.28 | deflate 0.00 | perte max -87.1% | non fiable
+      temoin -0.56 pb (Welch -6.80) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs trades ; Sharpe deflate
+  6A (M6A)  2802 trades  P&L -315 371 $                       2802 trades | net -11.26 pb (t -13.15) | moities t -9.61 / -9.01 | Sharpe -3.68 [-4.35 ; -3.00] moities -3.90 / -3.49 | deflate 0.00 | perte max -95.9% | non fiable
+      temoin -0.25 pb (Welch -12.80) | rejetee : t >= 3 ; meme signe et t >= 1,5 sur chaque moitie ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs trades ; Sharpe deflate
+VERDICT H6 : 0 contrat(s) retenu(s) sur 8 : aucun ; fiables au sens du tableau de bord : YM
+(calcule en 150 s le 2026-10-19 23:17)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 402.
+
+H7 - DAX : REGLE DE H5 (DONCHIAN CONFORME) SUR LE MICRO-DAX FDXS, HEURES DE L EUREX 01:15-22:00 BERLIN
+  V   FDXS  2363 trades  P&L +2 255 $                         2363 trades | net  +0.10 pb (t +0.10) | moities t +1.23 / -1.20 | Sharpe +0.03 [-0.53 ; +0.54] moities +0.46 / -0.51 | deflate 0.00 | perte max -25.0% | non fiable
+  temoin : 1 FDXS de l ouverture a la cloture de chaque seance  3206 trades | net  +0.13 pb (t +0.48) | moities t -0.59 / +1.17 | Sharpe +0.14 [-0.42 ; +0.66] moities -0.22 / +0.49 | deflate 0.01 | perte max -7.3% | non fiable
+      sorties avant 17:00 New York : 95.0%
+CRITERES H7 (V) (2363 trades) : brut +0.10 pb (t +0.10) | 2016-2020 +1.82 (t +1.23) | 2021-2026 -1.59 (t -1.20) | temoin 0.13 (Welch -0.03) | net +0.10 | net sans 3 meilleurs -0.35
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 402 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H7 (V) : REJETEE
+(calcule en 40 s le 2026-10-19 23:20)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 405.
+
+H8 - ES : RETOUR APRES LA SORTIE DE LA BANDE DE VOLATILITE IMPLICITE (Seeck 2026), seance 9:30-16:00 New York
+ETAPE 1 - seances : 2542 ; sorties de bande (VIX / 16) : 475 (19%)
+  2016-2020   177 sorties | retour moyen jusqu a la cloture -6.35 pb (t -0.82) | part positive 51%
+  2021-2026   298 sorties | retour moyen jusqu a la cloture +1.97 pb (t +0.39) | part positive 45%
+  VIX < 20    269 sorties | retour moyen jusqu a la cloture -0.95 pb (t -0.26) | part positive 48%
+  VIX 20-30   156 sorties | retour moyen jusqu a la cloture -0.72 pb (t -0.09) | part positive 48%
+  VIX >= 30    50 sorties | retour moyen jusqu a la cloture -3.36 pb (t -0.12) | part positive 44%
+ETAPE 2 - strategies nettes (1 tick + 2,50 $ par cote)
+  V   ES, bande VIX / 16, retour jusqu a la cloture            475 trades | net  -2.74 pb (t -0.63) | moities t -1.11 / +0.15 | Sharpe -0.20 [-0.82 ; +0.42] moities -0.51 / +0.06 | deflate 0.00 | perte max -24.3% | non fiable
+  V   couts 2 ticks                                            475 trades | net  -4.07 pb (t -0.94) | moities t -1.35 / -0.05 | Sharpe -0.30 [-0.91 ; +0.32] moities -0.62 / -0.02 | deflate 0.00 | perte max -27.7% | non fiable
+  temoin : bande deux fois plus etroite (VIX / 32)            1567 trades | net  -5.55 pb (t -2.61) | moities t -2.15 / -1.59 | Sharpe -0.82 [-1.44 ; -0.20] moities -0.98 / -0.69 | deflate 0.00 | perte max -63.0% | non fiable
+  R1  regle du papier : NQ, bande VXN / 16                     535 trades | net  -9.15 pb (t -2.03) | moities t -1.31 / -1.57 | Sharpe -0.64 [-1.24 ; -0.02] moities -0.60 / -0.68 | deflate 0.00 | perte max -47.0% | non fiable
+  R0  V seulement si VIX >= 30                                  50 trades | net  -5.16 pb (t -0.19) | moities t -0.24 / -0.03 | Sharpe -0.06 [-0.68 ; +0.50] moities -0.11 / -0.01 | deflate 0.00 | perte max -12.9% | non fiable
+CRITERES H8 (V) (475 trades) : brut -1.13 pb (t -0.26) | 2016-2020 -6.35 (t -0.82) | 2021-2026 +1.97 (t +0.39) | temoin -3.87 (Welch +0.57) | net -2.74 | net sans 3 meilleurs -5.32
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 405 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H8 (V) : REJETEE
+(calcule en 13 s le 2026-10-19 23:28)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 407.
+
+H9 - LE FLUX GOTOBI (Ito & Yamada 2017 ; Krohn, Mueller & Whelan 2023) SUR 6E, 6B, 6A : vente 08:00 -> 09:55, achat -> 11:00 Tokyo
+  6E : jours gotobi 747 | avant le fixing -0.01 pb (t -0.04), apres -0.18 pb (t -0.68) | net des deux jambes -2.68 pb (t -5.88) | autres jours, brut +0.82 pb (t +2.87)
+  6B : jours gotobi 746 | avant le fixing +0.81 pb (t +1.54), apres +0.01 pb (t +0.04) | net des deux jambes -3.47 pb (t -5.83) | autres jours, brut +0.63 pb (t +2.05)
+  6A : jours gotobi 747 | avant le fixing +0.96 pb (t +1.71), apres +0.76 pb (t +1.05) | net des deux jambes -2.55 pb (t -2.84) | autres jours, brut +1.04 pb (t +1.86)
+  6J : jours gotobi 747 | avant le fixing +2.90 pb (t +4.90), apres +2.83 pb (t +6.15) | net des deux jambes +2.23 pb (t +2.96) | autres jours, brut +1.20 pb (t +2.53)
+  V   6E 6B 6A, les deux jambes, jours gotobi                 2240 trades | net  -2.90 pb (t -7.44) | moities t -2.84 / -8.53 | Sharpe -1.63 [-2.36 ; -0.92] moities -0.95 / -2.40 | deflate 0.00 | perte max -19.8% | non fiable
+  R1  jambe d avant le fixing seulement                       2226 trades | net  -1.26 pb (t -4.52) | moities t -1.89 / -5.10 | Sharpe -0.99 [-1.71 ; -0.32] moities -0.62 / -1.47 | deflate 0.00 | perte max -10.0% | non fiable
+  temoin : meme regle les autres jours ouvres                 5512 trades | net  -2.83 pb (t -12.09) | moities t -9.72 / -7.34 | Sharpe -2.68 [-3.30 ; -2.06] moities -3.38 / -2.09 | deflate 0.00 | perte max -40.6% | non fiable
+CRITERES H9 (V) (2240 trades) : brut +0.78 pb (t +1.99) | 2016-2020 +1.74 (t +2.64) | 2021-2026 -0.07 (t -0.16) | temoin 0.83 (Welch -0.12) | net -2.90 | net sans 3 meilleurs -3.17
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 407 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H9 (V) : REJETEE
+(calcule en 10 s le 2026-10-19 23:32)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 409.
+
+H10 - OR LA NUIT RENDU CONFORME (Blose & Gondhalekar 2014) : achat 18:00 -> 8:20 et 13:30 -> 16:59, GC
+  V   18:00 -> 8:20 et 13:30 -> 16:59                         5435 trades | net  +1.55 pb (t +2.12) | moities t +0.79 / +2.08 | Sharpe +0.65 [+0.06 ; +1.22] moities +0.34 / +0.88 | deflate 0.19 | perte max -30.8% | FIABLE
+  R1  jambe asie seule (18:00 -> 8:20)                        2735 trades | net  +2.48 pb (t +1.90) | moities t +1.24 / +1.45 | Sharpe +0.58 [-0.05 ; +1.15] moities +0.54 / +0.61 | deflate 0.13 | perte max -25.8% | non fiable
+  temoin : seance du COMEX (8:20 -> 13:30)                    2750 trades | net  -1.75 pb (t -1.38) | moities t -1.04 / -0.94 | Sharpe -0.42 [-1.02 ; +0.16] moities -0.47 / -0.39 | deflate 0.00 | perte max -50.0% | non fiable
+  reference : or garde toute la seance                        2735 trades | net  +3.08 pb (t +1.57) | moities t +0.86 / +1.32 | Sharpe +0.48 [-0.17 ; +1.04] moities +0.37 / +0.56 | deflate 0.07 | perte max -35.1% | non fiable
+CRITERES H10 (V) (5435 trades) : brut +1.81 pb (t +2.48) | 2016-2020 +1.09 (t +1.13) | 2021-2026 +2.43 (t +2.27) | temoin -1.49 (Welch +2.25) | net +1.55 | net sans 3 meilleurs +1.20
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [x] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [x] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 409 essais : 0.19
+  [x] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H10 (V) : REJETEE (mais fiable au sens du tableau de bord)
+  V contre la simple detention de l or (meme seance) : Sharpe +0.65 contre +0.48
+(calcule en 12 s le 2026-10-19 23:42)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 412.
+
+H11 - CRYPTO : MICRO BITCOIN ET MICRO ETHER DU CME (MBT, MET), comptant Binance 08/2017-09/2026, seance CME 18:00-17:00
+  horodatage : correlation des rendements 15 min Binance / Alpaca (BTC, 201180 barres) par decalage : -2 : -0.03 ; -1 : -0.00 ; +0 : 0.94 ; +1 : -0.00 ; +2 : -0.03
+  V   regle de H5 sur MBT (2011 trades, 53477 $ par trade)    2011 trades | net +12.22 pb (t +4.07) | moities t +2.73 / +3.03 | Sharpe +1.56 [+1.05 ; +2.03] moities +1.40 / +1.71 | deflate 1.00 | perte max -12.4% | FIABLE
+  V   regle de H5 sur MBT couts x 2 (2011 trades, 53477 $ par trade)  2011 trades | net  +6.21 pb (t +2.07) | moities t +1.68 / +1.25 | Sharpe +0.92 [+0.35 ; +1.42] moities +0.90 / +0.94 | deflate 0.66 | perte max -15.9% | FIABLE
+      temoin : MBT de 18:00 a 17:00 chaque seance             2375 trades | net  +1.06 pb (t +0.14) | moities t +0.48 / -0.28 | Sharpe +0.05 [-0.56 ; +0.68] moities +0.25 / -0.12 | deflate 0.00 | perte max -93.0% | non fiable
+CRITERES H11 (V, MBT) (2011 trades) : brut +12.22 pb (t +4.07) | 2016-2020 +15.62 (t +2.73) | 2021-2026 +10.19 (t +3.03) | temoin 1.06 (Welch +1.39) | net +12.22 | net sans 3 meilleurs +10.52
+  [x] t >= 3
+  [x] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [x] gain net > 0 sans les 3 meilleurs trades
+  [x] Sharpe deflate >= 0.95 pour 412 essais : 1.00
+  [x] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H11 (V, MBT) : REJETEE (mais fiable au sens du tableau de bord)
+  V2  regle de H5 sur MET (1981 trades, 41411 $ par trade)    1981 trades | net -12.73 pb (t -3.70) | moities t -2.50 / -2.73 | Sharpe -0.74 [-1.49 ; -0.08] moities -0.88 / -0.67 | deflate 0.00 | perte max -51.7% | non fiable
+  V2  regle de H5 sur MET couts x 2 (1981 trades, 41411 $ par trade)  1981 trades | net -42.76 pb (t -12.46) | moities t -7.42 / -10.05 | Sharpe -3.44 [-4.29 ; -2.69] moities -3.40 / -3.47 | deflate 0.00 | perte max -95.7% | non fiable
+      temoin : MET de 18:00 a 17:00 chaque seance             2375 trades | net -28.89 pb (t -3.10) | moities t -1.89 / -2.48 | Sharpe -1.01 [-1.63 ; -0.40] moities -1.01 / -1.02 | deflate 0.00 | perte max -100.0% | non fiable
+CRITERES H11 (V2, MET) (1981 trades) : brut -12.73 pb (t -3.70) | 2016-2020 -15.32 (t -2.50) | 2021-2026 -11.24 (t -2.73) | temoin -28.89 (Welch +1.63) | net -12.73 | net sans 3 meilleurs -14.31
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 412 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H11 (V2, MET) : REJETEE
+  R1  regle ZPB25 conforme (MBT), exposition moyenne 0.19     1813 trades | net  +2.70 pb (t +1.30) | moities t +2.03 / +0.13 | Sharpe +0.42 [-0.19 ; +1.05] moities +1.09 / +0.05 | deflate 0.05 | perte max -27.8% | non fiable
+  R1  regle ZPB25 conforme (MBT) couts x 2, exposition moyenne 0.19  1813 trades | net  +1.24 pb (t +0.60) | moities t +1.71 / -0.51 | Sharpe +0.20 [-0.42 ; +0.82] moities +0.92 / -0.21 | deflate 0.01 | perte max -31.8% | non fiable
+      temoin de R1 : exposition constante 0.19                2375 trades | net  +0.20 pb (t +0.14) | moities t +0.48 / -0.28 | Sharpe +0.05 [-0.56 ; +0.68] moities +0.25 / -0.12 | deflate 0.00 | perte max -31.8% | non fiable
+CRITERES H11 (R1, ZPB25 conforme) (1813 trades) : brut +2.70 pb (t +1.30) | 2016-2020 +7.46 (t +2.03) | 2021-2026 +0.33 (t +0.13) | temoin 0.2 (Welch +1.00) | net +2.70 | net sans 3 meilleurs +1.86
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [x] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 412 essais : 0.05
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H11 (R1, ZPB25 conforme) : REJETEE
+VERDICT H11 : retenue(s) : aucune ; fiables au sens du tableau de bord : V
+(calcule en 35 s le 2026-10-20 10:47)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 414.
+
+H12 - BITCOIN : FENETRES COURTES (MBT) : momentum de la derniere demi-heure (Wen et al. 2022) ; deux heures apres la cloture du NYSE (Padysak & Vojtko 2022)
+  V   derniere demi-heure dans le sens de la premiere         2374 trades | net  -7.54 pb (t -7.34) | moities t -3.38 / -7.33 | Sharpe -2.18 [-2.71 ; -1.63] moities -1.65 / -2.73 | deflate 0.00 | perte max -85.2% | non fiable
+  V   derniere demi-heure dans le sens de la premiere couts x 2  2374 trades | net -13.54 pb (t -13.19) | moities t -6.22 / -12.98 | Sharpe -3.89 [-4.47 ; -3.33] moities -3.03 / -4.81 | deflate 0.00 | perte max -96.4% | non fiable
+      temoin : achat de 23:30 a 00:00 UTC chaque jour         2379 trades | net  -7.79 pb (t -7.60) | moities t -3.30 / -7.82 | Sharpe -2.25 [-2.83 ; -1.69] moities -1.61 / -2.92 | deflate 0.00 | perte max -85.9% | non fiable
+CRITERES H12 (V, demi-heure) (2374 trades) : brut -7.54 pb (t -7.34) | 2016-2020 -7.14 (t -3.38) | 2021-2026 -7.77 (t -7.33) | temoin -7.79 (Welch +0.18) | net -7.54 | net sans 3 meilleurs -7.87
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 414 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H12 (V, demi-heure) : REJETEE
+      heures en position par an : 130
+  R1  achat 21:00 -> 23:00 UTC (seance CME, 60 min en moyenne)  2378 trades | net  -3.83 pb (t -2.35) | moities t -0.54 / -2.89 | Sharpe -0.70 [-1.29 ; -0.12] moities -0.27 / -1.08 | deflate 0.00 | perte max -74.0% | non fiable
+  R1  achat 21:00 -> 23:00 UTC (seance CME, 60 min en moyenne) couts x 2  2378 trades | net  -9.83 pb (t -6.04) | moities t -2.39 / -6.33 | Sharpe -1.79 [-2.40 ; -1.20] moities -1.17 / -2.36 | deflate 0.00 | perte max -93.4% | non fiable
+      temoin : achat de 09:00 a 11:00 UTC les memes jours     2063 trades | net  -7.95 pb (t -3.25) | moities t -2.56 / -2.04 | Sharpe -0.97 [-1.51 ; -0.42] moities -1.25 / -0.76 | deflate 0.00 | perte max -86.3% | non fiable
+CRITERES H12 (R1, deux heures apres le NYSE) (2378 trades) : brut -3.83 pb (t -2.35) | 2016-2020 -1.77 (t -0.54) | 2021-2026 -5.04 (t -2.89) | temoin -7.95 (Welch +1.40) | net -3.83 | net sans 3 meilleurs -4.57
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 414 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H12 (R1, deux heures apres le NYSE) : REJETEE
+      heures en position par an : 261
+VERDICT H12 : retenue(s) : aucune ; fiables au sens du tableau de bord : aucune
+(calcule en 6 s le 2026-10-20 10:57)
+
+======================================================================================================================
+ LOT « CRENEAUX VIDES » : STRATEGIES FUTURES INTRADAY POUR LES HEURES SANS STRATEGIE FIABLE
+======================================================================================================================
+Protocoles : en-tete de nexus/perso/creneaux.py (ecrits avant chaque calcul). Essais cumules : 416.
+
+H13 - NQ 1-A ETENDUE : resultats de TSLA, AVGO, NFLX, COST, ADBE, AMD, INTC, CSCO en plus des 6 d origine (8-K EDGAR)
+  jours d evenement : 6 d origine 187, nouvelles 287, ensemble 423, nouvelles seules 236 ; cout 0.68 pb l aller-retour
+  A   NQ 1-A d origine (6 valeurs, reference, pas un essai)    162 trades | net  +3.30 pb (t +2.31) | moities t +1.45 / +1.92 | Sharpe +0.69 [+0.16 ; +1.20] moities +0.63 / +0.78 | deflate 0.29 | perte max -1.5% | FIABLE
+  V   les 6 + les 8 nouvelles                                  317 trades | net  +1.36 pb (t +1.79) | moities t +1.11 / +1.48 | Sharpe +0.54 [-0.01 ; +1.05] moities +0.49 / +0.61 | deflate 0.14 | perte max -1.6% | non fiable
+CRITERES H13 (V) (317 trades) : brut +1.36 pb (t +1.79) | 2016-2020 +0.95 (t +1.11) | 2021-2026 +1.56 (t +1.48) | temoin -1.28 (Welch +3.09) | net +1.36 | net sans 3 meilleurs +0.77
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [x] t de Welch >= 2 contre le temoin
+  [x] gain moyen net > 0
+  [x] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 416 essais : 0.14
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H13 (V) : REJETEE
+      30 jours par an, environ 15 h en position par an
+  R1  les 8 nouvelles seules (jours sans les 6)                156 trades | net  -0.59 pb (t -0.90) | moities t -1.37 / -0.65 | Sharpe -0.27 [-0.90 ; +0.29] moities -0.59 / -0.27 | deflate 0.00 | perte max -1.0% | non fiable
+CRITERES H13 (R1) (156 trades) : brut -0.59 pb (t -0.90) | 2016-2020 -0.75 (t -1.37) | 2021-2026 -0.55 (t -0.65) | temoin -1.28 (Welch +0.90) | net -0.59 | net sans 3 meilleurs -1.18
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 416 essais : 0.00
+  [ ] fiable au sens du tableau de bord (IC du Sharpe > 0, deux moities > 0)
+VERDICT H13 (R1) : REJETEE
+      15 jours par an, environ 7 h en position par an
+      temoin : autres jours, 16:20 -> 16:50 dans le sens de 16:00 -> 16:20  1138 trades | net  -1.28 pb (t -3.32) | moities t -3.11 / -3.14 | Sharpe -1.00 [-1.83 ; -0.67] moities -1.27 / -1.30 | deflate 0.00 | perte max -13.7% | non fiable
+VERDICT H13 : retenue(s) : aucune ; fiables au sens du tableau de bord : aucune
+(calcule en 4 s le 2026-10-20 11:07)

@@ -1,0 +1,290 @@
+==============================================================================================================
+ PORTEFEUILLE PROP FIRM FUTURES - compte 150 000 $  perte journaliere max 3 000 $  drawdown suiveur 4 500 $ (fin de journee)
+==============================================================================================================
+Strategie retenue si : PnL net > 0, Sharpe >= 0.3, positive sur 2016-2020 ET sur 2021-2026, et deployable a la taille du compte (au moins 1 micro par position).
+Non chargees (negatives, voir resultats_strategies.txt) : S19-B Rebalancement LETF, DAX 17:00-17:30 (historique long)
+
+Temps en position : moyenne par trade, en temps calendaire de l entree a la sortie (nuits et week-ends compris).
+
+  [x] boombitch, taille inverse a la volatilite (alternative)          Sharpe  1.50 | MNQ, 9.1 contrat(s) en moyenne                     | en position     5 h 48 | PnL prop  +132 374 $ | DD prop    7 323 $
+  [x] boombitch, filtre de tendance 200 j (alternative)                Sharpe  1.09 | MNQ, 1.0 contrat(s) en moyenne                     | en position     5 h 43 | PnL prop   +20 037 $ | DD prop    3 211 $
+  [x] boombitch (Turtle Donchian 160/60, M15)                          Sharpe  0.98 | MNQ, 1.0 contrat(s) en moyenne                     | en position     5 h 48 | PnL prop   +21 942 $ | DD prop    3 211 $
+  [x] S20-A ERC, covariance sur 60 j (alternative)                     Sharpe  0.79 | capital 100 000 $ -> x1.50                         | en position permanente | PnL prop  +100 648 $ | DD prop   25 634 $
+  [x] S20 1/N, memes 4 jambes (reference naive)                        Sharpe  0.74 | capital 100 000 $ -> x1.50                         | en position permanente | PnL prop  +161 077 $ | DD prop   46 398 $
+  [x] S20-A Risk parity ERC multi-futures                              Sharpe  0.72 | capital 100 000 $ -> x1.50                         | en position permanente | PnL prop   +88 985 $ | DD prop   24 408 $
+  [x] S20-B Risk parity inverse-vol multi-futures                      Sharpe  0.70 | capital 100 000 $ -> x1.50                         | en position permanente | PnL prop   +86 172 $ | DD prop   25 588 $
+  [x] Fiche 5 Retour a la moyenne de vol (futures)                     Sharpe  0.65 | capital 1 M$ -> x0.150 (5.7 micro par position)    | en position permanente | PnL prop  +187 599 $ | DD prop   52 182 $
+  [x] Fiche 2 XSMOM (futures)                                          Sharpe  0.53 | capital 1 M$ -> x0.150 (3.1 micro par position)    | en position       58 j | PnL prop   +74 306 $ | DD prop   39 284 $
+  [ ] S11-A Price discovery or, long seul (corrige, sans stop)         Sharpe  0.48 | MGC, 1.0 contrat(s) en moyenne                     | en position     9 h 37 | PnL prop   +11 969 $ | DD prop    6 777 $ | une des deux periodes est negative
+  [x] Fiche 1 TSMOM (futures)                                          Sharpe  0.44 | capital 1 M$ -> x0.150 (1.5 micro par position)    | en position       59 j | PnL prop   +31 481 $ | DD prop   18 180 $
+  [ ] S01-B Momentum intraday : bande de bruit + VWAP, trailing        Sharpe  0.36 | MES, 2.7 contrat(s) en moyenne                     | en position     1 h 43 | PnL prop   +11 968 $ | DD prop    8 457 $ | une des deux periodes est negative
+  [x] S06-B Reversal de jump overnight (corrige)                       Sharpe  0.36 | MNQ, 1.0 contrat(s) en moyenne                     | en position        1 h | PnL prop    +3 636 $ | DD prop    1 433 $
+  [x] ZarattiniEnvelope (enveloppe de bruit, vol-cible)                Sharpe  0.31 | ES -> MES (1/10), 2.9 contrat(s) en moyenne        | en position     2 h 39 | PnL prop    +8 805 $ | DD prop    6 658 $
+  [ ] S06-B Reversal de jump overnight (tel que code)                  Sharpe  0.31 | MNQ, 1.0 contrat(s) en moyenne                     | en position        1 h | PnL prop    +2 848 $ | DD prop    2 215 $ | version boguee (la version corrigee est evaluee)
+  [ ] S11-B Price discovery or, long-short (corrige)                   Sharpe  0.28 | MGC, 1.0 contrat(s) en moyenne                     | en position     2 h 19 | PnL prop    +7 439 $ | DD prop    9 279 $ | Sharpe < 0.3
+  [ ] Or 4 Fed accommodante (sortie 14:28)                             Sharpe  0.26 | 1R = 750 $ en MGC                                  | en position     19 min | PnL prop    +1 758 $ | DD prop      832 $ | Sharpe < 0.3
+  [ ] S06-C Tilt small-cap : reversal de jump (corrige, IWM ~ RTY)     Sharpe  0.24 | IWM -> M2K (1/10), 1.0 contrat(s) en moyenne       | en position        1 h | PnL prop      +725 $ | DD prop      675 $ | Sharpe < 0.3
+  [ ] S06-C Tilt small-cap : fade de l overnight (corrige, IWM ~ RTY)  Sharpe  0.20 | IWM -> M2K (1/10), 1.0 contrat(s) en moyenne       | en position     6 h 31 | PnL prop    +3 006 $ | DD prop    3 582 $ | Sharpe < 0.3
+  [ ] Fiche 14 Swing strict (futures)                                  Sharpe  0.19 | capital 1 M$ -> x0.150 (1.3 micro par position)    | en position      3,8 j | PnL prop    +4 496 $ | DD prop    6 471 $ | Sharpe < 0.3
+  [ ] S11-A Price discovery or, long seul (corrige)                    Sharpe  0.09 | MGC, 1.0 contrat(s) en moyenne                     | en position     2 h 24 | PnL prop    +1 242 $ | DD prop    6 903 $ | Sharpe < 0.3
+  [ ] Fiche 12 Regime de vol (futures)                                 Sharpe  0.01 | capital 1 M$ -> x0.150 (1.3 micro par position)    | en position       34 j | PnL prop      +987 $ | DD prop   30 388 $ | Sharpe < 0.3
+  [ ] S11-A Price discovery or, long seul (tel que code)               Sharpe -0.05 | MGC, 1.0 contrat(s) en moyenne                     | en position        2 h | PnL prop      -626 $ | DD prop    8 057 $ | version boguee (la version corrigee est evaluee)
+  [ ] S06-A Fade de l overnight (corrige : gap du jour)                Sharpe -0.07 | MNQ, 1.0 contrat(s) en moyenne                     | en position     7 h 27 | PnL prop    -3 761 $ | DD prop   19 639 $ | PnL negatif
+  [ ] S05-A Reversal de l opening range 5 min (Dow)                    Sharpe -0.10 | MYM, 1.0 contrat(s) en moyenne                     | en position     41 min | PnL prop      -527 $ | DD prop    1 672 $ | PnL negatif
+  [ ] Test OPR cassure 1re barre (corrige : short, stop, objectif 2R)  Sharpe -0.11 | ES -> MES (1/10), 1.0 contrat(s) en moyenne        | en position     1 h 25 | PnL prop    -1 230 $ | DD prop    3 827 $ | PnL negatif
+  [ ] Test OPR cassure 1re barre (tel que code)                        Sharpe -0.12 | ES -> MES (1/10), 1.0 contrat(s) en moyenne        | en position     5 h 23 | PnL prop    -2 967 $ | DD prop    7 932 $ | version boguee (la version corrigee est evaluee)
+  [ ] Fiche 13 Trend 8 actifs (futures)                                Sharpe -0.12 | capital 1 M$ -> x0.150 (1.4 micro par position)    | en position       25 j | PnL prop    -9 103 $ | DD prop   20 920 $ | PnL negatif
+  [ ] Or 1 Ouverture US surevaluee                                     Sharpe -0.19 | 1R = 750 $ en MGC                                  | en position     1 h 50 | PnL prop    -8 182 $ | DD prop   17 744 $ | PnL negatif
+  [ ] Fiche 6 Paires co-integrees (futures)                            Sharpe -0.23 | capital 1 M$ -> x0.150 (0.2 micro par position)    | en position       24 j | PnL prop       -94 $ | DD prop      145 $ | PnL negatif
+  [ ] IntradayMomentumGamma (Noise Area + VWAP, sans gamma)            Sharpe -0.25 | ES -> MES (1/10), 1.8 contrat(s) en moyenne        | en position     1 h 34 | PnL prop    -5 113 $ | DD prop    9 219 $ | PnL negatif
+  [ ] Or 7 Apres le fixing de l apres-midi                             Sharpe -0.45 | 1R = 750 $ en MGC                                  | en position     1 h 19 | PnL prop   -41 482 $ | DD prop   60 594 $ | PnL negatif
+  [ ] S06-A Fade de l overnight (tel que code)                         Sharpe -0.51 | MNQ, 1.0 contrat(s) en moyenne                     | en position     7 h 30 | PnL prop   -27 319 $ | DD prop   33 151 $ | version boguee (la version corrigee est evaluee)
+  [ ] ICT2022Model (sweep/FVG HTF, killzone, MSS + FVG 1 min)          Sharpe -0.54 | NQ -> MNQ (1/10), 1.0 contrat(s) en moyenne        | en position     53 min | PnL prop    -7 438 $ | DD prop    9 165 $ | PnL negatif
+  [ ] S09-A Fade du fix WM/R fin de mois sur 6B                        Sharpe -0.83 | M6B, 1.0 contrat(s) en moyenne                     | en position     12 min | PnL prop      -404 $ | DD prop      521 $ | PnL negatif
+  [ ] S02-C Momentum or session de nuit                                Sharpe -0.84 | MGC, 1.0 contrat(s) en moyenne                     | en position    13 h 58 | PnL prop   -27 669 $ | DD prop   30 846 $ | PnL negatif
+  [ ] Or 10 Momentum des jours agites                                  Sharpe -0.86 | 1R = 750 $ en MGC                                  | en position     24 min | PnL prop   -54 750 $ | DD prop   69 875 $ | PnL negatif
+  [ ] S19-A Rebalancement LETF, derniere 1/2 h US                      Sharpe -0.91 | MES, 1.3 contrat(s) en moyenne                     | en position     16 min | PnL prop   -12 086 $ | DD prop   12 610 $ | PnL negatif
+  [ ] Or 9 Fuite vers l or                                             Sharpe -0.95 | 1R = 750 $ en MGC                                  | en position     44 min | PnL prop  -143 249 $ | DD prop  165 589 $ | PnL negatif
+  [ ] Gotobi pre-fix USD/JPY (Ito & Yamada)                            Sharpe -0.98 | 1R = 1 500 $ en micros                             | en position     49 min | PnL prop   -77 837 $ | DD prop   90 505 $ | PnL negatif
+  [ ] Gotobi seconde jambe : vente apres le fixing (hypothese)         Sharpe -1.23 | 1R = 1 500 $ en micros                             | en position     59 min | PnL prop  -118 122 $ | DD prop  121 330 $ | PnL negatif
+  [ ] Or 8 Barrieres des chiffres ronds (100 $)                        Sharpe -1.26 | 1R = 750 $ en MGC                                  | en position     58 min | PnL prop  -273 461 $ | DD prop  295 022 $ | PnL negatif
+  [ ] FX post-annonce NFP / CPI + flux (walk-forward)                  Sharpe -1.35 | 1R = 1 500 $ en micros                             | en position     40 min | PnL prop  -190 802 $ | DD prop  190 802 $ | PnL negatif
+  [ ] S02-B Momentum 6J ouverture de Londres                           Sharpe -1.36 | 6J -> MJY (1/10), 1.0 contrat(s) en moyenne        | en position        4 h | PnL prop    -4 823 $ | DD prop    5 524 $ | PnL negatif
+  [ ] IntradayMomentumMES (bande VWAP, trailing ATR)                   Sharpe -1.49 | MES, 1.0 contrat(s) en moyenne                     | en position     14 min | PnL prop   -14 286 $ | DD prop   14 358 $ | PnL negatif
+  [ ] S01-D Momentum intraday : derniere 1/2 h, taille vol-scale       Sharpe -1.51 | MES, 1.2 contrat(s) en moyenne                     | en position     29 min | PnL prop   -17 384 $ | DD prop   17 713 $ | PnL negatif
+  [ ] S01-A Momentum intraday : derniere 1/2 h dans le sens de r_first30 Sharpe -1.55 | MES, 1.0 contrat(s) en moyenne                     | en position     29 min | PnL prop   -13 828 $ | DD prop   14 297 $ | PnL negatif
+  [ ] S09-A Fade du fix WM/R fin de mois sur 6E                        Sharpe -1.64 | M6E, 1.0 contrat(s) en moyenne                     | en position     12 min | PnL prop      -839 $ | DD prop      862 $ | PnL negatif
+  [ ] Or 3 Retour apres exces non informe                              Sharpe -1.66 | 1R = 750 $ en MGC                                  | en position     19 min | PnL prop  -194 329 $ | DD prop  208 466 $ | PnL negatif
+  [ ] S09-B Or entre fixings de Londres (corrige : 1 entree par soiree) Sharpe -1.75 | MGC, 1.0 contrat(s) en moyenne                     | en position      4 min | PnL prop    -9 270 $ | DD prop   10 115 $ | PnL negatif
+  [ ] AUDusd (paires z-score, 15 min)                                  Sharpe -1.81 | 10 000 unites (~1 M6B)                             | en position     6 h 15 | PnL prop   -12 956 $ | DD prop   13 016 $ | PnL negatif
+  [ ] Or 2 Momentum premiere demi-heure                                Sharpe -2.23 | 1R = 750 $ en MGC                                  | en position     26 min | PnL prop  -186 459 $ | DD prop  203 152 $ | PnL negatif
+  [ ] Or 6 Avant le fixing du matin                                    Sharpe -2.31 | 1R = 750 $ en MGC                                  | en position     53 min | PnL prop  -242 835 $ | DD prop  261 409 $ | PnL negatif
+  [ ] FX fix flow fin de mois (Krohn + Melvin & Prins)                 Sharpe -2.39 | 1R = 1 500 $ en micros                             | en position     33 min | PnL prop  -324 445 $ | DD prop  324 899 $ | PnL negatif
+  [ ] S19-B Rebalancement LETF, DAX 17:00-17:30                        Sharpe -2.78 | FDAX -> FDXS (1/25)                                | en position     16 min | PnL prop    -5 855 $ | DD prop    5 977 $ | PnL negatif
+  [ ] S02-A Momentum WTI 1re 1/2 h (filtre EIA)                        Sharpe -4.19 | MCL, 1.0 contrat(s) en moyenne                     | en position     29 min | PnL prop    -9 671 $ | DD prop    9 901 $ | PnL negatif
+  [ ] Fil ES/NQ fiche 3 : retour au POC                                Sharpe -4.74 | 1R = 1 500 $ en micros                             | en position     22 min | PnL prop -2 095 709 $ | DD prop 2 100 455 $ | PnL negatif
+  [ ] FX cascade de stops sur chiffres ronds (walk-forward)            Sharpe -5.03 | 1R = 1 500 $ en micros                             | en position     1 h 31 | PnL prop -1 537 560 $ | DD prop 1 537 560 $ | PnL negatif
+  [ ] FX trois strategies combinees                                    Sharpe -5.57 | 1R = 1 500 $ en micros                             | en position     1 h 23 | PnL prop -1 957 291 $ | DD prop 1 957 291 $ | PnL negatif
+  [ ] Fil ES/NQ fiche 1 : choc prix + volume                           Sharpe -5.72 | 1R = 1 500 $ en micros                             | en position    < 1 min | PnL prop -7 974 946 $ | DD prop 7 981 951 $ | PnL negatif
+  [ ] S07-A Post-settle 16:00-17:00 -> gap (regression ridge)          Sharpe   nan | MES, nan contrat(s) en moyenne                     | en position        n/d | PnL prop        +0 $ | DD prop        0 $ | PnL negatif
+  [ ] S09-B Or entre fixings de Londres                                Sharpe -18.75 | MGC, 1.0 contrat(s) en moyenne                     | en position      2 min | PnL prop  -169 556 $ | DD prop  169 556 $ | PnL negatif
+
+Legende (temps en position par trade : moyenne, mediane, gagnants / perdants) :
+  S1 = boombitch, taille inverse a la volatilite (alternative) (NQ) - en position 5 h 48 (mediane 1 h 45, gagnants 11 h 09 / perdants 2 h 36)
+  S2 = boombitch, filtre de tendance 200 j (alternative) (NQ) - en position 5 h 43 (mediane 1 h 45, gagnants 10 h 56 / perdants 2 h 28)
+  S3 = boombitch (Turtle Donchian 160/60, M15) (NQ) - en position 5 h 48 (mediane 1 h 45, gagnants 11 h 09 / perdants 2 h 36)
+  S4 = S20-A ERC, covariance sur 60 j (alternative) (6E, CL, ES, GC) - position permanente
+  S5 = S20 1/N, memes 4 jambes (reference naive) (6E, CL, ES, GC) - position permanente
+  S6 = S20-A Risk parity ERC multi-futures (6E, CL, ES, GC) - position permanente
+  S7 = S20-B Risk parity inverse-vol multi-futures (6E, CL, ES, GC) - position permanente
+  S8 = Fiche 5 Retour a la moyenne de vol (futures) (ES) - position permanente
+  S9 = Fiche 2 XSMOM (futures) (6A, 6B, 6E, 6J, CL, ES, GC, NQ, YM) - en position 58 j (mediane 46 j, gagnants 93 j / perdants 27 j)
+  S10 = Fiche 1 TSMOM (futures) (6A, 6B, 6E, 6J, CL, ES, FDAX, GC, NQ, YM) - en position 59 j (mediane 40 j, gagnants 89 j / perdants 32 j)
+  S11 = S06-B Reversal de jump overnight (corrige) (NQ) - en position 1 h (mediane 1 h, gagnants 1 h / perdants 1 h)
+  S12 = ZarattiniEnvelope (enveloppe de bruit, vol-cible) (ES) - en position 2 h 39 (mediane 2 h, gagnants 4 h 31 / perdants 1 h 31)
+
+=== 1. DIVERSIFICATION ===
+Correlation des P&L quotidiens :
+       S1    S2    S3    S4    S5    S6    S7    S8    S9   S10   S11   S12
+S1  +1.00 +0.67 +0.74 +0.19 +0.11 +0.18 +0.19 +0.29 +0.18 +0.21 -0.02 +0.08
+S2  +0.67 +1.00 +0.82 +0.16 +0.07 +0.14 +0.14 +0.29 +0.16 +0.21 -0.04 +0.11
+S3  +0.74 +0.82 +1.00 +0.23 +0.12 +0.22 +0.22 +0.32 +0.15 +0.19 -0.02 +0.08
+S4  +0.19 +0.16 +0.23 +1.00 +0.77 +0.93 +0.94 +0.48 +0.48 +0.55 -0.04 -0.07
+S5  +0.11 +0.07 +0.12 +0.77 +1.00 +0.79 +0.80 +0.30 +0.53 +0.45 -0.03 -0.04
+S6  +0.18 +0.14 +0.22 +0.93 +0.79 +1.00 +0.96 +0.48 +0.50 +0.58 -0.04 -0.03
+S7  +0.19 +0.14 +0.22 +0.94 +0.80 +0.96 +1.00 +0.48 +0.51 +0.57 -0.04 -0.07
+S8  +0.29 +0.29 +0.32 +0.48 +0.30 +0.48 +0.48 +1.00 +0.44 +0.52 -0.02 -0.11
+S9  +0.18 +0.16 +0.15 +0.48 +0.53 +0.50 +0.51 +0.44 +1.00 +0.64 +0.02 -0.05
+S10 +0.21 +0.21 +0.19 +0.55 +0.45 +0.58 +0.57 +0.52 +0.64 +1.00 -0.03 -0.05
+S11 -0.02 -0.04 -0.02 -0.04 -0.03 -0.04 -0.04 -0.02 +0.02 -0.03 +1.00 -0.04
+S12 +0.08 +0.11 +0.08 -0.07 -0.04 -0.03 -0.07 -0.11 -0.05 -0.05 -0.04 +1.00
+
+Correlation sur les jours ou la paire perd (pertes simultanees) :
+       S1    S2    S3    S4    S5    S6    S7    S8    S9   S10   S11   S12
+S1  +1.00 +0.42 +0.51 -0.29 -0.25 -0.31 -0.30 -0.26 -0.31 -0.31 -0.22 -0.31
+S2  +0.42 +1.00 +0.71 -0.08 -0.03 -0.10 -0.09 -0.08 -0.15 -0.14 -0.22 -0.21
+S3  +0.51 +0.71 +1.00 -0.10 -0.06 -0.11 -0.10 -0.09 -0.17 -0.18 -0.19 -0.22
+S4  -0.29 -0.08 -0.10 +1.00 +0.59 +0.85 +0.88 +0.24 +0.23 +0.32 -0.00 -0.30
+S5  -0.25 -0.03 -0.06 +0.59 +1.00 +0.62 +0.66 +0.01 +0.37 +0.27 -0.05 -0.17
+S6  -0.31 -0.10 -0.11 +0.85 +0.62 +1.00 +0.91 +0.23 +0.26 +0.35 -0.00 -0.30
+S7  -0.30 -0.09 -0.10 +0.88 +0.66 +0.91 +1.00 +0.25 +0.27 +0.35 -0.01 -0.31
+S8  -0.26 -0.08 -0.09 +0.24 +0.01 +0.23 +0.25 +1.00 +0.17 +0.31 +0.09 -0.39
+S9  -0.31 -0.15 -0.17 +0.23 +0.37 +0.26 +0.27 +0.17 +1.00 +0.45 +0.02 -0.27
+S10 -0.31 -0.14 -0.18 +0.32 +0.27 +0.35 +0.35 +0.31 +0.45 +1.00 -0.07 -0.31
+S11 -0.22 -0.22 -0.19 -0.00 -0.05 -0.00 -0.01 +0.09 +0.02 -0.07   NaN -0.12
+S12 -0.31 -0.21 -0.22 -0.30 -0.17 -0.30 -0.31 -0.39 -0.27 -0.31 -0.12 +1.00
+
+Stabilite (correlation sur 1 an glissant, min / max) :
+  S1 / S2 : +0.00 a +0.97
+  S1 / S3 : +0.75 a +0.97
+  S1 / S4 : +0.05 a +0.39
+  S1 / S5 : -0.03 a +0.27
+  S1 / S6 : +0.03 a +0.40
+  S1 / S7 : +0.02 a +0.42
+  S1 / S8 : -0.06 a +0.49
+  S1 / S9 : -0.00 a +0.40
+  S1 / S10 : -0.01 a +0.38
+  S1 / S11 : -0.28 a +0.14
+  S1 / S12 : -0.05 a +0.34
+  S2 / S3 : +0.00 a +1.00
+  S2 / S4 : -0.07 a +0.39
+  S2 / S5 : -0.08 a +0.27
+  S2 / S6 : -0.14 a +0.40
+  S2 / S7 : -0.11 a +0.42
+  S2 / S8 : -0.09 a +0.52
+  S2 / S9 : -0.09 a +0.44
+  S2 / S10 : -0.10 a +0.45
+  S2 / S11 : -0.30 a +0.05
+  S2 / S12 : -0.10 a +0.38
+  S3 / S4 : +0.06 a +0.40
+  S3 / S5 : -0.04 a +0.32
+  S3 / S6 : +0.04 a +0.40
+  S3 / S7 : +0.02 a +0.42
+  S3 / S8 : -0.04 a +0.52
+  S3 / S9 : -0.00 a +0.46
+  S3 / S10 : -0.02 a +0.36
+  S3 / S11 : -0.30 a +0.24
+  S3 / S12 : -0.08 a +0.38
+  S4 / S5 : +0.57 a +0.95
+  S4 / S6 : +0.65 a +1.00
+  S4 / S7 : +0.67 a +1.00
+  S4 / S8 : +0.02 a +0.65
+  S4 / S9 : +0.02 a +0.74
+  S4 / S10 : +0.01 a +0.86
+  S4 / S11 : -0.41 a +0.24
+  S4 / S12 : -0.31 a +0.22
+  S5 / S6 : +0.65 a +0.96
+  S5 / S7 : +0.73 a +0.95
+  S5 / S8 : -0.02 a +0.54
+  S5 / S9 : +0.04 a +0.87
+  S5 / S10 : +0.03 a +0.74
+  S5 / S11 : -0.40 a +0.16
+  S5 / S12 : -0.28 a +0.24
+  S6 / S7 : +0.68 a +1.00
+  S6 / S8 : +0.01 a +0.66
+  S6 / S9 : +0.06 a +0.71
+  S6 / S10 : +0.05 a +0.89
+  S6 / S11 : -0.50 a +0.23
+  S6 / S12 : -0.28 a +0.22
+  S7 / S8 : +0.01 a +0.66
+  S7 / S9 : +0.05 a +0.71
+  S7 / S10 : +0.04 a +0.89
+  S7 / S11 : -0.53 a +0.26
+  S7 / S12 : -0.28 a +0.21
+  S8 / S9 : -0.25 a +0.89
+  S8 / S10 : +0.08 a +0.82
+  S8 / S11 : -0.32 a +0.23
+  S8 / S12 : -0.36 a +0.20
+  S9 / S10 : +0.07 a +1.00
+  S9 / S11 : -0.40 a +0.22
+  S9 / S12 : -0.36 a +0.18
+  S10 / S11 : -0.37 a +0.28
+  S10 / S12 : -0.28 a +0.21
+  S11 / S12 : -0.25 a +0.13
+
+Ratio de diversification de l ensemble : 1.72 (1 = aucune diversification)
+Groupe peu correle (|corr| < 0.3, glouton par Sharpe) : S1, S4, S11, S12
+
+=== 2. CHEVAUCHEMENT ===
+Temps en position : S1 15.5% | S2 12.0% | S3 15.5% | S4 98.7% | S5 98.0% | S6 98.0% | S7 98.0% | S8 29.5% | S9 80.4% | S10 81.0% | S11 0.2% | S12 2.6%
+
+Chevauchement dans le temps (tous contrats confondus) :
+      S1   S2   S3   S4   S5   S6   S7   S8   S9  S10  S11  S12
+S1  100% 100% 100%  98%  97%  97%  97%  31%  83%  83%  16%  30%
+S2  100% 100% 100% 100% 100% 100% 100%  37%  91%  95%  12%  23%
+S3  100% 100% 100%  98%  97%  97%  97%  31%  83%  83%  16%  30%
+S4   98% 100%  98% 100% 100% 100% 100% 100% 100% 100% 100% 100%
+S5   97% 100%  97% 100% 100% 100% 100% 100% 100% 100% 100% 100%
+S6   97% 100%  97% 100% 100% 100% 100% 100% 100% 100% 100% 100%
+S7   97% 100%  97% 100% 100% 100% 100% 100% 100% 100% 100% 100%
+S8   31%  37%  31% 100% 100% 100% 100% 100%  89%  92%  41%  31%
+S9   83%  91%  83% 100% 100% 100% 100%  89% 100%  95%  72%  77%
+S10  83%  95%  83% 100% 100% 100% 100%  92%  95% 100%  82%  83%
+S11  16%  12%  16% 100% 100% 100% 100%  41%  72%  82% 100%   8%
+S12  30%  23%  30% 100% 100% 100% 100%  31%  77%  83%   8% 100%
+
+Conflits de contrat (meme contrat au meme moment), part du temps de la moins exposee :
+      S1   S2   S3   S4   S5   S6   S7   S8  S9  S10  S11  S12
+S1    0% 100% 100%   0%   0%   0%   0%   0% 52%  62%  16%   0%
+S2  100%   0% 100%   0%   0%   0%   0%   0% 65%  76%  12%   0%
+S3  100% 100%   0%   0%   0%   0%   0%   0% 52%  62%  16%   0%
+S4    0%   0%   0%   0% 100% 100% 100% 100% 38%  76%   0% 100%
+S5    0%   0%   0% 100%   0% 100% 100% 100% 38%  76%   0% 100%
+S6    0%   0%   0% 100% 100%   0% 100% 100% 38%  76%   0% 100%
+S7    0%   0%   0% 100% 100% 100%   0% 100% 38%  76%   0% 100%
+S8    0%   0%   0% 100% 100% 100% 100%   0% 11%  71%   0%  31%
+S9   52%  65%  52%  38%  38%  38%  38%  11%  0%  61%  41%  17%
+S10  62%  76%  62%  76%  76%  76%  76%  71% 61%   0%  48%  58%
+S11  16%  12%  16%   0%   0%   0%   0%   0% 41%  48%   0%   0%
+S12   0%   0%   0% 100% 100% 100% 100%  31% 17%  58%   0%   0%
+
+Profil horaire (part du temps en position par heure ET) :
+     0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19  20  21  22  23
+S1  16% 16% 16% 15% 14% 14% 14% 13% 13% 14% 15% 15% 16% 16% 16% 17% 17% 17% 17% 17% 17% 16% 16% 16%
+S2  12% 12% 12% 11% 11% 10% 10% 10% 10% 11% 12% 12% 12% 12% 13% 13% 12% 13% 13% 13% 13% 12% 12% 12%
+S3  16% 16% 16% 15% 14% 14% 14% 13% 13% 14% 15% 15% 16% 16% 16% 17% 17% 17% 17% 17% 17% 16% 16% 16%
+S4  99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99% 99%
+S5  98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98%
+S6  98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98%
+S7  98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98% 98%
+S8  29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 29% 30% 29% 29% 29% 29%
+S9  80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80% 80%
+S10 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81% 81%
+S11  0%  0%  0%  0%  0%  0%  0%  0%  0%  1%  3%  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%
+S12  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%  6% 10% 11% 12% 12% 12%  0%  0%  0%  0%  0%  0%  0%  0%
+
+Groupe strictement sans chevauchement (jamais en position en meme temps, <= 10%) : S1
+
+=== 3. MEILLEURS GROUPES POUR LE COMPTE PROP ===
+Contraintes : aucun conflit de contrat (<= 2% du temps), |correlation| < 0.3 entre chaque paire. Taille max = plus grand multiplicateur de la taille de base sans violation des regles sur 2016-2026 ;
+taille conseillee = 50 % de ce maximum (marge : le maximum est mesure sur le meme historique). Classement par PnL annuel
+a la taille conseillee.
+  1. S1 + S4              Sharpe 1.39 | diversification 1.30 | taille de base : PnL +233 023 $  DD 23 893 $  pire jour -5 312 $ | taille max x0.56, conseillee x0.28 -> +6 180 $ par an
+  2. S1 + S12             Sharpe 1.49 | diversification 1.36 | taille de base : PnL +141 179 $  DD 10 751 $  pire jour -2 652 $ | taille max x0.93, conseillee x0.46 -> +6 157 $ par an
+  3. S1 + S7              Sharpe 1.33 | diversification 1.30 | taille de base : PnL +218 546 $  DD 23 534 $  pire jour -5 312 $ | taille max x0.56, conseillee x0.28 -> +5 796 $ par an
+  4. S1 + S6              Sharpe 1.35 | diversification 1.30 | taille de base : PnL +221 359 $  DD 22 668 $  pire jour -5 312 $ | taille max x0.55, conseillee x0.27 -> +5 674 $ par an
+  5. S3 + S12             Sharpe 0.82 | diversification 1.36 | taille de base : PnL +30 747 $  DD 7 268 $  pire jour -1 192 $ | taille max x2.52, conseillee x1.26 -> +3 634 $ par an
+  6. S1 + S8              Sharpe 0.98 | diversification 1.25 | taille de base : PnL +319 973 $  DD 51 221 $  pire jour -12 555 $ | taille max x0.24, conseillee x0.12 -> +3 590 $ par an
+
+Seules :
+  S1   taille de base : pire jour   -2 300 $  DD    7 323 $  violation le 2016-09-14 | taille max x0.89, conseillee x0.44 -> +5 505 $ par an
+  S2   taille de base : pire jour     -729 $  DD    3 211 $  regles respectees | taille max x4.11, conseillee x2.06 -> +3 871 $ par an
+  S3   taille de base : pire jour     -729 $  DD    3 211 $  regles respectees | taille max x4.11, conseillee x2.06 -> +4 239 $ par an
+  S4   taille de base : pire jour   -5 312 $  DD   25 634 $  violation le 2016-09-09 | taille max x0.56, conseillee x0.28 -> +2 669 $ par an
+  S5   taille de base : pire jour  -15 563 $  DD   46 398 $  violation le 2016-06-24 | taille max x0.10, conseillee x0.05 -> +734 $ par an
+  S6   taille de base : pire jour   -5 312 $  DD   24 408 $  violation le 2016-11-10 | taille max x0.51, conseillee x0.25 -> +2 120 $ par an
+  S7   taille de base : pire jour   -5 312 $  DD   25 588 $  violation le 2016-11-14 | taille max x0.19, conseillee x0.09 -> +761 $ par an
+  S8   taille de base : pire jour  -12 555 $  DD   52 182 $  violation le 2017-05-17 | taille max x0.24, conseillee x0.12 -> +2 105 $ par an
+  S9   taille de base : pire jour   -6 861 $  DD   39 284 $  violation le 2020-02-24 | taille max x0.44, conseillee x0.22 -> +1 526 $ par an
+  S10  taille de base : pire jour   -3 599 $  DD   18 180 $  violation le 2018-02-02 | taille max x0.83, conseillee x0.42 -> +1 232 $ par an
+  S11  taille de base : pire jour     -722 $  DD    1 433 $  regles respectees | taille max x4.15, conseillee x2.08 -> +709 $ par an
+  S12  taille de base : pire jour   -1 192 $  DD    6 658 $  regles respectees | taille max x1.87, conseillee x0.94 -> +775 $ par an
+
+=== 4. SIMULATION DE L EVALUATION (objectif +9 000 $, 120 jours de bourse max) ===
+Evaluation rejouee en partant de chaque jour 2016-2026. Taille = multiplicateur du nombre de contrats de base (arrondi
+au contrat entier en pratique : x2 = 2 MNQ au lieu de 1 ; x0.5 n existe pas pour une strategie a 1 contrat).
+Taille retenue = celle qui maximise le taux de reussite sur la grille x0.5, x1, x1.5, x2, x3, x4, x5, x6, x8, x10.
+Reference a battre : une strategie SANS avantage reussit ~33% des evaluations conclues (objectif contre drawdown, pile ou face).
+'avantage' = reussite parmi les evaluations conclues moins cette reference ; une duree mediane de 1 a 3 jours = pari, pas strategie.
+  S1                   x1 : reussite  30% echec  17% | meilleure taille x2   : reussite  54%, echec  45%, non conclu   1%, duree mediane   47 j, avantage +21%
+  S1 + S12             x1 : reussite  32% echec  18% | meilleure taille x1.5 : reussite  53%, echec  42%, non conclu   5%, duree mediane   64 j, avantage +22%
+  S1 + S7              x1 : reussite  45% echec  47% | meilleure taille x1   : reussite  45%, echec  47%, non conclu   8%, duree mediane   54 j, avantage +15%
+  S1 + S4              x1 : reussite  45% echec  51% | meilleure taille x1   : reussite  45%, echec  51%, non conclu   4%, duree mediane   51 j, avantage +13%
+  S1 + S6              x1 : reussite  44% echec  51% | meilleure taille x1   : reussite  44%, echec  51%, non conclu   5%, duree mediane   50 j, avantage +13%
+  S3                   x1 : reussite   0% echec   0% | meilleure taille x10  : reussite  43%, echec  33%, non conclu  24%, duree mediane   42 j, avantage +23%
+  S1 + S8              x1 : reussite  34% echec  63% | meilleure taille x10  : reussite  42%, echec  58%, non conclu   0%, duree mediane    1 j, avantage +8%
+  S8                   x1 : reussite  28% echec  63% | meilleure taille x10  : reussite  40%, echec  54%, non conclu   6%, duree mediane    1 j, avantage +9%
+  S5                   x1 : reussite  29% echec  69% | meilleure taille x10  : reussite  39%, echec  61%, non conclu   0%, duree mediane    2 j, avantage +6%
+  S9                   x1 : reussite  30% echec  48% | meilleure taille x1.5 : reussite  38%, echec  53%, non conclu   9%, duree mediane   47 j, avantage +8%
+  S2                   x1 : reussite   0% echec   0% | meilleure taille x10  : reussite  37%, echec  24%, non conclu  39%, duree mediane   43 j, avantage +27%
+  S3 + S12             x1 : reussite   0% echec   4% | meilleure taille x4   : reussite  36%, echec  41%, non conclu  22%, duree mediane   63 j, avantage +13%
+  S4                   x1 : reussite  26% echec  53% | meilleure taille x10  : reussite  36%, echec  64%, non conclu   0%, duree mediane    2 j, avantage +2%
+  S7                   x1 : reussite  24% echec  51% | meilleure taille x10  : reussite  34%, echec  66%, non conclu   0%, duree mediane    2 j, avantage +0%
+  S6                   x1 : reussite  23% echec  57% | meilleure taille x10  : reussite  34%, echec  66%, non conclu   0%, duree mediane    2 j, avantage +0%
+  S10                  x1 : reussite   6% echec  34% | meilleure taille x4   : reussite  33%, echec  60%, non conclu   7%, duree mediane   26 j, avantage +3%
+  S12                  x1 : reussite   0% echec   1% | meilleure taille x8   : reussite  28%, echec  64%, non conclu   8%, duree mediane   46 j, avantage -2%
+  S11                  x1 : reussite   0% echec   0% | meilleure taille x10  : reussite   8%, echec  26%, non conclu  66%, duree mediane   71 j, avantage -9%
+
+Notes : regles evaluees en fin de journee (une firme qui suit le drawdown en intrajournalier est plus severe) ;
+drawdown suiveur bloque au capital de depart une fois atteint (regle la plus courante). Adapter --compte, --perte-jour,
+--dd-suiveur a ta firme. Un backtest favorable doit encore passer le walk-forward et une periode de paper trading.

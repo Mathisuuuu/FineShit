@@ -1,0 +1,32 @@
+======================================================================================================================
+ SUIVI DE TENDANCE SUR NOS 9 FUTURES : STRATEGIE CONSTRUITE SUR SEPT TRAVAUX (AQR, ROBECO, CFM / BOUCHAUD, YALE...)
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/tendance.py (ecrit avant le calcul).
+
+ETAPE 1 - l anomalie
+  1a. rapport tick / volatilite quotidienne (moyenne) et part des mois classes « gros tick » :
+      NQ 0.0028 (0%) | YM 0.0050 (11%) | GC 0.0076 (47%) | CL 0.0077 (36%) | ES 0.0099 (46%) | 6E 0.0104 (76%) | 6A 0.0126 (100%) | 6J 0.0128 (84%) | 6B 0.0154 (100%)
+  1b. tendance KEBR26 gros tick (V)        : Sharpe net +0.23 | 2016-2020 +0.22 | 2021-2026 +0.23
+  1b. tendance KEBR26 petit tick (temoin)  : Sharpe net +0.28 | 2016-2020 +0.31 | 2021-2026 +0.24
+  1b. tendance KEBR26 les 9 (R1)           : Sharpe net +0.34 | 2016-2020 +0.39 | 2021-2026 +0.30
+      ES  seul : Sharpe +0.26 (2016-2020 +0.29, 2021-2026 +0.24)
+      NQ  seul : Sharpe +0.40 (2016-2020 +0.62, 2021-2026 +0.09)
+      YM  seul : Sharpe +0.25 (2016-2020 +0.42, 2021-2026 -0.11)
+      GC  seul : Sharpe +0.46 (2016-2020 +0.42, 2021-2026 +0.50)
+      CL  seul : Sharpe +0.14 (2016-2020 +0.20, 2021-2026 +0.07)
+      6E  seul : Sharpe -0.01 (2016-2020 -0.09, 2021-2026 +0.05)
+      6B  seul : Sharpe -0.23 (2016-2020 -0.30, 2021-2026 -0.16)
+      6J  seul : Sharpe +0.35 (2016-2020 -0.29, 2021-2026 +0.81)
+      6A  seul : Sharpe -0.31 (2016-2020 -0.08, 2021-2026 -0.64)
+
+ETAPE 2 - strategies (rendements quotidiens nets de couts, en pb du capital)
+  --- V tendance KEBR26 sur le tier gros tick : 2733 jours | net +5.91 pb/j (t +0.74) | 2016-2020 t +0.50 | 2021-2026 t +0.56
+      temoin petit tick +6.33 pb/j, Welch -0.04 | sans les 3 meilleurs jours +2.08 | Sharpe net 0.23 (stress 2 ticks 0.22) | Sharpe deflate (44 essais) 0.07
+  --- R1 tendance KEBR26 sur les 9 contrats : 2751 jours | net +15.74 pb/j (t +1.12) | 2016-2020 t +0.87 | 2021-2026 t +0.71
+      temoin petit tick +6.33 pb/j, Welch +0.60 | sans les 3 meilleurs jours +7.08 | Sharpe net 0.34 (stress 2 ticks 0.33) | Sharpe deflate (44 essais) 0.14
+  --- R0 momentum 12 mois de MOP12 (9 contrats) : 2495 jours | net +14.81 pb/j (t +1.61) | 2016-2020 t +0.74 | 2021-2026 t +1.50
+      temoin petit tick +6.33 pb/j, Welch +0.74 | sans les 3 meilleurs jours +12.02 | Sharpe net 0.51 (stress 2 ticks 0.51) | Sharpe deflate (44 essais) 0.26
+      contexte (KTW16) : toujours acheteur a risque egal, Sharpe 0.37 ; correlation V / long seul -0.19
+
+VERDICT (V) : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0.95)
+Calcul en 11 s.

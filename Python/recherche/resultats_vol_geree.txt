@@ -1,0 +1,43 @@
+======================================================================================================================
+ EXPOSITION GEREE PAR LA VOLATILITE (futures d indices) : STRATEGIE CONSTRUITE SUR NEUF PAPIERS
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/vol_geree.py (ecrit avant le calcul).
+
+Marche americain (Ken French) : 1926-07-01 -> 2026-08-31, 26317 jours.
+ETAPE 1 - l anomalie
+  1a. 1936-2016 - mois suivant par quintile de volatilite du mois (1 = calme, 5 = agite) : Q1 rend. +6.7 %/an, vol 8 % | Q2 rend. +9.3 %/an, vol 10 % | Q3 rend. +4.1 %/an, vol 11 % | Q4 rend. +5.2 %/an, vol 14 % | Q5 rend. +12.7 %/an, vol 20 %
+  1a. 2017-2026 - mois suivant par quintile de volatilite du mois (1 = calme, 5 = agite) : Q1 rend. +5.3 %/an, vol 12 % | Q2 rend. +4.5 %/an, vol 13 % | Q3 rend. +16.7 %/an, vol 12 % | Q4 rend. +18.9 %/an, vol 15 % | Q5 rend. +21.7 %/an, vol 27 %
+  1b. R1 1936-2016 (vu par les papiers) : alpha +2.49 %/an (t +2.34), beta 1.19 | Sharpe 0.58 contre 0.49 | perte max -67 % contre -54 % | exposition moyenne 1.56
+  1b. R1 2017-2026 (jamais vu) : alpha +1.63 %/an (t +0.63), beta 0.98 | Sharpe 0.72 contre 0.72 | perte max -32 % contre -32 % | exposition moyenne 1.34
+  1b. V 1936-2016 (vu par les papiers) : alpha +1.43 %/an (t +1.71), beta 0.95 | Sharpe 0.55 contre 0.49 | perte max -55 % contre -54 % | exposition moyenne 1.18
+  1b. V 2017-2026 (jamais vu) : alpha +1.10 %/an (t +0.55), beta 0.83 | Sharpe 0.73 contre 0.72 | perte max -28 % contre -32 % | exposition moyenne 1.04
+      part des mois par etat (V) : moyen 63%, bas 20%, haut 17%
+  1c. prediction de Harvey et al. sur nos futures (version classique, volatilite propre, 2018-2026) :
+      ES  Sharpe +0.60 -> +0.57 (gain -0.03) | perte max -30 % -> -26 %
+      NQ  Sharpe +0.62 -> +0.66 (gain +0.04) | perte max -38 % -> -32 %
+      YM  Sharpe +0.46 -> +0.40 (gain -0.06) | perte max -33 % -> -30 %
+      GC  Sharpe +0.66 -> +0.67 (gain +0.01) | perte max -27 % -> -26 %
+      CL  Sharpe +0.10 -> +0.00 (gain -0.09) | perte max -85 % -> -86 %
+      6E  Sharpe -0.46 -> -0.57 (gain -0.11) | perte max -31 % -> -36 %
+      6B  Sharpe -0.15 -> -0.32 (gain -0.17) | perte max -27 % -> -39 %
+      6J  Sharpe -0.83 -> -0.76 (gain +0.07) | perte max -50 % -> -54 %
+      6A  Sharpe -0.18 -> -0.18 (gain +0.00) | perte max -28 % -> -31 %
+      gain moyen : actions -0.01, temoins -0.05 -> prediction verifiee
+
+ETAPE 2 - strategie V (conditionnelle, BK20) sur les futures d indices, net de couts
+  controle : correlation des volatilites mensuelles ES / marche americain 1.00, rapport moyen 0.94
+  --- ES R1 : alpha +1.33 %/an (t +0.58), beta 0.99 | 2016-2020 -0.69 (t -0.17) | 2021-2026 +3.06 (t +1.27)
+      Sharpe net 0.69 (stress 2 ticks 0.69) contre 0.69 detenu | perte max -31 % contre -30 % | rotation 4.5 fois l exposition par an | Sharpe deflate couvert 0.05
+  --- ES V : alpha +1.13 %/an (t +0.65), beta 0.83 | 2016-2020 +0.25 (t +0.07) | 2021-2026 +1.86 (t +1.42)
+      Sharpe net 0.71 (stress 2 ticks 0.71) contre 0.69 detenu | perte max -27 % contre -30 % | rotation 2.9 fois l exposition par an | Sharpe deflate couvert 0.06
+  --- NQ R1 : alpha +2.51 %/an (t +0.87), beta 1.06 | 2016-2020 +0.77 (t +0.15) | 2021-2026 +4.04 (t +1.24)
+      Sharpe net 0.74 (stress 2 ticks 0.74) contre 0.71 detenu | perte max -32 % contre -38 % | rotation 4.5 fois l exposition par an | Sharpe deflate couvert 0.07
+  --- NQ V : alpha +0.81 %/an (t +0.37), beta 0.89 | 2016-2020 -0.18 (t -0.04) | 2021-2026 +1.76 (t +0.89)
+      Sharpe net 0.70 (stress 2 ticks 0.70) contre 0.71 detenu | perte max -32 % contre -38 % | rotation 2.9 fois l exposition par an | Sharpe deflate couvert 0.03
+  --- YM R1 : alpha +1.50 %/an (t +0.67), beta 0.98 | 2016-2020 +1.67 (t +0.40) | 2021-2026 +1.22 (t +0.58)
+      Sharpe net 0.64 (stress 2 ticks 0.64) contre 0.63 detenu | perte max -35 % contre -33 % | rotation 4.5 fois l exposition par an | Sharpe deflate couvert 0.05
+  --- YM V : alpha +2.40 %/an (t +1.34), beta 0.83 | 2016-2020 +3.03 (t +0.84) | 2021-2026 +1.74 (t +1.50)
+      Sharpe net 0.74 (stress 2 ticks 0.74) contre 0.63 detenu | perte max -31 % contre -33 % | rotation 2.9 fois l exposition par an | Sharpe deflate couvert 0.20
+
+VERDICT (V sur l ES) : ECHOUE (C1 alpha t >= 3 (ES 2016-2026) ; C2 alpha > 0 et t >= 1,5 sur 2016-2020 et 2021-2026 ; C6 Sharpe deflate >= 0.95 (38 essais) ; C7 marche 2017-2026 : alpha > 0 et t >= 1,5)
+Calcul en 15 s.

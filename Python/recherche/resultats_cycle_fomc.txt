@@ -1,0 +1,25 @@
+======================================================================================================================
+ CYCLE DU FOMC ET « FED PUT » : STRATEGIE CONSTRUITE SUR SIX TRAVAUX (CMVJ 2019, UPPAL 2025, CIESLAK & VJ 2021...)
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/cycle_fomc.py (ecrit avant le calcul).
+
+ETAPE 1 - l anomalie (pb par jour)
+  marche 1994-2003 : semaine 0 +15.3 pb/j (t +2.49) | semaines 2-4-6 +12.6 pb/j (t +2.36) | Fed put : paire +22.6 pb (t +2.4, 284 j), impaire +3.8 pb (t +0.5, 306 j)
+  marche 2004-2016 : semaine 0 +13.7 pb/j (t +2.12) | semaines 2-4-6 +10.8 pb/j (t +2.28) | Fed put : paire +34.6 pb (t +3.0, 281 j), impaire -8.4 pb (t -0.9, 331 j)
+  marche 2017-2026 : semaine 0 -9.6 pb/j (t -1.42) | semaines 2-4-6 -3.9 pb/j (t -0.71) | Fed put : paire -5.3 pb (t -0.3, 182 j), impaire +22.1 pb (t +2.0, 261 j)
+  ES 2016-2020 : semaine 0 -15.0 pb/j (t -1.73) | semaines 2-4-6 -7.2 pb/j (t -0.88) | Fed put : paire -14.4 pb (t -0.7, 116 j), impaire +31.0 pb (t +1.7, 111 j)
+  ES 2021-2026 : semaine 0 -0.3 pb/j (t -0.04) | semaines 2-4-6 +0.2 pb/j (t +0.03) | Fed put : paire +9.0 pb (t +0.8, 131 j), impaire +4.9 pb (t +0.5, 205 j)
+  ES 2016-2026 : semaine 0 -7.3 pb/j (t -1.20) | semaines 2-4-6 -3.3 pb/j (t -0.67) | Fed put : paire -2.0 pb (t -0.2, 247 j), impaire +14.1 pb (t +1.5, 316 j)
+
+ETAPE 2 - strategies sur l ES (cloture -> cloture), nettes de couts
+  --- R0 semaines paires seulement (CMVJ, strategie B)
+      1267 jours investis (262 entrees) | brut +2.45 pb/j (t +0.8) | 2016-2020 +0.22 (t +0.0) | 2021-2026 +4.39 (t +1.2)
+      temoin (semaine impaire, meme condition) +7.00 pb, Welch -1.1 | cout moyen 0.18 pb/j -> net +2.26 pb/j, sans les 3 meilleurs jours +0.82 | stress +2.11
+      Sharpe net annualise 0.22 (ES detenu 0.69) | Sharpe deflate (40 essais) 0.07
+  --- V Fed put : semaine paire apres une baisse (quintile bas des 5 seances)
+      247 jours investis (117 entrees) | brut -1.99 pb/j (t -0.2) | 2016-2020 -14.36 (t -0.7) | 2021-2026 +8.97 (t +0.8)
+      temoin (semaine impaire, meme condition) +14.06 pb, Welch -1.1 | cout moyen 0.42 pb/j -> net -2.40 pb/j, sans les 3 meilleurs jours -9.97 | stress -2.75
+      Sharpe net annualise -0.06 (ES detenu 0.69) | Sharpe deflate (40 essais) 0.01
+
+VERDICT (V sur l ES) : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95 ; marche 2017-2026 : jours V > 0 avec t >= 1,5)
+Calcul en 2 s.

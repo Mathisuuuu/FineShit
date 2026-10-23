@@ -1,0 +1,45 @@
+﻿Strategie;Fichier;Donnees;Periode;Trades;Reussite;PnL net $;Profit factor;Sharpe;DD max $;t;Verdict
+S01-A Momentum intraday : derniere 1/2 h dans le sens de r_first30;S01_MomentumIntraday.cs;ES 1 min -> MES;2016-01 -> 2026-08;2634;43%;-13 828;0.73;-1.41;14 297;-5.1;NEGATIVE
+S01-B Momentum intraday : bande de bruit + VWAP, trailing;S01_MomentumIntraday.cs;ES 1 min -> MES;2016-01 -> 2026-08;2706;32%;+11 968;1.08;0.33;8 457;+1.2;POSITIVE MAIS FAIBLE
+S01-D Momentum intraday : derniere 1/2 h, taille vol-scale;S01_MomentumIntraday.cs;ES 1 min -> MES;2016-01 -> 2026-08;2634;43%;-17 384;0.72;-1.37;17 713;-5.0;NEGATIVE
+S02-A Momentum WTI 1re 1/2 h (filtre EIA);S02_MomentumCrossAssets.cs;CL 1 min -> MCL;2016-01 -> 2026-08;2646;30%;-9 671;0.38;-3.80;9 901;-13.9;NEGATIVE
+S02-B Momentum 6J ouverture de Londres;S02_MomentumCrossAssets.cs;6J 1 min -> 6J;2016-01 -> 2026-08;2636;45%;-48 305;0.77;-1.24;55 239;-4.5;NEGATIVE
+S02-C Momentum or session de nuit;S02_MomentumCrossAssets.cs;GC 1 min -> MGC;2016-01 -> 2026-08;2606;47%;-27 669;0.82;-0.80;30 999;-2.8;NEGATIVE
+S05-A Reversal de l opening range 5 min (Dow);S05_Prime0DTE.cs;YM 1 min -> MYM;2016-01 -> 2026-08;1127;51%;-527;0.98;-0.10;1 672;-0.3;NEGATIVE
+S06-A Fade de l overnight (tel que code);S06_OvernightReversal.cs;NQ 1 min -> MNQ;2016-01 -> 2026-08;2699;48%;-27 319;0.90;-0.47;33 151;-1.7;NEGATIVE
+S06-A Fade de l overnight (corrige : gap du jour);S06_OvernightReversal.cs;NQ 1 min -> MNQ;2016-01 -> 2026-08;2704;49%;-3 761;0.99;-0.07;19 639;-0.2;NEGATIVE
+S06-B Reversal de jump overnight (tel que code);S06_OvernightReversal.cs;NQ 1 min -> MNQ;2016-01 -> 2026-08;172;50%;+2 848;1.24;0.28;2 215;+1.0;POSITIVE MAIS FAIBLE
+S06-B Reversal de jump overnight (corrige);S06_OvernightReversal.cs;NQ 1 min -> MNQ;2016-01 -> 2026-08;172;51%;+3 636;1.28;0.32;1 433;+1.2;POSITIVE MAIS FAIBLE
+S07-A Post-settle 16:00-17:00 -> gap (regression ridge);S07_OvernightGap.cs;ES 1 min -> MES;2016-01 -> 2026-08;0;n/d;+0;n/d;n/d;0;;INSUFFISANT (< 30 trades)
+S09-A Fade du fix WM/R fin de mois sur 6E;S09_LondonFix.cs;6E 1 min -> M6E;2016-01 -> 2026-08;252;35%;-839;0.41;-1.49;862;-5.7;NEGATIVE
+S09-A Fade du fix WM/R fin de mois sur 6B;S09_LondonFix.cs;6B 1 min -> M6B;2016-01 -> 2026-08;253;38%;-404;0.57;-0.76;521;-2.8;NEGATIVE
+S09-B Or entre fixings de Londres;S09_LondonFix.cs;GC 1 min -> MGC;2016-01 -> 2026-08;53145;27%;-169 606;0.40;-15.35;169 589;-51.1;NEGATIVE
+S09-B Or entre fixings de Londres (corrige : 1 entree par soiree);S09_LondonFix.cs;GC 1 min -> MGC;2016-01 -> 2026-08;2751;45%;-9 259;0.68;-1.59;10 115;-5.8;NEGATIVE
+S11-A Price discovery or, long seul (tel que code);S11_GoldPriceDiscovery.cs;GC 1 min -> MGC;2016-01 -> 2026-08;2590;14%;-547;0.99;-0.04;8 300;-0.1;NEGATIVE
+S11-A Price discovery or, long seul (corrige);S11_GoldPriceDiscovery.cs;GC 1 min -> MGC;2016-01 -> 2026-08;2590;12%;+1 389;1.03;0.08;7 168;+0.3;POSITIVE MAIS FAIBLE
+S11-A Price discovery or, long seul (corrige, sans stop);S11_GoldPriceDiscovery.cs;GC 1 min -> MGC;2016-01 -> 2026-08;2099;41%;+12 116;1.12;0.43;6 808;+1.6;POSITIVE MAIS FAIBLE
+S11-B Price discovery or, long-short (corrige);S11_GoldPriceDiscovery.cs;GC 1 min -> MGC;2016-01 -> 2026-08;5104;11%;+7 586;1.08;0.27;9 462;+0.9;POSITIVE MAIS FAIBLE
+S19-A Rebalancement LETF, derniere 1/2 h US;S19_LetfRebalance.cs;ES 1 min -> MES;2016-01 -> 2026-08;2638;28%;-12 103;0.79;-0.83;12 610;-3.0;NEGATIVE
+S19-B Rebalancement LETF, DAX 17:00-17:30;S19_LetfRebalance.cs;FDAX 1 min -> FDAX;2025-03 -> 2026-08;370;33%;-152 164;0.51;-2.60;154 639;-3.5;NEGATIVE
+S20-A Risk parity ERC multi-futures;S20_RiskParity.cs;journalier ES/GC/CL/6E (micros), 126 reequilibrages (58 ordres de jambe);2016-01 -> 2026-08;58;68%;+59 323;4.67;0.72;16 272;;PROMETTEUSE
+S20-B Risk parity inverse-vol multi-futures;S20_RiskParity.cs;journalier ES/GC/CL/6E (micros), 126 reequilibrages (50 ordres de jambe);2016-01 -> 2026-08;50;67%;+57 448;3.99;0.70;17 059;;PROMETTEUSE
+IntradayMomentumMES (bande VWAP, trailing ATR);MyCustomStrategy1.cs;ES 1 min -> MES;2016-01 -> 2026-08;5192;27%;-14 284;0.79;-1.36;14 358;-5.0;NEGATIVE
+Test OPR cassure 1re barre (tel que code);MyCustomStrategy2.cs;ES 5 min RTH -> ES;2016-01 -> 2026-08;2227;52%;-29 672;0.97;-0.12;79 325;-0.4;NEGATIVE
+Test OPR cassure 1re barre (corrige : short, stop, objectif 2R);MyCustomStrategy2.cs;ES 5 min RTH -> ES;2016-01 -> 2026-08;2228;34%;-12 302;0.98;-0.11;38 270;-0.4;NEGATIVE
+ZarattiniSPYMomentum (Beat the Market);MyCustomStrategy3.cs;SPY 1 min RTH -> SPY;2016-01 -> 2026-10;17787;23%;-81 230;0.87;-1.06;82 941;-3.5;NEGATIVE
+ICT2022Model (sweep/FVG HTF, killzone, MSS + FVG 1 min);MyCustomStrategy4.cs;NQ 1 min -> NQ;2016-01 -> 2026-08;1330;23%;-74 385;0.85;-0.50;91 650;-1.8;NEGATIVE
+ZarattiniEnvelope (enveloppe de bruit, vol-cible);ZarattiniEnvelope.cs;ES 1 min RTH -> ES;2016-01 -> 2026-08;964;38%;+88 048;1.10;0.31;66 580;+1.0;POSITIVE MAIS FAIBLE
+IntradayMomentumGamma (Noise Area + VWAP, sans gamma);IntradayMomentumC01.cs;ES 1 min RTH -> ES;2016-01 -> 2026-08;3347;28%;-51 132;0.95;-0.25;92 190;-0.8;NEGATIVE
+boombitch (Turtle Donchian 160/60, M15);boombitch.cs;NQ 15 min -> MNQ;2016-01 -> 2026-08;2491;37%;+21 942;1.26;0.92;3 211;+3.3;PROMETTEUSE
+AUDusd (paires z-score, 15 min);AUDusd.cs;6B suiveur / 6E meneur, 15 min;2016-01 -> 2026-08;3261;41%;-12 956;0.73;-1.63;13 016;-6.0;NEGATIVE
+Fiche 1 TSMOM 12-1 (25 actions/ETF US);Nexus01_TSMOM.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;845;48%;+37 838;1.69;0.76;9 434;+5.4;PROMETTEUSE
+Fiche 2 XSMOM quartile superieur (25 actions/ETF US);Nexus02_XSMOM.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;284;46%;+25 902;1.83;0.82;4 789;+3.3;PROMETTEUSE
+Fiche 3 Rotation multi-facteurs;Nexus03_MultiFactorRotation.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;124;66%;+35 184;3.80;0.82;6 288;+3.8;PROMETTEUSE
+Fiche 4A Residu OU sectoriel;Nexus04A_ResidualMeanReversion.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;732;57%;+12 479;1.38;0.86;3 375;+3.4;PROMETTEUSE
+Fiche 4B Retournement crypto 15 min (mode strategie);Nexus04B_CryptoIntradayReversal.cs;crypto Alpaca 15 min;2021-01 -> 2026-10;49226;46%;-27 911;0.66;-2.25;31 482;-10.5;NEGATIVE
+Fiche 5 Retour a la moyenne de volatilite;Nexus05_VolatilityMeanReversion.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;1;100%;+2 460;n/d;0.43;22 569;;POSITIVE MAIS FAIBLE
+Fiche 6 Paires co-integrees (long seul);Nexus06_PairsCointegration.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;107;50%;+1 147;1.19;0.16;1 734;+0.6;POSITIVE MAIS FAIBLE
+Fiche 11 Roue d options synthetique;Nexus11_OptionsWheel.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;876;76%;+127 654;2.33;0.80;21 783;+3.2;PROMETTEUSE
+Fiche 12 Regime de vol (terciles);Nexus12_VolRegimeConditional.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;1491;46%;+13 899;1.22;0.29;16 729;+2.4;POSITIVE MAIS FAIBLE
+Fiche 13 Trend 8 actifs (futures);Nexus13_PropTrend8.cs;futures Databento (profil futures);2016-01 -> 2026-08;880;26%;-64 218;0.91;-0.10;129 514;-0.7;NEGATIVE
+Fiche 14 Swing strict;Nexus14_StrictSwing.cs;actions/ETF Alpaca journalier;2016-01 -> 2026-10;1211;60%;+418;1.02;0.05;2 581;+0.2;POSITIVE MAIS FAIBLE

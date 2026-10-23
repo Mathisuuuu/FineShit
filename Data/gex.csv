@@ -1,0 +1,9 @@
+# GEX agrege des dealers d options pour la fiche 15, en dollars par mouvement de 1 % du sous-jacent.
+# date = seance a laquelle la valeur s applique (calculee AVANT l ouverture, open interest de la veille).
+# Une ligne par jour (SPX + NDX + QQQ deja sommes) ou une ligne par sous-jacent (colonne underlying, sommee par date).
+# gex_ref (facultatif) = meme mesure d une source tierce (SpotGamma, SqueezeMetrics) : le rapport compare les deux.
+# G < 0 : dealers courts gamma (w = 1) ; G > 0 : longs gamma (w = 0.3 par defaut, a calibrer).
+date,underlying,gex,gex_ref
+# 2026-10-13,SPX,-1200000000,-900000000
+# 2026-10-13,NDX,300000000,
+# 2026-10-13,QQQ,500000000,

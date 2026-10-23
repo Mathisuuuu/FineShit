@@ -15,6 +15,131 @@ static class T
     static string F(double x) { return x.ToString("G6", CultureInfo.InvariantCulture); }
     static double Gauss(Random r) { double u1 = 1.0 - r.NextDouble(), u2 = r.NextDouble(); return Math.Sqrt(-2 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2); }
 
+    // =====================================================================
+    //  Fiche 15 - rebalancement des LETF (AddOns\NexusLetf.cs)
+    // =====================================================================
+    static void Fiche15(Random dr)
+    {
+        Console.WriteLine("== Fiche 15 : flux de rebalancement LETF");
+        List<NxLetfFund> funds = NxLetfFlow.ParseFunds(NxLetfFlow.DefaultFunds);
+        Check("10 fonds (4 Nasdaq-100, 6 S&P 500)", funds.Count == 10 && funds.Count(f => f.Index == "NDX") == 4 && funds.Count(f => f.Index == "SPX") == 6);
+        Check("L(L-1) = 6, 2, 6, 12 pour +3, +2, -2, -3", new NxLetfFund { Leverage = 3 }.LeverageFactor == 6 && new NxLetfFund { Leverage = 2 }.LeverageFactor == 2
+              && new NxLetfFund { Leverage = -2 }.LeverageFactor == 6 && new NxLetfFund { Leverage = -3 }.LeverageFactor == 12);
+        bool sameSign = new[] { 3.0, 2.0, -2.0, -3.0 }.All(L => NxLetfFlow.Flow(1e9, L, 0.01, NxLetfFlowFormula.Fiche) > 0 && NxLetfFlow.Flow(1e9, L, -0.01, NxLetfFlowFormula.Fiche) < 0);
+        Check("flux du meme signe que r pour tout levier (inverses compris)", sameSign);
+        double fl = NxLetfFlow.Flow(33.5e9, 3, 0.01, NxLetfFlowFormula.NavVeilleExacte) + NxLetfFlow.Flow(13e9, 2, 0.01, NxLetfFlowFormula.NavVeilleExacte)
+                    + NxLetfFlow.Flow(2.2e9, -3, 0.01, NxLetfFlowFormula.NavVeilleExacte);
+        double ff = NxLetfFlow.Flow(33.5e9, 3, 0.01, NxLetfFlowFormula.Fiche) + NxLetfFlow.Flow(13e9, 2, 0.01, NxLetfFlowFormula.Fiche) + NxLetfFlow.Flow(2.2e9, -3, 0.01, NxLetfFlowFormula.Fiche);
+        Check("exemple de la fiche : +1 % du NDX -> ~2.5 Md$ (approximation lineaire)", Math.Abs(fl - 2.53e9) < 0.01e9, F(fl / 1e9) + " Md$");
+        Check("exemple de la fiche : ~5 000 contrats NQ a 25 000", Math.Abs(NxLetfFlow.Contracts(fl, 20, 25000) - 5068) < 1, F(NxLetfFlow.Contracts(fl, 20, 25000)));
+        Check("formule de la fiche (1 + L r) : 2.48 Md$ / 4 957 contrats", Math.Abs(ff / 1e9 - 2.478) < 0.002 && Math.Abs(NxLetfFlow.Contracts(ff, 20, 25000) - 4957) < 3, F(ff / 1e9) + " Md$");
+        // Rebalancement simule d un fonds 3x : exposition apres le mouvement L A (1 + r), cible L A (1 + L r).
+        double A = 100, Lv = 3, rr = 0.05, trade = Lv * A * (1 + Lv * rr) - Lv * A * (1 + rr);
+        Check("NAV de la veille : A L(L-1) r est exact (Cheng-Madhavan)", Math.Abs(NxLetfFlow.Flow(A, Lv, rr, NxLetfFlowFormula.NavVeilleExacte) - trade) < 1e-9, F(trade));
+        Check("formule de la fiche exacte avec la NAV de FIN de journee A(1 + L r)", Math.Abs(NxLetfFlow.Flow(A * (1 + Lv * rr), Lv, rr, NxLetfFlowFormula.Fiche) - trade) < 1e-9);
+        Check("formule de la fiche avec la NAV de la veille : ecart de 1/(1 + L r)", Math.Abs(NxLetfFlow.Flow(A, Lv, rr, NxLetfFlowFormula.Fiche) / trade - 1 / 1.15) < 1e-12,
+              F(NxLetfFlow.Flow(A, Lv, rr, NxLetfFlowFormula.Fiche)) + " vs " + F(trade));
+        Check("placebo de levier : facteur constant", Math.Abs(NxLetfFlow.FlowWithFactor(1e9, 3, 1, 0.01, NxLetfFlowFormula.NavVeilleExacte) - 1e7) < 1e-3);
+
+        Console.WriteLine("== Fiche 15 : donnees (actif net de la veille, GEX)");
+        NxLetfAumStore aum = new NxLetfAumStore();
+        DateTime d1 = new DateTime(2026, 10, 12), d2 = new DateTime(2026, 10, 13), d3 = new DateTime(2026, 10, 14);
+        aum.Add("TQQQ", new NxLetfAumRow { Date = d1, Shares = 100, Nav = 10 });
+        aum.Add("TQQQ", new NxLetfAumRow { Date = d2, Shares = 110, Nav = 11, NetFlowUsd = 50 });
+        aum.Sort();
+        Check("A_i = parts x NAV de la VEILLE (pas du jour)", aum.AumBefore("TQQQ", d2, 7) == 1000 && aum.AumBefore("TQQQ", d3, 7) == 1210 && double.IsNaN(aum.AumBefore("TQQQ", d1, 7)));
+        Check("actif net trop ancien ignore", double.IsNaN(aum.AumBefore("TQQQ", d2.AddDays(30), 7)));
+        Check("creations nettes du jour", aum.NetFlowOn("TQQQ", d2) == 50 && double.IsNaN(aum.NetFlowOn("TQQQ", d3)) && aum.HasNetFlows);
+        Check("tendance d exposition sur n seances = L x dparts x NAV", Math.Abs(aum.ExposureTrend("TQQQ", 3, d3, 1) - 3 * 10 * 11) < 1e-9);
+        NxGexStore gx = new NxGexStore();
+        gx.Add(d1, -5e8, double.NaN); gx.Add(d2, 2e9, 1.5e9);
+        double g, gr; bool allowed;
+        Check("GEX : derniere valeur <= jour", gx.TryGet(d3, 5, out g, out gr) && g == 2e9 && gr == 1.5e9 && gx.TryGet(d1, 5, out g, out gr) && g == -5e8);
+        Check("GEX trop ancien -> inconnu", !gx.TryGet(d2.AddDays(10), 5, out g, out gr));
+        Check("regime : G < 0 court, G > 0 long", NxGexStore.Regime(-1) == NxLetfGammaRegime.Court && NxGexStore.Regime(1) == NxLetfGammaRegime.Long && NxGexStore.Regime(double.NaN) == NxLetfGammaRegime.Inconnu);
+        Check("w = 1 court gamma, 0.3 long gamma", NxGexStore.Weight(NxLetfGammaRegime.Court, true, 1, 0.3, NxLetfGammaUnknown.PoidsUn, out allowed) == 1
+              && NxGexStore.Weight(NxLetfGammaRegime.Long, true, 1, 0.3, NxLetfGammaUnknown.PoidsUn, out allowed) == 0.3);
+        NxGexStore.Weight(NxLetfGammaRegime.Inconnu, true, 1, 0.3, NxLetfGammaUnknown.PasDeTrade, out allowed);
+        Check("GEX inconnu : PasDeTrade bloque, sans filtre w = 1", !allowed && NxGexStore.Weight(NxLetfGammaRegime.Long, false, 1, 0.3, NxLetfGammaUnknown.PoidsUn, out allowed) == 1);
+
+        Console.WriteLine("== Fiche 15 : calendrier et jours exclus");
+        Check("Paques 2026 = 5 avril, Vendredi saint ferie", NxUsMarketCalendar.Easter(2026) == new DateTime(2026, 4, 5) && NxUsMarketCalendar.IsHoliday(new DateTime(2026, 4, 3)));
+        Check("Juneteenth ferie depuis 2022 seulement", NxUsMarketCalendar.IsHoliday(new DateTime(2026, 6, 19)) && !NxUsMarketCalendar.IsHoliday(new DateTime(2020, 6, 19)));
+        Check("4 juillet 2026 un samedi -> 3 juillet ferie (pas demi-seance)", NxUsMarketCalendar.IsHoliday(new DateTime(2026, 7, 3)) && !NxUsMarketCalendar.IsHalfDay(new DateTime(2026, 7, 3)));
+        Check("demi-seances : 3 juillet 2025, lendemain de Thanksgiving, 24 decembre 2026", NxUsMarketCalendar.IsHalfDay(new DateTime(2025, 7, 3))
+              && NxUsMarketCalendar.IsHalfDay(new DateTime(2026, 11, 27)) && NxUsMarketCalendar.IsHalfDay(new DateTime(2026, 12, 24)) && !NxUsMarketCalendar.IsHalfDay(new DateTime(2026, 12, 23)));
+        Check("quatre sorcieres 2026 : 20/03, 18/06 (19/06 Juneteenth ferie), 18/09, 18/12", new[] { new DateTime(2026, 3, 20), new DateTime(2026, 6, 18), new DateTime(2026, 9, 18), new DateTime(2026, 12, 18) }.All(NxUsMarketCalendar.IsQuadWitching)
+              && !NxUsMarketCalendar.IsQuadWitching(new DateTime(2026, 6, 19)) && !NxUsMarketCalendar.IsQuadWitching(new DateTime(2026, 10, 16)));
+        Check("echeance avancee si le 3e vendredi est ferie (Vendredi saint 2008)", NxUsMarketCalendar.MonthlyExpiration(2008, 3) == new DateTime(2008, 3, 20));
+        Check("classement des libelles", NxLetfExclusionCalendar.Classify("FOMC Statement") == NxLetfExclusion.Fomc && NxLetfExclusionCalendar.Classify("Federal Funds Rate") == NxLetfExclusion.Fomc
+              && NxLetfExclusionCalendar.Classify("Nonfarm Payrolls") == NxLetfExclusion.Nfp && NxLetfExclusionCalendar.Classify("CPI m/m") == NxLetfExclusion.Cpi
+              && (NxLetfExclusionCalendar.Classify("FOMC Meeting Minutes") & NxLetfExclusion.Fomc) == 0 && (NxLetfExclusionCalendar.Classify("ADP Nonfarm Employment Change") & NxLetfExclusion.Nfp) == 0
+              && NxLetfExclusionCalendar.Classify("NDX special rebalance") == NxLetfExclusion.RebalancementNdx);
+        NxLetfExclusionCalendar ex = new NxLetfExclusionCalendar();
+        ex.Add(new DateTime(2026, 10, 28), NxLetfExclusion.Fomc);
+        Check("jours exclus : fichier + regles", ex.Check(new DateTime(2026, 10, 28)) == NxLetfExclusion.Fomc && (ex.Check(new DateTime(2026, 9, 18)) & NxLetfExclusion.QuatreSorcieres) != 0
+              && (ex.Check(new DateTime(2026, 11, 27)) & NxLetfExclusion.DemiSeance) != 0 && ex.Check(new DateTime(2026, 10, 14)) == NxLetfExclusion.Aucune);
+        ex.UseMacro = false;
+        Check("exclusion macro desactivable", ex.Check(new DateTime(2026, 10, 28)) == NxLetfExclusion.Aucune);
+
+        Console.WriteLine("== Fiche 15 : barres 1 min, 30 min, seuil glissant");
+        NxMinuteDay md = new NxMinuteDay(d3);
+        for (int m = 1; m <= 390; m++) md.Add(new TimeSpan(9, 30 + m, 0), 100 + m * 0.01 - 0.01, 100 + m * 0.01 + 0.02, 100 + m * 0.01 - 0.03, 100 + m * 0.01, m <= 360 ? 10 : 100);
+        Check("prix a 15:25 = cloture de la barre de 15:25", Math.Abs(md.PriceAsOf(new TimeSpan(15, 25, 0)) - (100 + 355 * 0.01)) < 1e-12);
+        Check("ouverture 9:30 = ouverture de la barre de 9:31", Math.Abs(md.OpenAfter(new TimeSpan(9, 30, 0)) - 100.0) < 1e-12);
+        Check("volume ]15:30 ; 16:00] = 30 barres", md.VolumeIn(new TimeSpan(15, 30, 0), new TimeSpan(16, 0, 0)) == 3000 && md.CountIn(new TimeSpan(15, 30, 0), new TimeSpan(16, 0, 0)) == 30);
+        double rvExp = Math.Sqrt(Enumerable.Range(331, 30).Select(m => Math.Pow(Math.Log((100 + m * 0.01) / (100 + (m - 1) * 0.01)), 2)).Average() * 98280);
+        Check("vol realisee 30 min annualisee (moyenne des carres x 252 x 390)", Math.Abs(md.RealizedVolAnn(new TimeSpan(15, 0, 0), new TimeSpan(15, 30, 0), NxLetfFlow.RthMinutesPerYear, 15) - rvExp) < 1e-12);
+        NxBarAggregator agg = new NxBarAggregator("x", 30, 2, new TimeSpan(9, 30, 0), new TimeSpan(16, 0, 0));
+        for (int m = 1; m <= 60; m++) agg.Add(d3, new TimeSpan(9, 30 + m, 0), 100, 101 + (m == 45 ? 5 : 0), 99, 100, 1);
+        Check("barres 30 min completes des leur derniere minute (10:00, 10:30)", agg.Hist.Count == 2 && agg.Hist.High[1] == 106 && agg.Hist.Volume[0] == 30);
+        NxRollingQuantile rq = new NxRollingQuantile(250);
+        for (int i = 1; i <= 300; i++) rq.Add(i);
+        Check("q70 glissant sur les 250 dernieres valeurs", rq.Count == 250 && Math.Abs(rq.Quantile(0.70) - (51 + 0.7 * 249)) < 1e-9, F(rq.Quantile(0.70)));
+
+        Console.WriteLine("== Fiche 15 : signal et taille");
+        NxLetfAumStore a2 = new NxLetfAumStore();
+        a2.Add("TQQQ", new NxLetfAumRow { Date = d2, Aum = 33.5e9 }); a2.Add("QLD", new NxLetfAumRow { Date = d2, Aum = 13e9 }); a2.Add("SQQQ", new NxLetfAumRow { Date = d2, Aum = 2.2e9 });
+        a2.Sort();
+        NxLetfSignal sg = NxLetfSignal.Compute(new NxLetfSignalInput { Day = d3, Index = "NDX", PrevClose = 25000, LevelAtSignal = 25250, Multiplier = 20, AvgWindowVolume = 80000,
+                                                                        Gex = 1e9, Funds = funds, Aum = a2, Formula = NxLetfFlowFormula.NavVeilleExacte });
+        Check("S = N / V et Score = S x 0.3 en long gamma", sg.Ok && Math.Abs(sg.S - sg.Contracts / 80000) < 1e-15 && Math.Abs(sg.Score - 0.3 * sg.S) < 1e-15 && sg.FundsUsed == 3 && sg.FundsMissing == 1,
+              "N " + F(sg.Contracts) + " S " + F(sg.S));
+        Check("concentration : TQQQ premier contributeur (~79 % du flux)", sg.TopFund == "TQQQ" && Math.Abs(sg.TopFundShare - 201.0 / 253.4) < 1e-3, F(sg.TopFundShare));
+        Check("pas de signal sans volume de fenetre (chauffage)", !NxLetfSignal.Compute(new NxLetfSignalInput { Day = d3, Index = "NDX", PrevClose = 25000, LevelAtSignal = 25250, Multiplier = 20,
+                                                                                                             AvgWindowVolume = double.NaN, Funds = funds, Aum = a2 }).Ok);
+        double raw; int cap; string det;
+        int q1 = NxLetfSizing.Contracts(0.02, 0.01, 25000, 20, 0.20, 30, 1e6, 0.5, 80000, 2.0, 0.01, 3.0, out raw, out cap, out det);
+        double base1 = 1e6 * 0.005 / (25000 * 20 * 0.20 * Math.Sqrt(30 / 98280.0));
+        Check("taille = capital x cible / (prix x $/pt x sigma 30 min) x |Score|/seuil", q1 == (int)Math.Floor(2 * base1) && Math.Abs(raw - 2 * base1) < 1e-9, q1 + " contrats, " + det);
+        int q2 = NxLetfSizing.Contracts(0.02, 0.01, 25000, 20, 0.20, 30, 1e6, 0.5, 100, 2.0, 0.01, 3.0, out raw, out cap, out det);
+        int q3 = NxLetfSizing.Contracts(0.02, 0.01, 25000, 20, 0.20, 30, 1e6, 0.5, 100, 2.0, 0.035, 3.0, out raw, out cap, out det);
+        Check("plafond 2 % du volume attendu, divise par 2 si |r| > 3 %", q2 == 2 && q3 == 1, q2 + " / " + q3);
+        Check("taille nulle si vol inconnue", NxLetfSizing.Contracts(0.02, 0.01, 25000, 20, double.NaN, 30, 1e6, 0.5, 80000, 2, 0.01, 3, out raw, out cap, out det) == 0);
+
+        Console.WriteLine("== Fiche 15 : Newey-West");
+        int n = 4000;
+        double[] xs = new double[n], ys = new double[n], ya = new double[n];
+        double ex1 = 0, ux = 0;
+        for (int t = 0; t < n; t++)
+        {
+            xs[t] = Gauss(dr); ys[t] = 0.5 + 2.0 * xs[t] + Gauss(dr);
+            ux = 0.8 * ux + Gauss(dr); ex1 = 0.8 * ex1 + Gauss(dr);
+            ya[t] = 1.0 * ux + ex1;
+        }
+        NxHacResult iid = NxNeweyWest.Ols(ys, xs.Select(v => new[] { v }).ToList(), new[] { "x" }, -1);
+        NxOlsResult ols = NxRegression.Simple(ys, xs);
+        Check("coefficients = MCO", Math.Abs(iid.CoefOf("x") - ols.Coef[1]) < 1e-9 && Math.Abs(iid.Coef[0] - ols.Coef[0]) < 1e-9, F(iid.CoefOf("x")));
+        Check("erreurs iid : erreur-type NW ~ MCO", Math.Abs(iid.Se[1] / ols.Se[1] - 1) < 0.1, F(iid.Se[1] / ols.Se[1]));
+        NxHacResult ac = NxNeweyWest.Ols(ys, xs.Select(v => new[] { v, 0.0 }).ToList(), new[] { "x", "zero" }, -1);
+        double[] xa = new double[n]; double v2 = 0; Random rx = new Random(9);
+        for (int t = 0; t < n; t++) { v2 = 0.8 * v2 + Gauss(rx); xa[t] = v2; }
+        NxHacResult hac = NxNeweyWest.Ols(ya, xa.Select(v => new[] { v }).ToList(), new[] { "x" }, -1);
+        NxOlsResult olsA = NxRegression.Simple(ya, xa);
+        Check("erreurs et regresseur autocorreles : erreur-type NW > MCO", hac.Se[1] > 1.5 * olsA.Se[1], "NW " + F(hac.Se[1]) + " vs MCO " + F(olsA.Se[1]) + ", lags " + hac.Lags);
+        Check("colonne constante retiree, lags auto = floor(4 (n/100)^(2/9))", !ac.Names.Contains("zero") && hac.Lags == (int)Math.Floor(4 * Math.Pow(n / 100.0, 2.0 / 9.0)));
+    }
+
     static void Main()
     {
         System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
@@ -265,6 +390,8 @@ static class T
         Check("3e vendredi", NxCalendar.ThirdFriday(2026, 11) == new DateTime(2026, 11, 20));
         double bv = NxPanel.BasketVol(new List<NxBarHistory> { ha, hb }, new[] { 0.5, 0.5 }, 120);
         Check("vol de panier ~ 16 %", bv > 0.12 && bv < 0.20, F(bv));
+
+        Fiche15(dr);
 
         Console.WriteLine();
         Console.WriteLine("RESULTAT : " + pass + " OK, " + fail + " ECHEC(S)");

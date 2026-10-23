@@ -1,0 +1,43 @@
+======================================================================================================================
+ NQ 1 - DIFFUSION DES RESULTATS DES GRANDES CAPITALISATIONS : VARIANTES CORRIGEES (protocole fixe avant le test)
+======================================================================================================================
+Protocole : en-tete de nexus/perso/nq1_variantes.py. Retenue = criteres de la vue d ensemble ET Sharpe deflate
+>= 0.95 pour 33 essais. A a deja ete vue (etape 2) ; B et C sont des essais supplementaires.
+
+Controle de l heure du communique reconstituee par le volume de l action (B et C) :
+    AAPL  detectee 44/44 | heure mediane 16:07 | ecart au 8-K median -26 min | dans [-3, +1] : 2%  (reference : 8-K a la minute du communique)
+    MSFT  detectee 36/43 | heure mediane 16:03 | ecart au 8-K median -2 min | dans [-3, +1] : 51%
+    AMZN  detectee 43/43 | heure mediane 16:01 | ecart au 8-K median -13 min | dans [-3, +1] : 5%
+    GOOGL detectee 23/43 | heure mediane 16:03 | ecart au 8-K median +1 min | dans [-3, +1] : 30%  (reference : 8-K a la minute du communique)
+    META  detectee 43/43 | heure mediane 16:04 | ecart au 8-K median -7 min | dans [-3, +1] : 19%
+    NVDA  detectee 39/43 | heure mediane 16:11 | ecart au 8-K median -12 min | dans [-3, +1] : 23%  (reference : 8-K a la minute du communique)
+    -> ECHEC : l heure detectee precede souvent le communique (positionnement d apres-cloture) ; B et C ne mesurent pas la reaction au communique et sont INVALIDES, quel que soit leur resultat
+Detection corrigee, essayee APRES la premiere execution (volume soutenu sur 3 min, 20 x la normale, 8 x le niveau du jour) :
+    AAPL  detectee 43/44 | heure mediane 16:29 | ecart au 8-K median -2 min | dans [-3, +1] : 75%  (reference : 8-K a la minute du communique)
+    MSFT  detectee 30/43 | heure mediane 16:01 | ecart au 8-K median -4 min | dans [-3, +1] : 30%
+    AMZN  detectee 35/43 | heure mediane 16:01 | ecart au 8-K median -11 min | dans [-3, +1] : 0%
+    GOOGL detectee 32/43 | heure mediane 16:01 | ecart au 8-K median -1 min | dans [-3, +1] : 70%  (reference : 8-K a la minute du communique)
+    META  detectee 36/43 | heure mediane 16:04 | ecart au 8-K median -7 min | dans [-3, +1] : 7%
+    NVDA  detectee 42/43 | heure mediane 16:19 | ecart au 8-K median -4 min | dans [-3, +1] : 47%  (reference : 8-K a la minute du communique)
+    -> ECHEC aussi : arret ; regler encore la detection apres avoir vu B serait de la sur-optimisation
+
+--- A - origine (heure du 8-K, signal NQ)
+    162 jours | moyenne +3.98 pb (t +2.8) | 2016-2020 +2.44 (t +2.0) | 2021-2026 +5.12 (t +2.2)
+    temoin -0.50 pb, Welch +3.0 | cout 0.68 pb -> net +3.30 pb, sans les 3 meilleurs jours +2.11 pb | Sharpe deflate (33 essais) 0.60
+    par annee (pb, nombre) : 2016:+0.8(13.0) 2017:+1.9(12.0) 2018:+2.0(16.0) 2019:+2.2(16.0) 2020:+5.6(12.0) 2021:+1.6(13.0) 2022:+14.9(18.0) 2023:-1.0(17.0) 2024:-2.3(17.0) 2025:+10.9(16.0) 2026:+5.6(12.0)
+    VERDICT : ECHOUE (t >= 3 ; Sharpe deflate >= 0.95)
+
+--- B - heure du communique (volume de l action), signal NQ
+    168 jours | moyenne +5.38 pb (t +3.3) | 2016-2020 +3.87 (t +1.8) | 2021-2026 +6.57 (t +2.7)
+    temoin -0.50 pb, Welch +3.5 | cout 0.68 pb -> net +4.70 pb, sans les 3 meilleurs jours +3.36 pb | Sharpe deflate (33 essais) 0.82
+    par annee (pb, nombre) : 2016:+0.3(12.0) 2017:+0.8(14.0) 2018:+4.8(17.0) 2019:+5.5(19.0) 2020:+7.3(12.0) 2021:+3.5(13.0) 2022:+13.9(18.0) 2023:+4.9(18.0) 2024:+3.1(17.0) 2025:+8.7(16.0) 2026:+3.4(12.0)
+    VERDICT : INVALIDE (heure du communique mal reconstituee, voir le controle) ; sinon il manquerait : Sharpe deflate >= 0.95
+
+--- C - heure du communique, signal = reaction de l action
+    167 jours | moyenne +3.80 pb (t +2.4) | 2016-2020 +2.45 (t +1.4) | 2021-2026 +4.85 (t +2.0)
+    temoin -0.40 pb, Welch +2.6 | cout 0.68 pb -> net +3.12 pb, sans les 3 meilleurs jours +1.94 pb | Sharpe deflate (33 essais) 0.46
+    signal de l action et signal du NQ de meme sens : 70% des jours
+    par annee (pb, nombre) : 2016:+1.2(12.0) 2017:-0.2(14.0) 2018:+8.4(17.0) 2019:+0.3(18.0) 2020:+1.5(12.0) 2021:+2.4(13.0) 2022:+12.3(18.0) 2023:+4.4(18.0) 2024:+4.8(17.0) 2025:+6.3(16.0) 2026:-4.8(12.0)
+    VERDICT : INVALIDE (heure du communique mal reconstituee, voir le controle) ; sinon il manquerait : t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; Sharpe deflate >= 0.95
+
+Calcul en 7 s.

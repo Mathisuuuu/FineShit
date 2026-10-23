@@ -183,6 +183,10 @@ namespace NinjaTrader.NinjaScript.Strategies
         protected virtual bool NxBatchMode { get { return true; } }
         protected virtual BarsPeriodType NxUniverseBarsType { get { return BarsPeriodType.Day; } }
         protected virtual int NxUniverseBarsValue { get { return 1; } }
+        /// <summary>Modele d horaires (Trading Hours) d une serie de l univers ; null ou vide = modele par defaut de l instrument.</summary>
+        protected virtual string NxUniverseTradingHours(string instrumentName) { return null; }
+        /// <summary>Cout supplementaire d une execution (devise du compte), ajoute au module C (ex. ticks par contrat de la fiche 15).</summary>
+        protected virtual double NxExtraFillCost(NxSym s, int absQty, double price) { return 0.0; }
         /// <summary>Symboles de reference supplementaires (barometre, VIX...).</summary>
         protected virtual IEnumerable<string> NxRequiredReferences() { return new string[0]; }
 
@@ -322,18 +326,24 @@ namespace NinjaTrader.NinjaScript.Strategies
             foreach (string n in traded)
             {
                 int bip;
-                if (NxAddSeries(n, NxUniverseBarsType, NxUniverseBarsValue, out bip)) configuredNames.Add(new ConfiguredSeries { Name = n, Traded = true, Bip = bip });
+                if (NxAddSeries(n, NxUniverseBarsType, NxUniverseBarsValue, NxUniverseTradingHours(n), out bip)) configuredNames.Add(new ConfiguredSeries { Name = n, Traded = true, Bip = bip });
             }
             foreach (string n in refs.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 if (traded.Any(t => string.Equals(t, n, StringComparison.OrdinalIgnoreCase))) continue;
                 int bip;
-                if (NxAddSeries(n, NxUniverseBarsType, NxUniverseBarsValue, out bip)) configuredNames.Add(new ConfiguredSeries { Name = n, Traded = false, Bip = bip });
+                if (NxAddSeries(n, NxUniverseBarsType, NxUniverseBarsValue, NxUniverseTradingHours(n), out bip)) configuredNames.Add(new ConfiguredSeries { Name = n, Traded = false, Bip = bip });
             }
         }
 
         /// <summary>Ajoute une serie (verifie l existence de l instrument) ; renvoie son indice BarsInProgress.</summary>
         protected bool NxAddSeries(string instrumentName, BarsPeriodType type, int value, out int bip)
+        {
+            return NxAddSeries(instrumentName, type, value, null, out bip);
+        }
+
+        /// <summary>Idem avec un modele d horaires explicite (ex. "CME US Index Futures RTH") ; null = modele de l instrument.</summary>
+        protected bool NxAddSeries(string instrumentName, BarsPeriodType type, int value, string tradingHoursName, out int bip)
         {
             bip = -1;
             NinjaTrader.Cbi.Instrument ins = null;
@@ -343,7 +353,8 @@ namespace NinjaTrader.NinjaScript.Strategies
                 Print("[Nexus] " + Name + " : instrument introuvable dans la base NinjaTrader, ignore -> '" + instrumentName + "'");
                 return false;
             }
-            AddDataSeries(instrumentName, type, value);
+            if (string.IsNullOrWhiteSpace(tradingHoursName)) AddDataSeries(instrumentName, type, value);
+            else AddDataSeries(instrumentName, new BarsPeriod { BarsPeriodType = type, Value = value }, tradingHoursName.Trim());
             bip = nextBip++;
             return true;
         }
@@ -1123,7 +1134,7 @@ namespace NinjaTrader.NinjaScript.Strategies
         {
             if (signedQty == 0) return;
             double vpp = ValuePerPoint(s);
-            double cost = Costs.Cost(s.Class, Math.Abs(signedQty) * price * vpp, Math.Abs(signedQty));
+            double cost = Costs.Cost(s.Class, Math.Abs(signedQty) * price * vpp, Math.Abs(signedQty)) + NxExtraFillCost(s, Math.Abs(signedQty), price);
             realizedNet -= cost;
             if (s.Qty == 0)
             {
