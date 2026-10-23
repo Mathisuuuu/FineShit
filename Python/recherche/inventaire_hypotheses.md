@@ -36,7 +36,7 @@ récente (après 2016), la cause observable aujourd'hui et la puissance attendue
 | 13 | Tour de mois, ventes forcées | Etula et al. 2020 | REJETÉE | dispo | `fin_de_mois` |
 | 14 | Rééquilibrage des 60/40 en fin de mois | Harvey, Mazzoleni & Melone 2026 | REJETÉE | dispo | `fin_de_mois` |
 | 15 | Rééquilibrage des ETF à levier | Cheng & Madhavan 2009 ; Barbon et al. | REJETÉE | dispo | fiche 15 (L1) |
-| 16 | Couverture des ETP VIX en fin de séance | Bangsgaard & Kokholm 2023 | ÉCARTÉE | encours ETP introuvables | un substitut referait l'échec LETF |
+| 16 | Couverture des ETP VIX en fin de séance | Bangsgaard & Kokholm, *JBF* 2025 (publié) | ÉCARTÉE | encours ETP introuvables | un substitut referait l'échec LETF ; version publiée vérifiée le 2026-10-23 : même blocage |
 | 17 | Retournement de l'enchère de clôture | Bogousslavsky & Muravyev, *JFM* 2023 | ÉCARTÉE | — | C1 : l'effet ne passe pas aux futures, t < 1 |
 | 18 | Veilles de jours fériés | Ariel 1990 | REJETÉE | dispo | Z2 |
 | 19 | Halloween | Bouman & Jacobsen, *AER* 2002 | ÉCARTÉE | dispo | trop peu de puissance sur 10 ans |
@@ -76,13 +76,20 @@ récente (après 2016), la cause observable aujourd'hui et la puissance attendue
 | # | Hypothèse | Source | Statut | Données | Résultat / remarque |
 |---|---|---|---|---|---|
 | 50 | Cycle des adjudications : baisse avant, reprise après | Lou, Yan & Zhang, *RFS* 2013 ; Fleming, Liu & Nguyen, Fed de New York SR 1188, 2026 | ÉCARTÉE (calcul de puissance du 2026-10-22) | Databento | ZB (meilleur cas) : ~160 $ bruts contre ~135 $ de coûts par contrat et par adjudication, soit ~25 $ nets ; écart-type sur les ~6 h ~800 $ ; ~128 adjudications à 30 ans sur 2016-2026 → t attendu ≈ 0,35 ; ZN : gain net négatif. Pas d'achat de données pour elle |
-| 51 | Momentum de fin de séance sur les obligations | Baltussen et al., *JFE* 2021 (60 futures dont 16 obligations, 1974-2020) | **OUVERTE** ★ | Databento + PDF payant | jamais testé sur les taux. Aperçu ScienceDirect lu le 2026-10-22 (le PDF complet est payant, le lien gratuit de l'auteur est coupé) : seul chiffre public, Sharpe 0,87 à 1,73 par classe d'actifs, avant frais, sur un panier de marchés ; rien par contrat. Ordre de grandeur (estimation, pas un chiffre du papier) : sur ZN, la dernière demi-heure bouge d'environ 8 pb et le gain attendu serait de l'ordre de 1 pb par jour, contre 3,3 pb de frais (1 tick + 2,50 $ par côté) ; la même règle sur ES ne donne qu'un Sharpe de 0,71. Ne justifie ni l'achat du PDF ni celui des données |
+| 51 | Momentum de fin de séance sur les obligations (et matières premières : or, pétrole, gaz, grains, bétail) | Baltussen et al., *JFE* 2021 (60 futures dont 16 obligations et 21 matières premières, 1974-2020) | ÉCARTÉE (texte complet lu le 2026-10-23, PDF libre www3.nd.edu/~zda/intramom.pdf) | Databento | tableau 6, portefeuille 1/N, avant frais : obligations 2,16 %/an soit **~0,9 pb par jour** (Sharpe 1,62), matières premières 4,34 %/an soit ~1,7 pb par jour ; la pente sur les obligations est divisée par deux entre 1974-1999 (3,19) et 2000-2020 (1,53, R² 0,47 %) ; par contrat (tableau B2) ZN : R² 0,24 % (première demi-heure). Nos frais aller-retour : ZN ~3,3 pb, grains ~11 pb (ZC : tick 12,50 $ pour ~22 000 $), bien au-dessus du gain brut → t attendu < 0 ; les auteurs disent eux-mêmes que la stratégie n'est sans doute pas exploitable après frais (seul le S&P l'est, rejeté chez nous, n° 2). Aucun essai |
 | 52 | Fin de mois du Trésor, partie de jour | Hartley & Schwarz 2019 | REJETÉE (ETF journalier) ; version future **OUVERTE** ★ | Databento | IEF : t 2,1, déflaté 0,10 |
 | 53 | Hausse des obligations la veille du FOMC | Pan & Peng 2026 | ÉCARTÉE | — | ~5 pb par réunion, 8 réunions par an : puissance trop faible |
 | 54 | Dérive des taux après un changement de taux directeur | Brooks, Katz & Lustig, NBER 2018 | **OUVERTE** ★ | Databento | plusieurs semaines ; peu d'événements |
 | 55 | Baisse des taux dans les 3 h après le FOMC | Fleming et al. 2026 (annexe) ; Brooks-Katz-Lustig ; Indriawan et al. 2021 | **OUVERTE** ★ | Databento | 0,5-1,5 pb ; 8 cas par an |
 | 56 | Dérive avant les publications de 8:30 | Kurov et al., BCE WP 1901 | ÉCARTÉE | — | suit le signe de la surprise, inconnu avant 8:30 |
 | 57 | Prime des jours d'annonce sur les obligations | Savor & Wilson 2013 ; Wachter & Zhu | **OUVERTE** ★ | Databento | à lire en entier ; effet journalier |
+| 165 | Les obligations montent la veille de l'annonce trimestrielle de refinancement du Trésor (vendredi avant le lundi 15:00) | Wang (Notre Dame) & Zhao (OFR), prépublication SocArXiv 2024 (lue en entier le 2026-10-23) | ÉCARTÉE | Databento | 1991-2023 ; tableau 8 (2003-2023, effets jour et fin de mois retirés) : 5 ans +8,0 pb (t 2,7), 7 ans +10,6 (t 2,5), 30 ans +16,5 (t 1,5) ; le « Sharpe de 4 » annualise 4 jours par 252 ; inversé en récession. Puissance (effet du papier moins nos coûts, 43 annonces 2016-2026, 67 depuis 2010) : ZF 1,5 (1,8), ZN 1,2 (1,6), ZT 1,0, ZB 0,7, UB 0,7 → t < 2 partout ; source sans comité de lecture (`tri_hypotheses_donnees.md`) |
+| 166 | Les taux continuent 2 à 7 semaines dans le sens de la surprise du FOMC | Brooks, Katz & Lustig, NBER w25127 2019 (1989-2008, lu) ; Indriawan, Jiao & Tse, *JBF* 2021 (après 2008, payant : ~15 jours, aucune dérive avant le FOMC) | ÉCARTÉE | Databento (ZN, ZQ) | complète les n° 54-55 ; surprises récentes de 2 à 5 pb → 20-50 pb de dérive contre ~280 pb d'écart-type sur 50 jours, et la version conforme (sortie chaque vendredi) coûte ~10 allers-retours : t ≈ 0 |
+| 167 | Le marché américain monte les jours où beaucoup de dividendes sont versés (réinvestissement annoncé des semaines avant) | Hartzmark & Solomon, *AER* 2025 (« Market-Wide Predictable Price Pressure » ; NBER w30688 lu en entier le 2026-10-23) | ÉCARTÉE | dispo (ES, NQ) + calendrier des versements (CRSP, payant) | 1926-2018, marché pondéré : quintile haut ~8 pb par jour contre ~2 pb pour les deux bas (moyenne 4,1 pb) ; le coefficient faiblit avec le temps (avant 1960 t 1,83, après 1960 t 1,58, **après 1980 t 0,73**). Puissance sur ES (quintile haut ≈ 50 jours par an, 8 pb − 1 pb de coûts, écart-type ~110 pb, ~540 jours 2016-2026) : t ≈ 1,5 seul, ≈ 0,8 contre le témoin (tous les jours) → aucun essai |
+| 168 | Retournement de fin de séance (les actions qui ont baissé dans la journée remontent dans la dernière demi-heure) | Baltussen, Da & Soebhag 2025 (document de travail, 2e prix Quantpedia 2025 ; texte complet lu, www3.nd.edu/~zda/EOD.pdf) | ÉCARTÉE | — | effet en coupe transversale (acheter les actions perdantes, vendre les gagnantes : 3,8 pb par jour, t 10,7) ; au niveau de l'indice, les mêmes auteurs trouvent le contraire (momentum, n° 2, déjà rejeté) : rien à jouer avec un future d'indice |
+| 169 | La nuit des indices américains se retourne dans la première demi-heure | Iwanaga & Sakemoto 2025 (« Intraday Time Series Reversal », document de travail ; texte complet derrière un captcha) | ÉCARTÉE | dispo | même famille que le n° 25 (fade de la nuit), déjà rejetée ; les auteurs disent eux-mêmes que l'effet **faiblit après les années 2010** et vient surtout des crises (2008, COVID) |
+| 170 | Les devises se retournent après le FOMC (le mouvement de la journée de l'annonce s'efface dans les 12 h) | Lee & Wang, *Review of Asset Pricing Studies* 2025 (chiffres de la thèse de Lee) | ÉCARTÉE | dispo (6E, 6J, 6B, 6A) | ~10 pb rendus par fenêtre de 12 h, ~85 réunions 2016-2026 → t attendu 1,6 à 2,2 (< 3) ; famille du n° 9 (retournement FOMC sur le S&P, rejeté) |
+| 171 | Les gilts britanniques montent avant les réunions de la Banque d'Angleterre | Lou, Pinter, Üslü & Walker, *JFE* 2025 | ÉCARTÉE | — | gilts cotés à l'ICE (pas de prop firm) ; la version américaine est contredite par Pan & Peng 2026 (n° 53 : ~5 pb par réunion, puissance trop faible) |
 
 ## 3. Énergie (CL, NG)
 
@@ -291,7 +298,7 @@ dérive de nuit des teneurs de marché (7).
 
 | # | Flux forcé | Source | Statut | Données | Résultat / raison |
 |---|---|---|---|---|---|
-| 142 | Rééquilibrage annuel des poids du S&P GSCI / BCOM (janvier, 5 jours, sens connu dès novembre) | Yan, Irwin & Sanders, *J. Commodity Markets* 2022 (SSRN 3715726) | **OUVERTE** ★ | dispo (CL, GC) ; Databento pour les autres | texte non lu (SSRN) ; 1 événement par an et par contrat → ~20 cas sur CL + GC (événement rare) ; tenue de plusieurs jours, à rendre intraday (fenêtre de règlement) ; la lignée Irwin conclut d'ordinaire à un faible impact des flux indiciels |
+| 142 | Rééquilibrage annuel des poids du S&P GSCI / BCOM (janvier, 5 jours, sens connu dès novembre) | Yan, Irwin & Sanders, *J. Commodity Markets* 2022 (SSRN 3715726) | ÉCARTÉE le 2026-10-23 : contredite par Yan & Irwin 2016 et 2017 (AgEcon 285846, 258504 : rendements nuls pendant le rééquilibrage, aucun lien causal) | dispo (CL, GC) ; Databento pour les autres | texte non lu (SSRN) ; 1 événement par an et par contrat → ~20 cas sur CL + GC (événement rare) ; tenue de plusieurs jours, à rendre intraday (fenêtre de règlement) ; la lignée Irwin conclut d'ordinaire à un faible impact des flux indiciels |
 | 143 | Flux des CTA (suiveurs de tendance : positions déduites de règles connues) | aucune source académique (fournisseurs de données, arXiv 2405.12768 théorique) | ÉCARTÉE | — | critère 1 : aucune mesure publiée de l'effet sur les rendements |
 | 145 | **Pic du 3e vendredi** : la couverture des teneurs de marché pousse les indices la nuit avant le règlement des options (SOQ), rendu avant midi | Baltussen, Terstegge & Whelan, « The Derivative Payoff Bias », 2024 (SSRN 4562800, texte complet lu) | REJETÉE (essai n° 432) | dispo | version trimestrielle seule (puissance) : ES +33,8 pb net mais +92 pb en 2016-2020 et −13 pb en 2021-2026, Sharpe 0,41, déflaté 0,17 ; NQ, YM pareils ; éteint depuis les options du jour (0DTE) (`tiers_vendredi`) |
 | 146 | Japon : ventes des ETF pour payer leurs dividendes (juillet) ; pression avant le règlement mensuel du Nikkei (SQ, 2e vendredi) | presse (Reuters), note d'Optiver | ÉCARTÉE | Databento (NKD) | aucune étude sérieuse mesurant l'effet sur les prix |
@@ -328,10 +335,10 @@ dérive de nuit des teneurs de marché (7).
 
 | Rang | # | Hypothèse | Fiabilité a priori | Bloquée par |
 |---|---|---|---|---|
-| 1 | 49 | ORB NQ rejouée sur 2010-2015 (pas un essai) | ★★★★ | Databento |
+| 1 | 49 | ORB NQ rejouée sur 2010-2015 (pas un essai) | ★★★★ | Databento ; simulation du 2026-10-23 : déflaté ~0,91 si 2010-2015 ressemble à 2016-2026, une chance sur trois de passer 0,95 |
 | — | 58 | Gaz : jours du rapport de stocks EIA | écartée | texte lu : effet disparu après 2011 (Sharpe net −0,16), t attendu ≈ −0,4 |
 | — | 50 | Cycle des adjudications du Trésor | écartée | t attendu ≈ 0,35 (ZB), gain net négatif (ZN) |
-| 3 | 51 | Momentum de fin de séance sur les obligations | ★ | pas de chiffres publiés pour la puissance ; Databento (ZN, ZB) |
+| — | 51 | Momentum de fin de séance sur les obligations et les matières premières | écartée | texte lu le 2026-10-23 : ~0,9 pb brut par jour sur les obligations contre ~3,3 pb de frais |
 | — | 39 | ETF sectoriels de nuit → futures d'indices | rejetée | essai n° 431 (`etf_nuit`) |
 | 6 | 59-60 | Gaz : dérive avant le rapport, retour après une surprise | ★★ | Databento + consensus payant |
 | 7 | 52 | Fin de mois du Trésor, partie de jour, sur ZN | ★ | Databento ; puissance < 3 avec 129 mois |
@@ -342,8 +349,10 @@ dérive de nuit des teneurs de marché (7).
 | 13 | 101, 105 | Momentum monétaire (ZQ), pression avant l'échéance du WTI | ★ | Databento ; peu d'événements |
 | 14 | 102, 103, 100 | Basis-momentum, portage des matières premières, aimantation des futures S&P | ★ | taille du compte ou données d'options payantes |
 
-Bilan : 164 hypothèses inventoriées ; 3 RETENUES (S1, H5, Gotobi) ; 5 FIABLES NON RETENUES (ORB, NQ 1-A, or la nuit,
-boombitch MBT, boombitch YM) ; 24 OUVERTES. Le 2026-10-22, les trois seules jouables sans achat et lisibles (n° 85,
+Bilan : 171 hypothèses inventoriées ; 3 RETENUES (S1, H5, Gotobi) ; 5 FIABLES NON RETENUES (ORB, NQ 1-A, or la nuit,
+boombitch MBT, boombitch YM) ; 22 OUVERTES (n° 51 écartée le 2026-10-23 après lecture du texte complet, n° 142
+contredite). Tri du 2026-10-23 (n° 165, 166 ajoutées et écartées ; crible des revues 2022-2026 et des citations récentes : n° 167-171 ajoutées et écartées) et classement des données à acheter :
+`tri_hypotheses_donnees.md` — seul achat utile : NQ, 6J, GC de 2010 à 2015 pour contrôler S1 et Gotobi. Le 2026-10-22, les trois seules jouables sans achat et lisibles (n° 85,
 104, 110) ont été lues en entier : toutes écartées au calcul de puissance ou faute d'effet stable, aucun essai. Les trois
 restantes sans achat (n° 39, 40, 47) sont bloquées (texte payant, prépublication, effet mesuré sur un autre objet).
 Classement validé par l'utilisateur : n° 1 ORB 2010-2015, n° 2 gaz. Le gaz (n° 58) est écarté le 2026-10-22 après
