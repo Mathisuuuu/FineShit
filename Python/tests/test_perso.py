@@ -1000,3 +1000,74 @@ def test_t_attendu():
     # cas de fin_de_mois_taux : ~8 pb publies sur 2015-2019, 2 pb de couts, ecart-type ~50 pb, 129 mois
     assert 1.3 < t_attendu(8.0, 2.0, 50.0, 129) < 1.5
     assert t_attendu(8.0, 2.0, 0.0, 129) != t_attendu(8.0, 2.0, 0.0, 129)   # nan
+
+
+def test_orb_ancre_9h30_identique_a_orb():
+    from nexus import orb as O
+    from nexus.perso import orb_ancre as A
+    # 20 seances synthetiques de 9:31 a 16:00 (barres datees a leur fin), marche aleatoire : l ancre 0 doit redonner
+    # exactement les ordres de nexus.orb.signaux (memes entrees, prix, stops et tailles)
+    rng = np.random.default_rng(3)
+    idx, px = [], []
+    p0 = 100.0
+    for d in pd.bdate_range("2024-01-02", periods=20):
+        for k in range(1, 391):
+            idx.append(d + pd.Timedelta(minutes=570 + k))
+            p0 *= 1 + rng.normal(0, 0.001)
+            px.append(p0)
+    c = np.array(px)
+    m = pd.DataFrame(dict(open=c * (1 - 0.0002), high=c * 1.001, low=c * 0.999, close=c,
+                          volume=rng.integers(50, 150, len(c)).astype(float)), index=pd.DatetimeIndex(idx))
+    m["frais"], m["glissement"] = 1e-5, 1e-5
+    p = dict(O.DEFAULTS, volume_jours=3, atr_jours=3)
+    ref = O.signaux(m, p)[:6]
+    tabs, jour, mn = A.tables(m, p, [0])
+    cal = pd.DatetimeIndex(sorted(set(m.index.normalize())))
+    sig = A.signaux_ancre(m, p, tabs, jour, mn, {d: 0 for d in cal})
+    assert ref[0].sum() + ref[1].sum() > 0
+    for x, y in zip(ref, sig):
+        assert np.array_equal(np.nan_to_num(np.asarray(x, float)), np.nan_to_num(np.asarray(y, float)))
+
+
+def test_etf_nuit_comouvement_et_anticipation():
+    from nexus.perso import etf_nuit as E
+    # 3 secteurs synthetiques : C = 1 quand toutes les nuits ont le meme signe, < 1 sinon ; le seuil n utilise que le passe
+    idx = pd.bdate_range("2020-01-01", periods=300)
+    rng = np.random.default_rng(5)
+    etf = {}
+    for s in ("A", "B", "C"):
+        c = 100 * np.exp(np.cumsum(rng.normal(0, 0.01, len(idx))))
+        o = np.r_[c[0], c[:-1]] * np.exp(rng.normal(0, 0.003, len(idx)))
+        etf[s] = pd.DataFrame(dict(Open=o, Close=c), index=idx)
+    sig = E.signal(etf)
+    on = pd.DataFrame({s: d["Open"] / d["Close"].shift(1) - 1 for s, d in etf.items()}).dropna()
+    meme = (np.sign(on).nunique(axis=1) == 1)
+    assert np.allclose(sig.loc[meme[meme].index, "C"], 1.0)
+    assert (sig.loc[meme[~meme].index, "C"] < 1).all()
+    coupe = idx[280]
+    alt = {s: d.assign(Open=np.where(d.index > coupe, d["Open"] * 1.05, d["Open"])) for s, d in etf.items()}
+    s2 = E.signal(alt)
+    assert sig.loc[:coupe, ["sentiment", "D"]].equals(s2.loc[:coupe, ["sentiment", "D"]])
+
+
+def test_tiers_vendredi_echeances():
+    from nexus.perso import tiers_vendredi as T
+    # jours de bourse US de 2026 sans le 19 juin (Juneteenth) : l echeance de juin passe au jeudi 18
+    jours = pd.bdate_range("2026-01-02", "2026-12-31")
+    jours = jours[jours != pd.Timestamp("2026-06-19")]
+    e = T.echeances(jours)
+    assert list(e) == [pd.Timestamp(x) for x in ("2026-03-20", "2026-06-18", "2026-09-18", "2026-12-18")]
+    assert len(T.echeances(jours, trimestrielles=False)) == 12
+
+
+def test_crypto_retour_heures_permises():
+    from nexus.perso import crypto_retour as C
+    ny = "America/New_York"
+    t = lambda s: pd.DatetimeIndex([pd.Timestamp(s, tz=ny).tz_convert("UTC")])  # noqa: E731
+    two = pd.Timedelta(hours=2)
+    # mardi 10:00 -> 12:00 : permis ; mardi 15:00 -> 17:00 : traverse 16:10 ; samedi : non ; dimanche 18:00 -> 20:00 : permis
+    assert C.permis(t("2024-03-05 10:00"), t("2024-03-05 10:00") + two)[0]
+    assert not C.permis(t("2024-03-05 15:00"), t("2024-03-05 15:00") + two)[0]
+    assert not C.permis(t("2024-03-09 10:00"), t("2024-03-09 10:00") + two)[0]
+    assert C.permis(t("2024-03-10 18:00"), t("2024-03-10 18:00") + two)[0]
+    assert not C.permis(t("2024-03-08 15:00"), t("2024-03-08 15:00") + two)[0]

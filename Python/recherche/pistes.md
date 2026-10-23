@@ -166,6 +166,19 @@ Texte d'origine de la piste (conservé) :
 | Effet de nuit et momentum intraday sur l'or et l'argent chinois | *Global Finance Journal* 2025 | marchés de Shanghai ; sur GC, même famille que or la nuit, H1, A1 (déjà testées) |
 | Pression du roulement trimestriel des E-mini | aucune source académique trouvée | écartée |
 
+## Crible du catalogue SSRN, 2026-10-22 (aucun essai)
+
+`ssrn_intraday.csv` filtré sur nos actifs, avec une règle de trading, depuis 2020, non marqué testé : 84 articles. Presque
+tous sont des prépublications de 2026 sans relecture (critère 1), souvent des tests négatifs (« falsification »,
+« negative result ») ou des méthodes (LSTM, ICT, Gann). Les rares articles sérieux tombent dans des familles déjà
+testées : momentum du pétrole (Wen et al. → Z1), EIA (P1), gamma des teneurs de marché (`gamma_intraday`), jours de
+rendement anormal sur l'or et le pétrole (Caporale-Plastun 2020 → P1, M2), ETP VIX (données absentes), la clôture de
+New York annonce l'ouverture de l'Asie (Kinoshita 2026 : le signal passe dans le saut d'ouverture, comme le week-end
+crypto). Conclusion : aucune hypothèse nouvelle ne passe les critères 1 à 6 avec nos données ; pour atteindre 5
+stratégies fiables, il faut de nouvelles données (voir `pistes_contrats_manquants.md`).
+
+## Écartées après lecture
+
 | Piste | Raison |
 |---|---|
 | Effet « quart d'heure » et « tour de bougie » sur la crypto (arXiv 2607.09426 ; 2023) | gain brut d'environ 0,4 pb par trade, inférieur aux frais |

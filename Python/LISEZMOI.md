@@ -1051,6 +1051,50 @@ inchangé), pertes au-delà du stop (pire −2,85 R, 1,4 % des pertes), distribu
 séparés (achats faibles depuis 2021), filtre de volume (jours écartés +0,17 R contre +0,33 R, Welch 1,3), terciles
 d'ATR, jours de la semaine, pertes journalières.
 
+`python -m nexus.perso.orb_ancre` → `recherche/resultats_orb_ancre.txt` (2026-10-22). Contrôle « ancre au hasard » demandé
+par le contre-papier Fetna 2026 (SSRN 7428398 : aucune des 225 variantes d'ORB testées sur 9 futures ne survit aux coûts,
+et sa meilleure case marche aussi à une heure tirée au hasard). Mêmes règles figées, seule l'heure de la bougie de 5 min
+change ; protocole écrit avant le calcul ; l'ancre 9:30 du module redonne exactement les 1 174 trades de `nexus.orb`
+(pas un essai). Résultat : l'ORB réelle (R moyen net +0,182 pour 1 % de risque, Sharpe 0,92) bat 100 % des 200 tirages
+d'ancres entre 10:00 et 11:30 en R moyen et 99,5 % en Sharpe (médianes +0,032 et 0,25), et 100 % des tirages entre 10:00
+et 14:30. Ancres fixes : de −0,18 à 0,62 de Sharpe (10:00 la meilleure). L'avantage de notre ORB vient bien de
+l'ouverture de 9:30.
+
+`python -m nexus.perso.etf_nuit` → `recherche/resultats_etf_nuit.txt` (2026-10-22, hypothèse n° 39, **essai n° 431**).
+Lee, Liao & Lee (*J. Futures Markets* 2022) : la « comouvement relative » des rendements de nuit des ETF sectoriels
+mesure le sentiment et prévoit les futures d'indices. Texte payant, résumé seul : test fait par dérogation demandée par
+l'utilisateur (critères 3 et 6 non remplis), une seule règle figée avant le calcul, sans grille. C = |moyenne| /
+moyenne des |rendements de nuit| des 9 SPDR sectoriels ; jour de sentiment si C atteint le 80e centile des 252 jours
+précédents ; position contre le sens de la nuit (Berkman et al. 2012, Lou-Polk-Skouras 2019), ES de 9:35 à 16:00 ET.
+Vérifications : ouverture quotidienne = minute 9:30 de SPY, signaux inchangés quand on modifie les prix futurs, rejeu
+vectorbt identique au moteur (628 trades), 5 trades vérifiés à la main. Note : C vaut exactement 1 quand les 9 secteurs
+bougent dans le même sens, le seuil vaut souvent 1 et 26,5 % des jours sont pris (non corrigé, règle figée). Résultat :
+−1,8 pb brut par trade (t −0,4), −3,4 pb net, Sharpe vectorbt −0,22 [−0,90 ; 0,39], Welch −0,7 contre les autres jours ;
+NQ et YM (répliques) pareils → **rejetée**. Aucune variante testée.
+
+`python -m nexus.perso.tiers_vendredi` → `recherche/resultats_tiers_vendredi.txt` (2026-10-22, **essai n° 432**, première
+hypothèse de la recherche par flux forcés). Baltussen, Terstegge & Whelan, « The Derivative Payoff Bias » (2024, texte
+complet lu) : avant le règlement des options S&P le matin du 3e vendredi, la couverture des teneurs de marché pousse les
+prix la nuit, puis tout est rendu avant midi ; ES 2003-2021 : +24 pb net par échéance (t 3,5), +26 / −37 pb aux
+échéances trimestrielles. Calcul de puissance avec ces chiffres : seule la version trimestrielle passe (t attendu 3,7,
+seuil 2 pour 42 cas). Règle figée, rendue conforme : achat 18:00 ET la veille → 9:30, vente 9:30 → 16:00 le jour
+d'échéance ; témoin : les autres vendredis. Vérifications : dates (dont le jeudi 18/06/2026), anticipation, vectorbt
+identique au moteur (84 jambes), 5 échéances vérifiées à la main. Résultat ES : +36,9 pb brut (t 1,5), +33,8 pb net,
+mais +92 pb sur 2016-2020 (t 2,0) et **−13 pb sur 2021-2026**, Welch 1,6, Sharpe vectorbt 0,41 [−0,13 ; 0,77], déflaté
+0,17 ; la jambe de nuit ne rapporte que +3 pb (le pic du papier commence à 16:00, avant la pause, intenable en prop firm).
+NQ et YM pareils → **rejetée**. Lecture : l'effet s'éteint après 2021, avec l'essor des options du jour (0DTE).
+
+`python -m nexus.perso.crypto_retour` → `recherche/resultats_crypto_retour.txt` (2026-10-22, **essai n° 433**). De Nicola,
+« On the Intraday Behavior of Bitcoin », *Ledger* 2021 (texte complet lu) : sur 2015-2018, le bitcoin se retourne sur
+2 h après un grand mouvement (tableau 5 : +0,49 % brut par trade au-delà de 3 écarts-types). Calcul de puissance avec cet
+effet, l'écart-type et le nombre de cas de nos données et les frais réels du MBT au prix de chaque époque : seul le seuil
+de 3 écarts-types passe (t attendu 3,8). Règle figée : barres de 2 h (UTC), écart-type des 30 jours précédents (le papier
+prenait celui de tout l'échantillon, ce qui anticipe), position contraire pendant 2 h, aux heures permises en prop firm ;
+Binance au comptant comme substitut du MBT. Vérifications : horodatage (1re minute Binance), anticipation, vectorbt
+identique au moteur (533 trades), 5 trades à la main. Résultat (2019-2026, hors de l'échantillon du papier) : +9,4 pb
+brut par trade (t 1,2) au lieu de +49 ; MBT −21,5 pb net (frais moyens 31 pb, très lourds quand le bitcoin valait moins de
+10 000 $), Sharpe −0,95 ; contrat de base BTC +3,7 pb net, Sharpe 0,15 → **rejetée**.
+
 `python -m nexus.perso.weekend_crypto` → `recherche/resultats_weekend_crypto.txt` (2026-10-19, piste 1 de
 `recherche/pistes.md`). Mourey, Shahrour & Şoiman (*FRL* 2025) : un week-end négatif des cryptomonnaies annonce un
 lundi négatif des actions. Signal : BTC du vendredi 16:00 au dimanche 18:00 ET ; 246 week-ends, 2021-2026. Le constat

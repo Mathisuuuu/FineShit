@@ -1,0 +1,48 @@
+====================================================================================================================
+ SENTIMENT DE NUIT DES ETF SECTORIELS -> RETOURNEMENT DES FUTURES D INDICES (9:35 -> 16:00 ET) - UN ESSAI (n° 431)
+====================================================================================================================
+Derogation demandee par l utilisateur : texte complet non lu (critere 3), pas de calcul de puissance possible (critere 6).
+Regle figee : C = |moyenne| / moyenne des |rendements de nuit| des 9 SPDR sectoriels ; jour de sentiment si C >= 80% centile des 252 jours precedents ; position CONTRE le sens de la nuit, 9:35 -> 16:00 ET.
+
+Verification du calcul (critere 9)
+  (a) ouverture quotidienne SPY = ouverture de la minute 9:30-9:31 : 2707 jours, ecart median 0.00 pb, 95e centile 0.75 pb
+  (b) anticipation : prix des ETF modifies apres le 2021-05-20 -> signaux jusqu a cette date IDENTIQUES (1354 jours) ; ES n entre pas dans le signal
+  (c) rejeu vectorbt : 628 trades contre 628 au moteur, ecart maximal de P&L brut 0.000000 $ -> IDENTIQUE
+  (d) 5 trades tires au hasard (graine 7), a verifier a la main :
+      2020-02-28 | C 1.000 >= seuil 1.000 | nuit des secteurs -2.990 % -> ACHAT | entree 09:35 ET a 2914.00 | sortie 16:00 ET a 2964.00 | brut +2500.00 $ - frais 30.00 $ = +2470.00 $
+      2020-09-09 | C 1.000 >= seuil 1.000 | nuit des secteurs +1.070 % -> VENTE | entree 09:35 ET a 3374.50 | sortie 16:00 ET a 3396.50 | brut -1100.00 $ - frais 30.00 $ = -1130.00 $
+      2022-09-02 | C 1.000 >= seuil 1.000 | nuit des secteurs +1.093 % -> VENTE | entree 09:35 ET a 3987.00 | sortie 16:00 ET a 3925.75 | brut +3062.50 $ - frais 30.00 $ = +3032.50 $
+      2023-10-30 | C 1.000 >= seuil 1.000 | nuit des secteurs +0.639 % -> VENTE | entree 09:35 ET a 4173.25 | sortie 16:00 ET a 4186.25 | brut -650.00 $ - frais 30.00 $ = -680.00 $
+      2025-01-15 | C 1.000 >= seuil 0.957 | nuit des secteurs +1.323 % -> VENTE | entree 09:35 ET a 5967.75 | sortie 16:00 ET a 5988.50 | brut -1037.50 $ - frais 30.00 $ = -1067.50 $
+  (e) comptes ES : 2679 jours de bourse 2016-01-05 -> 2026-08-28 ; retenu 2370 ; signal indisponible (historique < 252 j ou ETF absent) 247 ; detachement trimestriel des SPDR 39 ; prix absent (fete, seance courte) 23
+      jours de sentiment retenus (trades) 628, jours temoins 1742 ; part des jours de sentiment 26.5% (attendu ~20 %)
+
+--- ES (ESSAI) : 628 trades
+    brut -1.80 pb (t -0.43) | 2016-2020 -6.32 (t -1.00) | 2021-2026 +2.60 (t +0.48)
+    temoin (jours sans sentiment) +1.58 pb -> Welch -0.74
+    cout aller-retour 1.61 pb -> net -3.42 pb ; sans les 3 meilleurs jours -5.83 pb ; stress 2 ticks -4.76 pb ; gain total -2145 pb
+    vectorbt (ES, 1 tick) : Sharpe -0.22 [IC 95 % -0.90 ; +0.39] | avant 2021 -0.58 | apres +0.11 | deflate (431 essais) 0.00 | perte max -37.4%
+    micro MES (cout 4.03 pb) : Sharpe -0.41 [IC bas -1.09] | deflate 0.00
+    heures en position : 379 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+--- NQ (replique, pas un essai) : 628 trades
+    brut -2.84 pb (t -0.56) | 2016-2020 -9.03 (t -1.23) | 2021-2026 +3.21 (t +0.46)
+    temoin (jours sans sentiment) +3.23 pb -> Welch -1.08
+    cout aller-retour 0.65 pb -> net -3.48 pb ; sans les 3 meilleurs jours -6.16 pb ; stress 2 ticks -3.91 pb ; gain total -2187 pb
+    vectorbt (NQ, 1 tick) : Sharpe -0.17 [IC 95 % -0.85 ; +0.45] | avant 2021 -0.61 | apres +0.20 | deflate (431 essais) 0.00 | perte max -48.0%
+    micro MNQ (cout 2.59 pb) : Sharpe -0.30 [IC bas -0.97] | deflate 0.00
+    heures en position : 379 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+--- YM (replique, pas un essai) : 626 trades
+    brut -1.44 pb (t -0.35) | 2016-2020 -4.87 (t -0.71) | 2021-2026 +1.89 (t +0.40)
+    temoin (jours sans sentiment) +0.48 pb -> Welch -0.43
+    cout aller-retour 1.00 pb -> net -2.43 pb ; sans les 3 meilleurs jours -4.69 pb ; stress 2 ticks -3.10 pb ; gain total -1522 pb
+    vectorbt (YM, 1 tick) : Sharpe -0.15 [IC 95 % -0.77 ; +0.47] | avant 2021 -0.38 | apres +0.11 | deflate (431 essais) 0.00 | perte max -30.9%
+    micro MYM (cout 3.98 pb) : Sharpe -0.38 [IC bas -1.00] | deflate 0.00
+    heures en position : 378 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+Synthese : REJETEE (l essai ES echoue). Aucune variante ne sera testee (pas de surajustement).
+Calcul en 7 s.

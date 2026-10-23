@@ -35,3 +35,22 @@ vus : elles sortent de la liste des pistes ouvertes.
    2,03 (tableau 1, sans coûts) contre 1,23 (tableau 3, coûts 10 pb) pour un Sharpe presque égal (1,58 / 1,56). La
    version « séance CME » (R1 de H11, 0,42) reste la seule adaptation prop firm possible, déjà rejetée.
 3. Rien d'autre n'est gratuit et ouvert : les n° 7 à 10 sont trop faibles ou sans données.
+
+## Sources de données comparées (2026-10-22)
+
+Besoin : barres 1 minute de NG (gaz), ZN et ZB (taux à 10 et 30 ans) sur 2016-2026, de préférence depuis 2010, et NQ
+sur 2010-2015 (rejeu de l'ORB).
+
+| Source | Prix | Historique | Pour | Contre |
+|---|---|---|---|---|
+| **Databento** (GLBX.MDP3, ohlcv-1m) | à l'usage ($/Go) ; **125 $ de crédits offerts** aux nouveaux comptes (valables 6 mois) | depuis 06/2010 (RTY depuis 07/2017) | même source et même format que `Cotations` (roulements, fuseau) ; `nexus/databento_dl.py` prêt ; devis exact avant achat | clé à créer par l'utilisateur |
+| FirstRate Data (lot futures) | ~299 $ une fois (+ 60-100 $/mois de mise à jour) | depuis ~2007 | 130 contrats d'un coup | NG et ZB non confirmés ; qualité contestée sur un forum ; autre format |
+| Portara (CQG) | ~275 $ une fois | depuis 1987 | très long historique | autre format ; prix d'un annuaire tiers, à vérifier |
+| NinjaTrader (serveur d'historique) | gratuit avec la connexion | minutes depuis ~2006 selon le support | déjà installé sur le serveur | export manuel dans NinjaTrader (l'utilisateur a demandé de ne pas y toucher) ; source différente de `Cotations` |
+
+Estimation de taille, avant devis : une barre ohlcv-1m pèse 56 octets, soit ~20 Mo par contrat et par an ; NG + ZN +
+ZB sur 2010-2026 et NQ sur 2010-2015 ≈ 1 Go au total, donc a priori quelques dollars et bien moins que les 125 $ de
+crédits. Seul `python -m nexus.databento_dl cout ...` donne le prix exact.
+
+Recommandation : Databento. Même source que nos données actuelles (aucun écart de roulement ni d'horodatage à
+corriger), coût probablement couvert par les crédits gratuits, devis automatique sans achat.

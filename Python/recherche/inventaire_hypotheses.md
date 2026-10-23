@@ -1,0 +1,350 @@
+# Inventaire des hypothèses (registre unique, critère 5)
+
+État au 2026-10-22. Une ligne par hypothèse tirée d'une source sérieuse ou déjà étudiée dans ce dépôt. À consulter AVANT
+toute nouvelle piste ; à compléter à chaque lecture ou test.
+
+**Statut**
+- **RETENUE** : passe les 24 critères de `CLAUDE.md`.
+- **FIABLE, NON RETENUE** : fiable au sens du tableau de bord (critères 17-18) mais échoue à un autre critère.
+- **REJETÉE** : testée, échoue (fichier de résultats indiqué).
+- **ÉCARTÉE** : abandonnée à la lecture, sans essai (source faible, puissance insuffisante, données impossibles…).
+- **OUVERTE** : jamais testée ; reste à lire en entier, puis calcul de puissance (critère 6) avant tout essai.
+- **À RELIRE** : testée sur un simple résumé ; relire le texte complet et ne retester que si la règle diffère (critère 5).
+
+**Fiabilité a priori** (seulement pour les OUVERTES) : ★ à ★★★★★, d'après la source (revue, institution), la preuve
+récente (après 2016), la cause observable aujourd'hui et la puissance attendue. Ce n'est PAS un résultat.
+
+**Données** : « dispo » = déjà sur le PC (`Cotations`, `.cache`) ; « Databento » = à acheter (clé absente, devis à faire) ;
+« payant » = autre source payante.
+
+## 1. Indices actions (ES, NQ, YM, RTY, Nikkei, DAX, FTSE)
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 1 | La 1re demi-heure annonce la dernière | Gao, Han, Li & Zhou, *JFE* 2018 | REJETÉE | dispo | P1 (`Python/LISEZMOI.md` § 14) |
+| 2 | Momentum de fin de séance porté par la couverture gamma | Baltussen, Da, Lammers & Martens, *JFE* 2021 | REJETÉE | dispo | `gamma_intraday`, `bdlm_conditionnel` : mécanisme confirmé, stratégie trop faible |
+| 3 | Zone de bruit (Noise Area) | Zarattini, Aziz & Barbon 2024 | **RETENUE** sur NQ (S1) | dispo | rejetée sur ES, YM, DAX, GC, CL, devises |
+| 4 | Cassure de la 1re bougie de 5 min, filtre de volume | Zarattini, Barbon & Aziz 2024 | FIABLE, NON RETENUE | dispo | ORB NQ : Sharpe 0,92, déflaté 0,70 ; voir n° 49 |
+| 5 | Cassure d'ouverture, version 2023 | Zarattini & Aziz 2023 | REJETÉE | dispo | NQ après publication, Nikkei (N2), FTSE (E3), DAX (H3) |
+| 6 | Retour au VWAP | Zarattini 2024 | REJETÉE | dispo | 0,21 / 0,26 |
+| 7 | Dérive de nuit (2:00-3:00 ET) | Boyarchenko, Larsen & Whelan, *RFS* 2023 | REJETÉE | dispo | `derive_nocturne` ; disparue depuis 2021 (Fed de New York 2026) |
+| 8 | Hausse avant le FOMC | Lucca & Moench, *JF* 2015 | REJETÉE | dispo | trois fois (ES 4, P1, `cycle_fomc`) |
+| 9 | Rallye et retournement le jour du FOMC | lignée Lucca-Moench | REJETÉE | dispo | P1 |
+| 10 | Cycle du FOMC, « Fed put » | Cieslak, Morse & Vissing-Jorgensen, *JF* 2019 | REJETÉE | dispo | `cycle_fomc` ; contre-papier Uppal 2025 |
+| 11 | Prime des jours d'annonce macro | Savor & Wilson, *JFQA* 2013 | REJETÉE | dispo | SPY 5, P1 |
+| 12 | Dérive avant ISM / NFP | lignée Kurov et al. | REJETÉE | dispo | ES 2 (famille entière éliminée) |
+| 13 | Tour de mois, ventes forcées | Etula et al. 2020 | REJETÉE | dispo | `fin_de_mois` |
+| 14 | Rééquilibrage des 60/40 en fin de mois | Harvey, Mazzoleni & Melone 2026 | REJETÉE | dispo | `fin_de_mois` |
+| 15 | Rééquilibrage des ETF à levier | Cheng & Madhavan 2009 ; Barbon et al. | REJETÉE | dispo | fiche 15 (L1) |
+| 16 | Couverture des ETP VIX en fin de séance | Bangsgaard & Kokholm 2023 | ÉCARTÉE | encours ETP introuvables | un substitut referait l'échec LETF |
+| 17 | Retournement de l'enchère de clôture | Bogousslavsky & Muravyev, *JFM* 2023 | ÉCARTÉE | — | C1 : l'effet ne passe pas aux futures, t < 1 |
+| 18 | Veilles de jours fériés | Ariel 1990 | REJETÉE | dispo | Z2 |
+| 19 | Halloween | Bouman & Jacobsen, *AER* 2002 | ÉCARTÉE | dispo | trop peu de puissance sur 10 ans |
+| 20 | Retournement des indices (arbitrage indiciel) | Baltussen, van Bekkum & Da, *JFE* 2019 ; Nagel, *RFS* 2012 | REJETÉE | dispo | `rachat_baisse` |
+| 21 | Exposition gérée par la volatilité | Moreira & Muir, *JF* 2017 (+ 8 papiers) | REJETÉE | dispo | `vol_geree` |
+| 22 | Résultats des méga-capitalisations (NQ 1-A) | 8-K EDGAR | FIABLE, NON RETENUE | dispo | déflaté 0,32 ; extension à 8 autres sociétés rejetée (H13) |
+| 23 | Indice local après les résultats (Japon, SAP) | règle de NQ 1-A | REJETÉE | dispo | J1, D1 |
+| 24 | Week-end crypto → lundi des indices | Mourey, Shahrour & Şoiman, *FRL* 2025 | REJETÉE | dispo | `weekend_crypto` |
+| 25 | Écart d'ouverture, fade de la nuit | famille S06 | REJETÉE | dispo | S06-C, IWM 1, P1 |
+| 26 | Un actif en retard sur un autre | famille IWM 2 | REJETÉE | dispo | famille éliminée |
+| 27 | Écart YM - ES (paires intraday) | famille YM 2 | REJETÉE | dispo | — |
+| 28 | Retournement après un choc de 2 écarts-types | Nagel 2012 | REJETÉE | dispo | YM 5, 6B 2, 6J 3 |
+| 29 | Quatre sorcières | — | REJETÉE | dispo | YM 4 ; version du papier (pic de nuit + retournement) → n° 145 |
+| 30 | Lundi matin, après le déjeuner, retournement d'après-midi (0DTE) | divers | REJETÉE | dispo | P1 |
+| 31 | Persistance à la même heure | Heston, Korajczyk & Sadka, *JF* 2010 | REJETÉE | dispo | P1 |
+| 32 | Microstructure : volume, déséquilibre, emballements | Campbell-Grossman-Wang ; Chordia-Subrahmanyam ; Christensen-Oomen-Renò 2022 | REJETÉE | dispo | M1, M2 (66 essais) |
+| 33 | Retour après sortie de la bande du VIX | Seeck 2026 | REJETÉE | dispo | H8 |
+| 34 | Tendance Donchian 15 min conforme (boombitch) | script personnel | **RETENUE** sur NQ (H5) | dispo | Welch 2,81, déflaté 0,98 |
+| 35 | Même règle sur les 8 autres contrats | H5 | REJETÉE (YM fiable non retenu) | dispo | H6 : YM t 2,91, 2e moitié t 1,04 |
+| 36 | Achats d'ETF par la Banque du Japon l'après-midi | Harada & Okimoto, *IRFA* 2021 | ÉCARTÉE | — | programme arrêté en mars 2024 : plus jouable |
+| 37 | Momentum intraday du Nikkei et du FTSE | Li, Sakkas & Urquhart, *J. Financial Markets* 2022 | REJETÉE | dispo (CFD) | N1 −1,16, E2 −0,70 ; texte complet relu le 2026-10-22 : même règle, pas de nouveau test |
+| 38 | Clôture du DAX 17:00-17:30 | Li-Sakkas-Urquhart ; S19-B inversée | REJETÉE | dispo | `dax_cloture` |
+| 39 | Sentiment des ETF sectoriels la nuit → futures d'indices | Lee, Liao & Lee, *J. Futures Markets* 42(6), 2022 | REJETÉE (essai n° 431) | dispo (ETF XL*) | résumé seul, test par dérogation demandée par l'utilisateur ; règle intraday unique figée (`etf_nuit`) : ES 9:35-16:00 contre le sens de la nuit les jours de forte comouvement, −3,4 pb net (t −0,4), Sharpe −0,22, Welch −0,7 ; NQ, YM pareils |
+| 40 | Retour après une enchère hebdomadaire ratée | Perry 2026 (prépublication pré-enregistrée) | **OUVERTE** ★ | dispo | p 0,014 sur ES (t ≈ 2,5), 0,09 ailleurs ; source non relue |
+| 41 | La clôture de New York annonce l'ouverture de l'Asie | Kinoshita 2026 | ÉCARTÉE | — | le signal passe dans le saut d'ouverture |
+| 42 | Prime des actions tenue la nuit (18:00 → 9:30) | Boyarchenko et al. 2023 ; Fed de New York 2026 | ÉCARTÉE | dispo | contre-papier : disparue depuis 2021 |
+| 43 | Surcouche « fast alpha » sur S1 | Zarattini & Pagani 2026 (note) | ÉCARTÉE | dispo | gain de 0,12 de Sharpe non mesurable ; S1 figée |
+| 44 | Facteurs intraday qui prédisent le marché | Aleti, Bollerslev & Siggaard, *Mgmt Sci* 2025 | ÉCARTÉE | — | apprentissage automatique sur des facteurs d'actions qu'on n'a pas |
+| 45 | Réplique de S1, ORB, H5 sur le Russell (RTY) | règles retenues | **OUVERTE** ★ | Databento (RTY depuis 07/2017) | répliques sur ES / YM déjà ratées |
+| 46 | Reconstitution du Russell (juin) | Dimensional 2024 ; EFMA 2007 | ÉCARTÉE | — | actions au comptant, 1 fois par an |
+| 47 | Échéance du VIX (règlement du mercredi) sur l'ouverture d'ES | Griffin & Shams, *RFS* 2018 | **OUVERTE** ★ | dispo | effet mesuré sur les options, pas sur l'indice ; ~120 cas |
+| 48 | Momentum des facteurs de nuit (« Day destroys the night ») | Akbas et al. ; Carlo Alberto | ÉCARTÉE | — | actions individuelles ; famille S06 rejetée |
+| 49 | **ORB NQ rejouée sur 2010-2015** (confirmation, pas un essai) | n° 4 | **OUVERTE** ★★★★ | Databento | t attendu ≈ 2,3 sur la période ; déflaté probablement juste sous 0,95 |
+
+## 2. Taux (ZN, ZB, ZF, ZT) — tout demande Databento
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 50 | Cycle des adjudications : baisse avant, reprise après | Lou, Yan & Zhang, *RFS* 2013 ; Fleming, Liu & Nguyen, Fed de New York SR 1188, 2026 | ÉCARTÉE (calcul de puissance du 2026-10-22) | Databento | ZB (meilleur cas) : ~160 $ bruts contre ~135 $ de coûts par contrat et par adjudication, soit ~25 $ nets ; écart-type sur les ~6 h ~800 $ ; ~128 adjudications à 30 ans sur 2016-2026 → t attendu ≈ 0,35 ; ZN : gain net négatif. Pas d'achat de données pour elle |
+| 51 | Momentum de fin de séance sur les obligations | Baltussen et al., *JFE* 2021 (60 futures dont 16 obligations, 1974-2020) | **OUVERTE** ★ | Databento + PDF payant | jamais testé sur les taux. Aperçu ScienceDirect lu le 2026-10-22 (le PDF complet est payant, le lien gratuit de l'auteur est coupé) : seul chiffre public, Sharpe 0,87 à 1,73 par classe d'actifs, avant frais, sur un panier de marchés ; rien par contrat. Ordre de grandeur (estimation, pas un chiffre du papier) : sur ZN, la dernière demi-heure bouge d'environ 8 pb et le gain attendu serait de l'ordre de 1 pb par jour, contre 3,3 pb de frais (1 tick + 2,50 $ par côté) ; la même règle sur ES ne donne qu'un Sharpe de 0,71. Ne justifie ni l'achat du PDF ni celui des données |
+| 52 | Fin de mois du Trésor, partie de jour | Hartley & Schwarz 2019 | REJETÉE (ETF journalier) ; version future **OUVERTE** ★ | Databento | IEF : t 2,1, déflaté 0,10 |
+| 53 | Hausse des obligations la veille du FOMC | Pan & Peng 2026 | ÉCARTÉE | — | ~5 pb par réunion, 8 réunions par an : puissance trop faible |
+| 54 | Dérive des taux après un changement de taux directeur | Brooks, Katz & Lustig, NBER 2018 | **OUVERTE** ★ | Databento | plusieurs semaines ; peu d'événements |
+| 55 | Baisse des taux dans les 3 h après le FOMC | Fleming et al. 2026 (annexe) ; Brooks-Katz-Lustig ; Indriawan et al. 2021 | **OUVERTE** ★ | Databento | 0,5-1,5 pb ; 8 cas par an |
+| 56 | Dérive avant les publications de 8:30 | Kurov et al., BCE WP 1901 | ÉCARTÉE | — | suit le signe de la surprise, inconnu avant 8:30 |
+| 57 | Prime des jours d'annonce sur les obligations | Savor & Wilson 2013 ; Wachter & Zhu | **OUVERTE** ★ | Databento | à lire en entier ; effet journalier |
+
+## 3. Énergie (CL, NG)
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 58 | **Gaz : le rendement se gagne les jours du rapport de stocks EIA** (> 50 % du rendement annuel ces jours-là, moitié avant, moitié après 10:30) | Prokopczuk, Wese Simen & Wichmann, *Energy Journal* 2021 | ÉCARTÉE | Databento (NG) | texte complet (SSRN 3575861) lu le 2026-10-22 : vente 90 min avant → 30 min après 10:30, 2003-2018 ; Sharpe net 1,76 sur tout l'échantillon mais **3,26 avant 2011 et −0,16 après 2011** (brut +2,9 %/an, p = 0,56) ; effet journalier absent sur 2014-2018 (annexe A.3) ; les auteurs concluent à sa disparition. Calcul de puissance avec l'effet après 2011 (5,6 pb brut par rapport, notre coût 8,3 pb) : t attendu ≈ −0,4 → aucun essai, aucun achat |
+| 59 | Gaz : dérive dans le bon sens 90 min avant le rapport | même lignée (2008-2016) | **OUVERTE** ★★ | Databento + consensus des analystes (payant) | le sens dépend de la surprise, inconnue avant |
+| 60 | Gaz : retour partiel la semaine suivant une surprise | Ederington, Lin, Linn & Yang, *Energy Journal* 2019 | **OUVERTE** ★★ | Databento + consensus (payant) | — |
+| 61 | Roulement des indices de matières premières (GSCI) | Mou 2010 | REJETÉE sur CL ; **OUVERTE** ★ sur NG / HG | Databento | effet affaibli après 2011 |
+| 62 | Pétrole : momentum intraday | Wen et al. 2021 | REJETÉE | dispo | Z1 −2,28 |
+| 63 | Pétrole : rapport EIA, rapport API | divers | REJETÉE | dispo | P1, CL 1, CL 2, CL 4 |
+| 64 | Brent : saisonnalité intraday | Ewald et al., *Quantitative Finance* 2025 | ÉCARTÉE | — | heures sous embargo jusqu'en 2027 |
+| 65 | Pétrole et or : jours de rendement anormal | Caporale & Plastun 2020 | ÉCARTÉE | dispo | familles P1 / M2 déjà rejetées |
+| 66 | Pression de la fenêtre de règlement (TAS) | dossiers CFTC, présentations | ÉCARTÉE | — | aucun article publié |
+
+## 4. Métaux (GC, SI, HG)
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 67 | Or tenu la nuit (13:30 → 8:20) | Blose & Gondhalekar 2014 | FIABLE, NON RETENUE | dispo | 1,11, déflaté 0,74 ; garde la nuit et le week-end |
+| 68 | Or la nuit rendu conforme | même | REJETÉE | dispo | H10 : 0,34 en MGC |
+| 69 | Dix anomalies intraday de l'or | fiche du 9/10/2026 | REJETÉE | dispo | `or_anomalies` |
+| 70 | Or et argent : la séance américaine annonce l'Asie | Wei 2026 | REJETÉE, À RELIRE | dispo | H1 −0,29 (or), A1 −0,29 (argent) ; testé sur résumé |
+| 71 | Or : ouverture de Shanghai | — | REJETÉE | dispo | P1 |
+| 72 | Or : fixing de Londres | Caminschi & Heaney, *JFM* 2014 | ÉCARTÉE | — | effet d'avant la réforme du fixing (2015) |
+| 73 | Métaux chinois : momentum intraday, effet de la nuit | *Global Finance Journal* 2025 ; Bouri et al. | ÉCARTÉE | — | marché de Shanghai ; disparaît avec la séance de nuit |
+| 74 | Réplique de S1 / H5 sur l'argent (SI) | règles retenues | **OUVERTE** ★ | Databento | — |
+| 75 | Réplique de S1 / H5 sur le cuivre (HG) | règles retenues | **OUVERTE** ★ | Databento | — |
+
+**Crible « or / MGC » du 2026-10-22 (aucun essai).** Seuil de coûts du MGC : 1 tick (1 $) + 2,50 $ par côté, soit 7 $
+l'aller-retour pour ~45 000 $ de notionnel : ~1,6 pb par trade à battre (environ 3 fois le GC rapporté au notionnel). Les
+156 résumés SSRN qui parlent de l'or (sur 23 136) ont été lus : méthodes de particuliers (VWAP / EMA, « Smart Money »,
+Fibonacci, Fair Value Gap), apprentissage automatique, études de volatilité ou de valeur refuge, or tokenisé, marchés
+chinois et indiens. Seuls rapprochements utiles : Bell 2026 (or tenu la nuit entre deux fixings de Londres, 2000-2010 :
+même famille que n° 67) ; Aggarwal & Lucey 2005 (barrières psychologiques : famille des chiffres ronds, rejetée). Recherche
+dans les revues (*JFM*, *J. Commodity Markets*, *J. Empirical Finance*, *Global Finance Journal*) et sur le prix
+d'enchère LBMA depuis 2015 : rien de jouable. **Aucune hypothèse nouvelle pour le MGC.** Seule version déjà mesurée qui
+tient en MGC : l'or la nuit dans sa forme publiée (nuit ET week-end), Sharpe 0,96 en MGC (`Python/LISEZMOI.md` § 12),
+réservée aux firmes qui permettent nuit et week-end (Phidias Premium, Elite Trader Funding) et sous le seuil de Sharpe
+déflaté (critère 16).
+
+## 5. Devises (6E, 6B, 6J, 6A ; 6C, 6S, 6N, 6M absents)
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 76 | Gotobi : flux des importateurs japonais au fixing de Tokyo | Ito & Yamada 2017 ; Krohn et al. 2024 | **RETENUE** (6J) | dispo | micro MJY non fiable, 6J entier oui |
+| 77 | Gotobi sur 6E, 6B, 6A | même | REJETÉE | dispo | H9 −1,63 |
+| 78 | Dollar en forme de W autour des fixings (Tokyo, BCE, Londres) | Krohn, Mueller & Whelan, *JF* 2024 | ÉCARTÉE | dispo | futures, coûts complets : Sharpe 0,61 (fix BCE), t attendu ≈ 2,0 |
+| 79 | Fix de Londres en fin de mois | Melvin & Prins ; Krohn et al. | REJETÉE | dispo | `fx_trois` |
+| 80 | Devises autour du FOMC | lignée Mueller et al. | REJETÉE | dispo | P1 |
+| 81 | Dérive après BCE, BoE, BoJ, RBA | — | REJETÉE | dispo | 6E 3, 6B 3, 6J 4, 6A 4 |
+| 82 | Australien après les chiffres chinois (NBS) | — | REJETÉE | dispo | 6A 1 |
+| 83 | Retour du saut de réouverture de 18:00 | Tolusic 2026 | REJETÉE | dispo | H2 : réel mais plus petit que les coûts |
+| 84 | Portage des devises | Lustig, Roussanov & Verdelhan 2014 (+ 8) | REJETÉE | dispo | `carry_fx` |
+| 85 | Une devise baisse pendant ses propres heures | Breedon & Ranaldo, *JMCB* 2013 (version QMUL lue en entier le 2026-10-22) | ÉCARTÉE | dispo | EUR/USD vendu en séance européenne : Sharpe 1,3 net sur EBS 1997-2007 ; mesure la plus récente sur NOS futures (Krohn et al. 1999-2018, coûts CME complets) : Sharpe 0,61 → t attendu ≈ 2,0 < 3 ; la BCE publie son fixing à 16:00 depuis 07/2016 |
+| 86 | Momentum intraday des devises | Elaut et al. ; Seeck 2026 | REJETÉE | dispo | P1 ; Seeck conclut lui-même à une barrière de coûts |
+| 87 | Cascades de stops sur chiffres ronds | Osler 2003, 2005 | REJETÉE | dispo | `fx_trois`, 6E 2 |
+| 88 | Dollar valeur refuge (retournement de 2025) | Torul 2026 | ÉCARTÉE | — | épisode de 2025 seulement |
+| 89 | Fixings et Gotobi sur 6C, 6S, 6N, 6M | Krohn et al. 2024 | **OUVERTE** ★ | Databento | aucune cause propre connue |
+
+## 6. Crypto (MBT, MET ; comptant Binance 2017-2026)
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 90 | Tendance Donchian à 9 horizons | Zarattini, Pagani & Barbon 2025 | REJETÉE ; lu en entier | dispo | R1 0,42 ; aucune version courte ; version testée = celle du papier rendue conforme (pas de retest) |
+| 91 | Boombitch sur le micro bitcoin | H5 | FIABLE, NON RETENUE | dispo | Sharpe 1,56, Welch 1,39 (critère 12) |
+| 92 | Fenêtres courtes du bitcoin | Padyšák & Vojtko 2022 ; Wen et al. 2022 | REJETÉE, À RELIRE | dispo | H12 −2,18 et −0,70 ; testé sur résumé |
+| 93 | Boombitch sur le micro ether | H5 | REJETÉE | dispo | −0,74 (coûts) |
+| 94 | Portage crypto (base perpétuels) | Schmeling, Schrimpf & Todorov, BRI 2023 | ÉCARTÉE | — | demande des perpétuels, non jouable en prop |
+| 95 | Flux des ETF bitcoin | Mazur & Polyzos 2025 | ÉCARTÉE | — | expliquent des niveaux, pas des rendements |
+| 96 | Bitcoin selon la séance (Asie / États-Unis) | blogs | ÉCARTÉE | — | aucune règle publiée |
+| 97 | Effet « quart d'heure » de la crypto | arXiv 2607.09426 | ÉCARTÉE | — | ~0,4 pb brut, sous les frais |
+
+**Crible Semantic Scholar crypto du 2026-10-22** : 29 requêtes, 446 résumés 2021-2026, 53 sur des effets intraday ; n° 158 à 161. Second crible (26 requêtes : momentum, tendance, calendrier, volume, options, attention) : 173 résumés nouveaux, 90 retenus au filtre, presque tous en coupe transversale, à horizon de semaines ou en apprentissage automatique ; n° 162 à 164.
+
+**Crible arXiv crypto du 2026-10-22 (aucun essai).** API publique d'arXiv, 24 requêtes (bitcoin / crypto × horizons
+courts) : 1 095 articles, 525 en finance ou économie, 219 sans apprentissage automatique ; titres lus, 12 résumés lus,
+1 texte complet. Coûts du critère 8 : **MBT** (0,1 BTC ≈ 8 360 $, tick 0,50 $) ≈ 3 $ par côté, soit ~7 pb l'aller-retour ;
+**MET** (0,1 ETH ≈ 270 $, tick 0,05 $) ≈ 2,55 $ par côté, soit ~190 pb l'aller-retour : **l'ether est injouable en micro**.
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 128 | Le déséquilibre d'ordres des 10 premières secondes de chaque quart d'heure prédit le rendement des 4 à 12 h suivantes | Kim & Hansen 2026 (arXiv 2607.09426, UNC ; lu en entier) | ÉCARTÉE | trades agrégés Binance à la seconde (publics, non téléchargés ; nos barres 1 min n'ont pas le sens de l'agresseur) | aucune règle de trading ni coût dans le papier ; effet en écart interquartile ≈ 18 pb à 8 h et ≈ 26 pb à 12 h, porté surtout par des indicateurs techniques ; échantillon 2021-2024 seulement (critère 11 impossible) ; puissance estimée : ~4 pb nets par trade de 12 h, écart-type ~210 pb, ~6 500 trades → t ≈ 1,5 < 3 |
+| 129 | Retour à la moyenne sur 15 min (contre la bougie précédente) | Kitron & Wengrowicz 2026 (arXiv 2608.21888) | ÉCARTÉE | dispo | gain brut 1,3 pb contre 5 pb de coûts selon les auteurs eux-mêmes |
+| 130 | Hausse du bitcoin 5 à 30 min après une création de Tether | Saggu 2025 (arXiv 2501.05232) | ÉCARTÉE | historique des créations (Whale Alert) | échantillon 2014-2021 ; famille de Griffin & Shams (n° 108) |
+| 131 | Flux on-chain (entrées nettes de Tether sur les plateformes) → rendements à 1-6 h | Chi, Chu & Hao 2024 (arXiv 2411.06327) | ÉCARTÉE | flux on-chain (payants) | données indisponibles gratuitement |
+| 132 | Retournement après le règlement des contrats Polymarket de 5 min | Dai, Jia & Yu 2026 (arXiv 2606.31675) | ÉCARTÉE | — | mouvements de quelques points de base, sous les coûts du MBT |
+
+Le reste : volatilité, modèles, DeFi, marchés de prédiction, rythmes d'activité sans effet de prix (Härdle et al. 2020 ;
+Wątorek et al. 2023). **Aucune hypothèse crypto nouvelle ne passe les critères 1 à 6.**
+
+**Crible arXiv élargi à tous nos marchés (2026-10-22, aucun essai).** Deux collectes de plus sur les catégories q-fin et
+econ : 50 expressions intraday (309 articles), puis 88 croisements marché × effet (917 articles) ; au total, avec la
+collecte crypto, ~2 300 articles arXiv. Après filtre (nos marchés, horizon intraday ou d'annonce, effet de prix, sans
+apprentissage automatique ni marchés émergents) : 47 résumés lus. arXiv q-fin publie surtout de la théorie, des modèles
+de volatilité ou de carnet d'ordres et de l'apprentissage automatique ; les rares effets de prix sont déjà testés
+(« drift burst » de Christensen, Oomen & Renò → M2 ; dérive de nuit → n° 7 ; Mesfin 2026 → mise en garde ORB).
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 133 | Le sentiment financier de la nuit sur Twitter prévoit le rendement des actions du lendemain | Adams, Ajello, Silva & Vazquez-Grande, Réserve fédérale, FEDS 2023-034 (arXiv 2305.16164) | ÉCARTÉE | indice non publié en série ; données Twitter (X) fermées depuis 2023 | impossible de le reconstruire, de le tester sur 2023-2026 ou de le suivre en direct |
+
+**Conclusion arXiv : aucune hypothèse fiable nouvelle, pour aucun de nos marchés.**
+
+## 7. Produits agricoles (ZC, ZS, ZW) — tout demande Databento
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 98 | Rapports USDA (WASDE, Grain Stocks) | Adjemian ; Karali & Park ; Silveira et al., *JFM* | ÉCARTÉE | — | effet sur la volatilité, pas de sens prévisible |
+| 99 | Prime de volatilité des options agricoles autour du WASDE | He & Bian 2025 | ÉCARTÉE | — | options, pas futures |
+
+## 7 bis. Ajouts du 2026-10-22 (deuxième recherche : échéances, flux mécaniques, politique monétaire, matières premières)
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 100 | Les futures S&P sont « aimantés » vers le prix d'exercice le jour d'échéance des options sur futures | Golez & Jackwerth, *JFE* 2012 | **OUVERTE** ★ | positions d'options par prix d'exercice (CME, payant) | échantillon d'avant les options quotidiennes (0DTE) : aucune confirmation récente trouvée |
+| 101 | « Momentum monétaire » : les actions dérivent pendant ~25 jours avant le FOMC dans le sens de la surprise lue sur les futures fed funds | Neuhierl & Weber, NBER w24748, 2018 (non publié) | **OUVERTE** ★ | Databento (ZQ) | échantillon 1994-2009 ; 8 réunions par an ; tenue de plusieurs semaines (à rendre conforme) |
+| 102 | Basis-momentum : le momentum de la pente de la courbe des futures prévoit les primes des matières premières | Boons & Porras Prado, *JF* 2019 | **OUVERTE** ★ | Databento (~20 matières premières, 1er et 2e contrats) | papier solide, mais portefeuille de ~20 contrats : intenable dans un compte prop de 50 000 $ ; pas de réplication hors échantillon trouvée |
+| 103 | Portage (« carry ») des matières premières | Koijen, Moskowitz, Pedersen & Vrugt, *JFE* 2018 | **OUVERTE** ★ | Databento | même limite de taille ; le portage des devises est déjà rejeté (`carry_fx`) |
+| 104 | Bitcoin autour de l'échéance mensuelle des futures CME (volume, volatilité, rendements) | Blasco, Corredor & Satrústegui, *IREF* 2023 (poster des auteurs lu le 2026-10-22 ; article payant) | ÉCARTÉE | dispo | les auteurs : effet sur les rendements « sans schéma commun » (576 modèles) ; Quantpedia : sens inversé après 2021 ; aucun effet stable à tester |
+| 105 | Pétrole : pression vendeuse l'avant-dernier jour avant l'échéance du WTI | Ge, Kang, Tang & Yang, AEA 2023 (document de conférence) | **OUVERTE** ★ | Databento (contrats individuels : notre série continue a déjà roulé) | construit sur avril 2020 (prix négatifs) |
+| 106 | Le dollar monte au comptant en fin de trimestre (manque de dollars des banques) | BRI WP 836 ; présentations BCE 2020 et 2024 | ÉCARTÉE | — | l'effet est sur la base des swaps et l'écart achat-vente, pas sur le sens du cours |
+| 107 | Rééquilibrage des fonds à volatilité cible en fin de séance | aucune source académique | ÉCARTÉE | — | seuls les ETF à levier (n° 15) et les ETP VIX (n° 16) sont documentés |
+| 108 | Émissions de Tether → hausse du bitcoin | Griffin & Shams, *JF* 2020 | ÉCARTÉE | — | effet de 2017-2018 seulement |
+| 109 | Rééquilibrage des ETP VIX → rendement de fin de séance des futures VIX | *J. Futures Markets* | ÉCARTÉE | — | futures VIX non proposés par les prop firms ; effet en baisse avec le temps selon l'article |
+
+## 7 ter. Recherche de pistes ★★★ du 2026-10-22 (aucune trouvée)
+
+Directions explorées : gaz et prévisions météo, nuit sur les taux et les matières premières, inflation (CPI), flux de
+dividendes des ETF japonais, saisonnalité intraday récente dans *JFE* / *RFS* / *Management Science*.
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 110 | Hausse des actions AVANT l'emploi, l'ISM et le PIB, plus forte quand l'incertitude (VIX) monte avant la publication | Hu, Pan, Wang & Zhu, *JFE* 2022 (lu en entier le 2026-10-22) | ÉCARTÉE | dispo | effet sur futures S&P, veille 16:00 → 5 min avant : 2012-2018 +6,98 pb par annonce (NFP, ISM, PIB), écart-type ~57 pb ; net de ~1,1 pb de coûts, ~380 annonces 2016-2026 → t attendu ≈ 2,0 ; version « 20 % de plus forte hausse du VIX sur 6 jours » (+16,95 pb, 1994-2018) → t ≈ 1,7 ; avec le FOMC (+7,02 pb) → t ≈ 2,2 : tous < 3, aucun essai |
+| 111 | Réaction asymétrique d'ES aux surprises du CPI (2021-2025) | *Applied Economics Letters* 2026 | ÉCARTÉE | — | réaction APRÈS la publication, sens inconnu à l'avance |
+| 112 | Gaz : réaction aux mises à jour des modèles météo (GFS, ECMWF) | articles de fournisseurs | ÉCARTÉE | — | aucun article académique ; prévisions météo à acheter |
+| 113 | Ventes des ETF japonais avant leurs dividendes (juillet) | presse (Daiwa, Nomura) | ÉCARTÉE | — | aucune étude ; un événement par an |
+| 114 | Les taux baissent pendant la séance asiatique | presse | ÉCARTÉE | — | aucune étude |
+| 115 | Prime de nuit des matières premières (pétrole, cuivre) | aucune étude trouvée (seulement les marchés chinois) | ÉCARTÉE | — | l'or la nuit (n° 67) reste le seul cas documenté |
+
+## 7 quater. Crible SSRN intraday du 2026-10-22 (articles déposés depuis le 2025-06-01)
+
+Collecte Crossref (DOI SSRN 10.2139, 31 requêtes, 18 334 articles ; OpenAlex refuse désormais les requêtes sans clé au-delà
+d'un petit budget quotidien). Après retrait des articles déjà au catalogue, filtre sur nos marchés ET un horizon intraday,
+sans apprentissage automatique ni marchés émergents : 128 articles, presque tous hors sujet (le moteur de Crossref est
+large). Retenus pour lecture du résumé :
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 116 | Le dénouement des couvertures des options S&P qui expirent pousse les futures dans les 30 min avant l'échéance | Garcia-Ares, Vasquez, Pearson et al. 2026 (SSRN 7330098 ; Pearson, auteur reconnu) | **OUVERTE** ★★ | positions des teneurs de marché sur les options qui expirent (CBOE Open-Close, payant) | le sens de la poussée dépend de ces positions : sans elles, pas de règle |
+| 117 | Après le FOMC, les actions suivent le ton du communiqué (≈ 12 pb en 2 h par écart-type de ton) | Boucher, Gagnon & Power 2026 (SSRN 7213059) | ÉCARTÉE | dispo + score de ton | ~85 réunions 2016-2026, écart-type ~70 pb sur 2 h → t attendu ≈ 1,6 |
+| 118 | Retournement de l'ouverture sur YM, attribué aux options 0DTE | Ladia 2026 (SSRN 7124578) | ÉCARTÉE | dispo | auteur seul, 194 trades depuis 2023, perdant avant 2023 (critères 1 et 11) |
+| 119 | « Murs » de gamma (GEX) comme supports et résistances, SPY et NDX | Popovici 2026 ; Cenobar & Fazeli 2026 (pré-enregistrés) | ÉCARTÉE | — | les deux tests concluent à l'absence d'effet |
+| 120 | Échéances des options S&P : de l'aimantation à l'amplification depuis 2016 | Elms 2026 (SSRN 6564078) | ÉCARTÉE | positions d'options (payant) | auteur seul ; recoupe le n° 100 |
+| 121 | Déséquilibre d'ordres au meilleur prix, rachat après une forte baisse | Rodas 2026 ; Dashyan 2026 | ÉCARTÉE | — | résultats négatifs publiés par leurs auteurs |
+
+Conclusion du crible : aucune hypothèse intraday nouvelle jouable avec nos données ne passe les critères 1 à 6.
+
+**Analyse des résumés (2026-10-22, à la demande de l'utilisateur).** Les 23 136 résumés (ancien catalogue + collecte
+Crossref) ont été notés automatiquement (marché parmi les nôtres, horizon intraday ou de séance, effet exploitable,
+chiffres, source ; malus pour l'apprentissage automatique, les marchés émergents et les sujets hors trading) : 458
+passent les conditions minimales, les 250 mieux notés ont été lus un par un. Constat : presque tous sont des
+prépublications de 2026 d'auteurs seuls (critère 1), des tests de méthodes de particuliers (ICT, Gann, Fibonacci, « Smart
+Money », Market Profile), des résultats négatifs pré-enregistrés, ou des familles déjà testées. Ajouts :
+
+| # | Hypothèse | Source | Statut | Données | Résultat / remarque |
+|---|---|---|---|---|---|
+| 122 | **Contre-papier de l'ORB** : aucune variante simple de cassure d'ouverture ne survit aux coûts sur 9 futures américains en 16 ans (225 cases pré-enregistrées) | Fetna 2026 (SSRN 7428398) | — (résumé complet lu le 2026-10-22 ; texte bloqué par la vérification anti-robot de SSRN) | — | 2010-2026 (couvre la période du rejeu n° 49) ; 9 marchés × 2 ancres (9:30, 18:00) × 4 durées (5/15/30/60 min) × 3 sorties ; critère t ≥ 2,5 à 25 $ l'aller-retour ; 0 case sur 225 ; gain brut médian −0,01 tick par trade ; la plage de 5 min est la pire ; la meilleure case échoue au contrôle « ancre au hasard » (continuation de volatilité, pas d'information à l'ouverture). Notre ORB est différente sur trois points (filtre de volume, stop à 10 % de l'ATR, sortie à la clôture) et son gain brut est d'environ +0,33 R (~40 ticks) par trade : à vérifier dans le texte si ces règles sont dans la grille. **Contrôle « ancre au hasard » fait le 2026-10-22** (`nexus/perso/orb_ancre.py`, `resultats_orb_ancre.txt`, pas un essai) : l'ORB réelle (9:30, R moyen +0,182, Sharpe 0,92) bat 100 % des 200 tirages d'ancres entre 10:00 et 11:30 en R moyen et 99,5 % en Sharpe (médianes +0,032 et 0,25) ; idem entre 10:00 et 14:30. **Son avantage vient bien de l'ouverture** : la lecture de Fetna ne s'applique pas à notre version ; le rejeu 2010-2015 garde son sens |
+| 123 | Asymétrie de la séance (ouverture, haut, bas) → séance suivante, en sens contraire | Valenti 2026 (SSRN 6074846) | ÉCARTÉE | dispo | auteur seul, SPY ; famille des retournements d'un jour déjà rejetée |
+| 124 | Retour après une enchère ratée aux extrêmes de la zone de valeur (ES, NQ, ZN, GC) | Perry 2026 (SSRN 7106618) | ÉCARTÉE | dispo | même auteur que le n° 40, prépublication |
+| 125 | Contre-pied du résidu de déséquilibre d'ordres sur 20 futures | Levander 2026 (SSRN 7245981) | ÉCARTÉE | déséquilibre d'ordres (carnet, payant) | auteur seul ; « fragile selon les régimes » d'après l'auteur |
+| 126 | Une devise baisse pendant ses heures (16 devises, 2010-2015) | Zhang 2018 (SSRN 3138756) | ÉCARTÉE | dispo | même famille que n° 78 et 85 (puissance insuffisante sur futures) |
+| 127 | Prime de nuit des actions conditionnée au sentiment | Vojtko & Hanicova 2021 (Quantpedia) | ÉCARTÉE | dispo | note de praticiens ; famille de la nuit déjà rejetée (n° 7, 42) |
+
+Appuis indépendants trouvés pour nos stratégies retenues : Chuk 2026 (zone de bruit sur NQ, Sharpe 1,14 sur 2020-2026),
+Delgado 2026 (réplication de « Beat the Market » jusqu'en 2026) ; et mises en garde : Paz 2026 (SPY après mai 2024 :
+0,39).
+
+## 7 quinquies. Autres marchés, recherche du 2026-10-22 (soir)
+
+Crible : 124 résumés SSRN et arXiv sur d'autres marchés (argent, cuivre, gaz, Brent, taux, Nikkei, DAX, FTSE, VIX,
+devises absentes, grains, bétail) et recherches ciblées sur le web. Presque tout était déjà inscrit (n° 12, 56, 58, 64,
+70…). Crible complémentaire (Crossref) : tous les articles 2023-2026 de *J. Futures Markets*, *J. Commodity Markets*,
+*J. Financial Markets*, *J. Empirical Finance* et *J. Banking & Finance* (2 393 articles, 28 sur des rendements
+intraday hors marchés émergents) : rien de jouable en prop firm. Nouveautés, toutes écartées à la lecture, aucun
+essai :
+
+| # | Hypothèse | Source | Statut | Données | Résultat / raison |
+|---|---|---|---|---|---|
+| 134 | La première demi-heure américaine annonce la dernière demi-heure des autres bourses (Europe le jour même, Asie le lendemain) | Li, Sakkas & Urquhart, *J. Financial Markets* 2022 (version acceptée lue en entier) | ÉCARTÉE | dispo (CFD HistData) | indices au comptant, 2005-2017, sans coûts ; pente significative dans 8 pays sur 15 seulement ; aucun chiffre net jouable pour le calcul de puissance (critères 2 et 6) |
+| 135 | Les rendements de nuit d'un autre indice prévoient l'écart d'ouverture du matin | Si, Nadarajah & Chen, *Borsa Istanbul Review* 2026 | ÉCARTÉE | — | prévoit l'écart des indices au comptant ; les futures cotent la nuit et contiennent déjà cet écart : rien à jouer |
+| 136 | L'argent baisse d'environ 12 pb autour du fixing de Londres | document de travail NYU Stern 2014 (« Any Silver Linings ») | ÉCARTÉE | dispo (XAGUSD) | ancien fixing téléphonique, remplacé par l'enchère LBMA en 08/2014 ; même cas que l'or (n° 72) |
+| 137 | Le S&P se retourne après le FOMC (mouvement d'avant l'annonce effacé ensuite) | Baglioni & Ribeiro 2022 (SSRN 4182628, non publié) | ÉCARTÉE | dispo | même famille que le n° 9, déjà testée et rejetée (lot P1, « retournement FOMC ») |
+| 138 | Les taux surréagissent aux annonces très suivies (CPI 2021-2023), puis se retournent | Kroner, Réserve fédérale, FEDS 2025-022 (lu) | ÉCARTÉE | Databento | le retournement prend plusieurs jours (pas intraday) ; la mesure d'attention n'est pas publiée en série |
+| 140 | Le bitcoin suit l'horloge de New York depuis les ETF au comptant (fenêtre 15:00-16:00) | Schmidt & Kraft, *Finance Research Letters* 2026 | ÉCARTÉE | dispo (Binance) | effet sur le volume seulement : aucun effet horaire sur le rendement après correction des tests multiples |
+| 141 | Momentum intraday des futures VIX | Huang, Tsai, Weng & Yang, *J. Banking & Finance* 2023 | ÉCARTÉE | — | futures VIX non proposés par les prop firms (comme le n° 109) |
+| 139 | Momentum de fin de séance sur le café | Couleau, Trujillo-Barrera & Etienne, *J. Commodity Markets* 2025 | ÉCARTÉE | — | café coté sur ICE, pas proposé par les prop firms (CME seulement) |
+
+## 7 sexies. Carte des flux forcés (nouvelle méthode décidée le 2026-10-22 : partir du flux, puis chercher la preuve)
+
+Un flux forcé = un acteur OBLIGÉ d'acheter ou de vendre à une heure ou une date connue d'avance. Déjà couverts dans ce
+registre : fin de mois et 60/40 (n° 14), ETF à levier (15), ETP VIX (16, 109), enchère de clôture (17), quatre
+sorcières (29), fixings de change et Gotobi (76-79, 89), roulement GSCI (61), adjudications et fin de mois du Trésor
+(50, 52), couverture gamma (2, 116, 119), achats d'ETF de la Banque du Japon (36), reconstitution du Russell (46),
+dérive de nuit des teneurs de marché (7).
+
+| # | Flux forcé | Source | Statut | Données | Résultat / raison |
+|---|---|---|---|---|---|
+| 142 | Rééquilibrage annuel des poids du S&P GSCI / BCOM (janvier, 5 jours, sens connu dès novembre) | Yan, Irwin & Sanders, *J. Commodity Markets* 2022 (SSRN 3715726) | **OUVERTE** ★ | dispo (CL, GC) ; Databento pour les autres | texte non lu (SSRN) ; 1 événement par an et par contrat → ~20 cas sur CL + GC (événement rare) ; tenue de plusieurs jours, à rendre intraday (fenêtre de règlement) ; la lignée Irwin conclut d'ordinaire à un faible impact des flux indiciels |
+| 143 | Flux des CTA (suiveurs de tendance : positions déduites de règles connues) | aucune source académique (fournisseurs de données, arXiv 2405.12768 théorique) | ÉCARTÉE | — | critère 1 : aucune mesure publiée de l'effet sur les rendements |
+| 145 | **Pic du 3e vendredi** : la couverture des teneurs de marché pousse les indices la nuit avant le règlement des options (SOQ), rendu avant midi | Baltussen, Terstegge & Whelan, « The Derivative Payoff Bias », 2024 (SSRN 4562800, texte complet lu) | REJETÉE (essai n° 432) | dispo | version trimestrielle seule (puissance) : ES +33,8 pb net mais +92 pb en 2016-2020 et −13 pb en 2021-2026, Sharpe 0,41, déflaté 0,17 ; NQ, YM pareils ; éteint depuis les options du jour (0DTE) (`tiers_vendredi`) |
+| 146 | Japon : ventes des ETF pour payer leurs dividendes (juillet) ; pression avant le règlement mensuel du Nikkei (SQ, 2e vendredi) | presse (Reuters), note d'Optiver | ÉCARTÉE | Databento (NKD) | aucune étude sérieuse mesurant l'effet sur les prix |
+| 147 | Europe : échéances et enchères de clôture de l'Euro Stoxx 50, du DAX, du Bund | mémoires (Aalto 2010), produits Eurex | ÉCARTÉE | — | aucune étude récente ; contrats Eurex absents des prop firms CME |
+| 148 | Crypto : retournement intraday autour de l'échéance des options Deribit (vendredi 8:00 UTC) | Weiss, Gaudiosi, Zhou & Webb, *Finance Research Letters* 2026 (texte complet lu le 2026-10-22) | ÉCARTÉE | intérêt ouvert par prix d'exercice et sens des transactions Deribit (payants) | 2021-2023 seulement ; **rien sur l'échantillon complet** (« not evident for the full sample ») ; l'effet n'existe que les jours du décile supérieur d'intérêt ouvert à la monnaie ET de gamma négatif (interaction triple −1,03, t −2,97 ; mouvement d'avant 8:00 plus bas de 0,17 %) ; calcul de puissance (17 pb rendus, écart-type 121 pb après l'échéance, coûts MBT 7 pb, 12 à 35 cas par an sur 7 ans) : t attendu 0,8 à 1,3 → aucun essai |
+| 149 | Crypto : mouvements de prix aux heures de financement des perpétuels (0:00, 8:00, 16:00 UTC) | aucune étude (arXiv 2212.06888 décrit le mécanisme seulement) | ÉCARTÉE | dispo | critère 1 : aucun effet de prix mesuré |
+| 150 | Crypto : rebond après les cascades de liquidations forcées | Garcia Seuma 2026 (arXiv 2607.27070, 2608.03616) ; Lim (SSRN 6579278) | ÉCARTÉE | liquidations (payant) | 7 cascades seulement ; aucun rebond mesuré ; préprints |
+| 151 | Crypto : échéance mensuelle des futures bitcoin CME | Vojtko & Dujava 2024 (Quantpedia, SSRN 4779669) | ÉCARTÉE | dispo | note de praticiens (critère 1) ; CME en continu 24/7 depuis mai 2026 |
+| 152 | Crypto : la première demi-heure (volume) annonce la dernière demi-heure (17:00 ET) | Shen, Urquhart & Wang, *Financial Review* 2022 (version acceptée lue en entier) | ÉCARTÉE | dispo | 2013-2020, plateformes au comptant ; point mort de la meilleure version 3 à 10 pb, contre ~7 pb de frais sur le MBT → gain net ≈ 0 ; même famille que H12 (rejetée) |
+| 153 | Crypto : le bitcoin se retourne dans la journée après les grands mouvements des bourses mondiales (surréaction) | Jia, Shen & Zhang, *Int. Review of Economics & Finance* 2024 | **OUVERTE** ★ | dispo (BTC Binance + ES) | texte payant : seule la phrase du résumé est connue (règle, seuil et effet inconnus) |
+| 154 | Crypto : rendements positifs aux minutes 0, 15, 30 et 45 de chaque heure (« turn of the candle ») | Shanaev, Vasenin & Stepanov, *Heliyon* 2023 (lu) | ÉCARTÉE | dispo | ~0,6 pb par minute contre ~7 pb de frais (même famille que le n° 97) ; apparu en 2020, déjà « moins prononcé » en 2022 |
+| 155 | Crypto : prime de la séance asiatique (achat la nuit en Asie) | mémoire de master (Aalto, 2026) ; Padyšák & Vojtko 2022 | ÉCARTÉE | dispo | pas une revue ; la prime asiatique disparaît après les ETF au comptant (2024) ; heures de Padyšák-Vojtko déjà rejetées (H12) |
+| 156 | **Crypto : retournement sur 2 h après un mouvement de 3 écarts-types** | De Nicola, *Ledger* 2021 (texte complet lu) | REJETÉE (essai n° 433) | dispo (Binance) | papier 2015-2018 : +0,49 % brut ; chez nous 2019-2026 (hors échantillon) : +9,4 pb brut (t 1,2), MBT −21,5 pb net, Sharpe −0,95 ; BTC +3,7 pb net, Sharpe 0,15 (`crypto_retour`) |
+| 157 | Crypto : momentum le jour d'un rendement anormal et le lendemain | Caporale & Plastun, *Financial Markets and Portfolio Management* 2020 (lu) | ÉCARTÉE | dispo | 2015-2019 seulement, paramètres de temps estimés sur l'échantillon ; contre-pied pour le bitcoin dans les hausses : résultats mêlés (critère 2) |
+| 158 | Crypto : rebond 6 à 24 h après une forte baisse sur une heure (surréaction aux mauvaises nouvelles) | Miralles-Quirós & Miralles-Quirós, *Journal of Applied Economics* 2022 (texte complet lu le 2026-10-22) | ÉCARTÉE | dispo (Binance) | Kraken 2016-2021, seuils fixes, sans frais ni témoin (la hausse générale du bitcoin, ~0,2 %/jour, n'est pas retirée) ; à 6 h (tenue la plus longue compatible prop) : +0,43 % (baisse ≥ 1,5 %), +0,75 % (≥ 2,5 %), +1,47 % (≥ 3,5 %) ; calcul de puissance (écart-type à 6 h 330-520 pb et cas mesurés sur nos données, frais MBT réels 32-45 pb) : t attendu 0,8 à 1,6 (1,6 à 1,9 depuis 05/2021) → aucun essai |
+| 159 | Crypto : rendements du bitcoin après des taux de financement extrêmes des perpétuels (15 min à 24 h) | revue sans comité reconnu (2026) | ÉCARTÉE | dispo | critère 1 |
+| 160 | Crypto : effets du vendredi et de certaines heures | *J. Applied Finance & Banking* 2024 ; *Oeconomia Copernicana* 2022 (heures, 2016-2021) | ÉCARTÉE | dispo | sources faibles ; mêmes familles que H12 et le n° 155, déjà rejetées |
+| 161 | Crypto : la variance réalisée prédit le rendement des semaines suivantes (coupe transversale) | *JFQA* 2024 | ÉCARTÉE | — | horizon de plusieurs semaines, panier de dizaines de cryptos : ni intraday, ni jouable en prop |
+| 162 | Crypto : contre-pied après 3 bougies d'une minute dans le même sens sur les futures bitcoin CME, sortie sur objectif | *Applied Economics Letters* 2021 | ÉCARTÉE | dispo | lettre courte, mouvements d'une minute (quelques pb) contre ~7 pb de frais du MBT ; famille des n° 97, 129, 154 |
+| 163 | Crypto : le retournement à court terme rémunère la fourniture de liquidité (paires peu actives) | *J. Banking & Finance* 2022 | ÉCARTÉE | — | coupe transversale de dizaines de paires ; l'effet est dans les petites cryptos, pas le bitcoin |
+| 164 | Crypto : moyennes mobiles à longueur variable sur les futures bitcoin (« carte de chaleur ») | *Heliyon* 2023 | ÉCARTÉE | dispo | choisir la meilleure case d'une carte de chaleur = surajustement ; pas d'effet mesuré hors échantillon |
+| 144 | Achats de fonds étrangers des particuliers japonais (NISA) → ventes de yens | notes de banques (MUFG), presse | ÉCARTÉE | dispo (6J) | aucune source sérieuse sur l'heure ou le jour ; le jour de paie (le 25) est déjà un jour Gotobi (n° 76) |
+
+## 8. Tests faits sur simple résumé, à relire (décision du 2026-10-21)
+
+| Test | Papier à relire en entier | Ce qu'on compare |
+|---|---|---|
+| N1, E2 | Li, Sakkas & Urquhart, *J. Financial Markets* 2022 — **relu en entier le 2026-10-22** | même règle que N1 / E2 (signe de la 1re demi-heure → dernière demi-heure, clôture locale) : pas de nouveau test ; Japon 0,72 et Royaume-Uni 0,51 de Sharpe sans coûts sur 2005-2017 |
+| H1, A1 | Wei 2026 | heures des séances, signal |
+| H12 | Padyšák & Vojtko 2022 ; Wen et al. 2022 | heures UTC, filtres |
+| J1, D1, H13 | (règle de NQ 1-A, pas de papier externe) | sans objet |
+
+## 9. Hypothèses OUVERTES, classées de la plus probablement fiable à la moins
+
+| Rang | # | Hypothèse | Fiabilité a priori | Bloquée par |
+|---|---|---|---|---|
+| 1 | 49 | ORB NQ rejouée sur 2010-2015 (pas un essai) | ★★★★ | Databento |
+| — | 58 | Gaz : jours du rapport de stocks EIA | écartée | texte lu : effet disparu après 2011 (Sharpe net −0,16), t attendu ≈ −0,4 |
+| — | 50 | Cycle des adjudications du Trésor | écartée | t attendu ≈ 0,35 (ZB), gain net négatif (ZN) |
+| 3 | 51 | Momentum de fin de séance sur les obligations | ★ | pas de chiffres publiés pour la puissance ; Databento (ZN, ZB) |
+| — | 39 | ETF sectoriels de nuit → futures d'indices | rejetée | essai n° 431 (`etf_nuit`) |
+| 6 | 59-60 | Gaz : dérive avant le rapport, retour après une surprise | ★★ | Databento + consensus payant |
+| 7 | 52 | Fin de mois du Trésor, partie de jour, sur ZN | ★ | Databento ; puissance < 3 avec 129 mois |
+| 8 | 54-55, 57 | Taux après le FOMC, prime des jours d'annonce | ★ | Databento ; peu d'événements |
+| 9 | 45, 74, 75, 89 | Répliques des règles retenues sur RTY, SI, HG, 6C… | ★ | Databento |
+| 10 | 61 | Roulement GSCI sur NG / HG | ★ | Databento |
+| 11 | 40, 47 | Enchère hebdomadaire ratée, échéance du VIX | ★ | prépublication / t publié ≈ 2,5 ; effet mesuré sur les options, pas sur l'indice |
+| 13 | 101, 105 | Momentum monétaire (ZQ), pression avant l'échéance du WTI | ★ | Databento ; peu d'événements |
+| 14 | 102, 103, 100 | Basis-momentum, portage des matières premières, aimantation des futures S&P | ★ | taille du compte ou données d'options payantes |
+
+Bilan : 164 hypothèses inventoriées ; 3 RETENUES (S1, H5, Gotobi) ; 5 FIABLES NON RETENUES (ORB, NQ 1-A, or la nuit,
+boombitch MBT, boombitch YM) ; 24 OUVERTES. Le 2026-10-22, les trois seules jouables sans achat et lisibles (n° 85,
+104, 110) ont été lues en entier : toutes écartées au calcul de puissance ou faute d'effet stable, aucun essai. Les trois
+restantes sans achat (n° 39, 40, 47) sont bloquées (texte payant, prépublication, effet mesuré sur un autre objet).
+Classement validé par l'utilisateur : n° 1 ORB 2010-2015, n° 2 gaz. Le gaz (n° 58) est écarté le 2026-10-22 après
+lecture du texte complet : l'ORB 2010-2015 reste la seule piste ouverte qui justifie un achat.

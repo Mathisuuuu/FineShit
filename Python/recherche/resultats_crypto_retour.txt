@@ -1,0 +1,38 @@
+====================================================================================================================
+ RETOURNEMENT DU BITCOIN SUR 2 H APRES UN MOUVEMENT DE 3 ECARTS-TYPES (De Nicola, Ledger 2021) - UN ESSAI (n° 433)
+====================================================================================================================
+Regle figee : barre de 2 h (UTC), |r| >= 3 sigma (sigma des 30 jours precedents) -> position contraire 2 h ;
+heures prop firm seulement ; temoin : meme operation apres les barres sans grand mouvement.
+
+Verification du calcul (critere 9)
+  (a) horodatage : 1re minute Binance (04:00-04:01 UTC le 17/08/2017, ouverture 4 261,48 $) datee 04:01 -> OK
+  (b) anticipation (2023-01-12 02:00 UTC) : prix +5 % apres l entree -> signal INCHANGE ; prix +5 % apres la sortie -> gain INCHANGE
+  (c) rejeu vectorbt : 533 trades contre 533 au moteur, ecart maximal de P&L brut 0.00000000 $ par BTC -> IDENTIQUE
+  (d) 5 trades tires au hasard (graine 7), a verifier a la main (prix BTC au comptant, frais MBT) :
+      barre close a 2019-10-23 14:00 UTC : r -6.46 % = -6.5 sigma -> ACHAT Wed 10:00 ET a 7465.28 -> 12:00 ET a 7425.95 | MBT brut -3.93 $ - frais 6.00 $ = -9.93 $
+      barre close a 2023-03-14 14:00 UTC : r +4.03 % = +4.5 sigma -> VENTE Tue 10:00 ET a 25762.88 -> 12:00 ET a 25894.67 | MBT brut -13.18 $ - frais 6.00 $ = -19.18 $
+      barre close a 2023-10-24 00:00 UTC : r +4.45 % = +9.0 sigma -> VENTE Mon 20:00 ET a 33069.99 -> 22:00 ET a 34190.94 | MBT brut -112.10 $ - frais 6.00 $ = -118.10 $
+      barre close a 2024-08-05 16:00 UTC : r +4.46 % = +5.2 sigma -> VENTE Mon 12:00 ET a 54321.08 -> 14:00 ET a 54707.99 | MBT brut -38.69 $ - frais 6.00 $ = -44.69 $
+      barre close a 2026-06-14 22:00 UTC : r +2.34 % = +3.6 sigma -> VENTE Sun 18:00 ET a 65311.59 -> 20:00 ET a 65746.45 | MBT brut -43.49 $ - frais 6.00 $ = -49.49 $
+  (e) comptes : 33913 barres de 2 h depuis 2019 ; 687 signaux >= 3 sigma, dont 533 aux heures permises (154 refuses) ; 20990 barres temoins
+
+--- MBT (contrat du compte : verdict) : 533 trades
+    brut +9.38 pb (t +1.18) | 2019-2020 +24.02 (t +1.09) | 2021-2026 +3.75 (t +0.53)
+    temoin (sans grand mouvement) +1.29 pb -> Welch +1.01
+    couts moyens 30.8 pb -> net -21.46 pb (t -2.68) ; 2019-2020 -50.29 | 2021-2026 -10.37 ; sans les 3 meilleurs -28.65 pb ; stress 2 ticks -26.59 pb
+    vectorbt : Sharpe -0.95 [IC 95 % -1.75 ; -0.16] | avant 2021 -1.61 | apres -0.58 | deflate (433 essais) 0.00 | perte max -74.0%
+    par annee (net, pb cumules) : 2019 -4856 ; 2020 -2586 ; 2021 +714 ; 2022 -2572 ; 2023 -2003 ; 2024 -635 ; 2025 -1024 ; 2026 +1527
+    heures en position : 138 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+--- BTC (contrat de base, intenable en prop) : 533 trades
+    brut +9.38 pb (t +1.18) | 2019-2020 +24.02 (t +1.09) | 2021-2026 +3.75 (t +0.53)
+    temoin (sans grand mouvement) +1.29 pb -> Welch +1.01
+    couts moyens 5.7 pb -> net +3.72 pb (t +0.47) ; 2019-2020 +10.40 | 2021-2026 +1.16 ; sans les 3 meilleurs -3.74 pb ; stress 2 ticks -1.41 pb
+    vectorbt : Sharpe +0.15 [IC 95 % -0.60 ; +0.80] | avant 2021 +0.22 | apres +0.12 | deflate (433 essais) 0.01 | perte max -26.2%
+    par annee (net, pb cumules) : 2019 -125 ; 2020 +1664 ; 2021 +1284 ; 2022 -1279 ; 2023 -719 ; 2024 -51 ; 2025 -663 ; 2026 +1874
+    heures en position : 138 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe deflate >= 0,95)
+
+Synthese : REJETEE (l essai MBT echoue). Aucune variante ne sera testee.
+Calcul en 2 s.
