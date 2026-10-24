@@ -484,7 +484,9 @@ contient AUSSI toutes les stratégies du runner local (`nexus/tableau_runner.py`
 `vbt.Portfolio.from_orders`, P&L identique à celui du moteur trade par trade), avec les mêmes tests ; il écrit en plus
 `rendements.json` (comparaison), `prop.json` (onglet Prop firm : stratégies futures intraday, corrélations, conflits
 de contrat, profil horaire) et `etudes.json` (copie de `recherche/resultats_60.json`). Le Sharpe déflaté de toutes
-les stratégies utilise le nombre cumulé d'essais du programme (`ESSAIS_PROGRAMME` de `nexus/tableau.py`) et, comme
+les stratégies utilise le nombre cumulé d'essais du programme (`ESSAIS_PROGRAMME` de `nexus/tableau.py`), figé à
+la date de validation pour les stratégies validées (`ESSAIS_FIGES` : S1, Gotobi et ORB à 430, compteur du 21/10/2026 ;
+décision du 24/10/2026 : les essais faits ensuite sur d'autres idées ne les pénalisent plus) et, comme
 toute la recherche, la variance du Sharpe sous l'hypothèse nulle. Jusqu'au 19/10/2026 au soir, c'était la variance
 des Sharpe des stratégies exportées (5,3, gonflée par des versions boguées très négatives) : le Sharpe à battre
 montait à 6,7 et toutes les stratégies tombaient à 0.

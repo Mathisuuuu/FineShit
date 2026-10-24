@@ -37,7 +37,7 @@ et `cd Dashboard && node --test`.
 3. Lire d'abord le résumé ; s'il est cohérent avec notre cadre, lire le texte COMPLET avant toute règle ou tout test
    (texte introuvable : l'idée attend).
 4. Chercher et lire les papiers contraires (« disappearing », « replication », « out-of-sample »).
-5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (190
+5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (223
    hypothèses au 2026-10-24, à compléter à chaque lecture ou test), puis `Python/recherche/`, en-têtes de
    `nexus/perso/`, `Python/.cache/`.
    Décision du 2026-10-21 : les tests faits sur simple résumé (Nikkei N1-N2-J1, argent A1, crypto H11-H12…) sont
@@ -67,7 +67,9 @@ et `cd Dashboard && node --test`.
 14. Gain net > 0 sans les 3 meilleurs jours.
 15. Événements rares (< 60 cas) : t ≥ 2 et net positif ≥ 65 % des années, à la place des n° 10-11.
 16. **Sharpe déflaté ≥ 0,95** avec le nombre CUMULÉ d'essais (`ESSAIS_PROGRAMME` de `Python/nexus/tableau.py`,
-    **434** au 2026-10-24 ; l'augmenter à chaque essai).
+    **434** au 2026-10-24 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
+    stratégie validée garde le nombre d'essais du jour de sa validation (`ESSAIS_FIGES` : S1, Gotobi et ORB figées à
+    **430**, compteur du 2026-10-21) ; les essais faits ensuite sur d'autres idées ne la pénalisent plus.
 
 **D. Fiabilité vectorbt**
 

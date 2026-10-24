@@ -45,6 +45,15 @@ VERSION = 2
 # deux valeurs (memes tests pour toutes). La variance est remplacee a l export par celle des strategies exportees.
 ESSAIS_PROGRAMME = 434        # 431e etf_nuit, 432e tiers_vendredi, 433e crypto_retour (2026-10-22), 434e ouverture_europe (2026-10-24), tous rejetes
 VAR_SHARPE_PROGRAMME = 0.5
+# Strategies validees : nombre d essais fige a leur date de validation (decision du 2026-10-24). Le compteur valait 430 le
+# 2026-10-21, jour ou S1, Gotobi et l ORB ont passe les criteres ; les essais faits ensuite sur d autres idees ne les
+# penalisent plus. Les nouvelles candidates gardent le compteur cumule ESSAIS_PROGRAMME.
+ESSAIS_FIGES = {"S1_NoiseAreaNQ": 430, "Gotobi_6J": 430, "ORB_NQ": 430}
+
+
+def essais_de(ident: str) -> int:
+    """Nombre d essais du Sharpe deflate d une strategie : fige si elle est validee, cumule sinon."""
+    return ESSAIS_FIGES.get(ident, ESSAIS_PROGRAMME)
 
 
 # =============================================================================
@@ -657,7 +666,7 @@ def fiche_gotobi(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[d
     from . import prop_combinaisons as PC
     px_ = 2.25 / (m["frais"] * 12_500_000)
     mj = m.assign(frais=0.6 / (px_ * 1_250_000), glissement=0.5 * 0.000001 / px_)
-    x_ = PC.mesures(GT.valeur_journaliere(GT.portefeuille(mj), cal).pct_change().fillna(0.0), ESSAIS_PROGRAMME)
+    x_ = PC.mesures(GT.valeur_journaliere(GT.portefeuille(mj), cal).pct_change().fillna(0.0), essais_de("Gotobi_6J"))
     tests.append(dict(famille="Prop firms", test="Micro MJY au lieu de 6J",
                       resultat=f"Sharpe {x_['sharpe']:.2f} [{x_['ic_bas']:.2f} ; {x_['ic_haut']:.2f}], moities {x_['sharpe_p1']:.2f} / {x_['sharpe_p2']:.2f}",
                       detail="couts du micro (tick deux fois plus gros rapporte au notionnel, commission 0,60 $ pour 12 fois moins de "
@@ -804,7 +813,7 @@ def fiche_orb(cotations: str, n_sim: int, grille: bool, log=print) -> tuple[dict
     # prop firms : le micro MNQ (multiplicateur 2, 0,60 $ par cote) : meme tick rapporte au notionnel, commission plus lourde
     from . import prop_combinaisons as PC
     px_ = OR.COMMISSION / (m["frais"] * 20.0)
-    x_ = PC.mesures(OR.valeur_journaliere(OR.portefeuille(m.assign(frais=0.6 / (px_ * 2.0))), cal).pct_change().fillna(0.0), ESSAIS_PROGRAMME)
+    x_ = PC.mesures(OR.valeur_journaliere(OR.portefeuille(m.assign(frais=0.6 / (px_ * 2.0))), cal).pct_change().fillna(0.0), essais_de("ORB_NQ"))
     tests.append(dict(famille="Prop firms", test="Micro MNQ au lieu de NQ",
                       resultat=f"Sharpe {x_['sharpe']:.2f} [{x_['ic_bas']:.2f} ; {x_['ic_haut']:.2f}], moities {x_['sharpe_p1']:.2f} / {x_['sharpe_p2']:.2f}",
                       detail="commission de 0,60 $ par cote pour un dixieme du notionnel de NQ ; " + ("toujours fiable" if x_["fiable"] else "PLUS fiable"),
@@ -1472,7 +1481,8 @@ def _sharpe_ann(r: pd.Series) -> float:
 
 
 def dsr_uniforme(fiche: dict, r: pd.Series, essais: int = ESSAIS_PROGRAMME) -> float:
-    """Sharpe deflate de la strategie avec le nombre CUMULE d essais du programme : meme ligne de test pour toutes.
+    """Sharpe deflate de la strategie avec le nombre CUMULE d essais du programme (fige a la date de validation pour
+    les strategies validees, voir ESSAIS_FIGES) : meme ligne de test pour toutes.
     Variance des essais = variance du Sharpe estime sous l hypothese nulle (asymetrie et queues comprises), comme dans
     toute la recherche (alternatives.dsr) ; calcul vectorbt, controle par nexus.validation. (Jusqu au 2026-10-19 la
     variance etait celle des Sharpe des strategies exportees, 5,3, gonflee par des versions boguees tres negatives :
@@ -1483,7 +1493,8 @@ def dsr_uniforme(fiche: dict, r: pd.Series, essais: int = ESSAIS_PROGRAMME) -> f
     dsr = PC.dsr(r, essais)
     dsr_n, sr0 = V.deflated_sharpe(r.to_numpy(), int(essais))
     ligne = dict(famille="Robustesse statistique", test="Sharpe deflate (programme entier, vectorbt)", resultat=f"{dsr:.1%}",
-                 detail=f"{essais} essais cumules du programme de recherche ; variance nulle du Sharpe {v0:.3f} (annualisee) ; "
+                 detail=f"{essais} essais cumules du programme de recherche"
+                        f"{' (fige a sa date de validation)' if essais != ESSAIS_PROGRAMME else ''} ; variance nulle du Sharpe {v0:.3f} (annualisee) ; "
                         f"Sharpe a battre {sr0 * math.sqrt(252):.2f} (controle nexus.validation : {dsr_n:.1%})",
                  verdict="ok" if dsr >= 0.95 else "alerte")
     tests = []
@@ -1544,7 +1555,8 @@ def annexe_prop(fiches: dict, rets: dict, positions: dict, log=print) -> dict:
     p0 = PRESETS_PROP[0]
     fiab = PC.analyser(R, corr, conf, ESSAIS_PROGRAMME, dict(compte=p0["compte"], objectif=p0["objectif"],
                        perte_jour=p0["perte_jour"], dd=p0["dd"], horizon=120), MULTIPLICATEURS_PROP, log,
-                       heures={i: float(tps.get(i, np.nan)) * 365.25 * 24 for i in ids})
+                       heures={i: float(tps.get(i, np.nan)) * 365.25 * 24 for i in ids},
+                       essais_membres={i: essais_de(i) for i in ids})
     cands = []
     for i in ids:
         f, r = fiches[i], R[i]
@@ -1624,7 +1636,7 @@ def exporter(cotations: str, sortie: str, n_sim: int = 2000, grille: bool = True
     var_ann = float(np.nanvar(shs[np.isfinite(shs)], ddof=1)) if np.isfinite(shs).sum() > 2 else VAR_SHARPE_PROGRAMME
     positions = {}
     for i, fiche in fiches.items():
-        dsr_uniforme(fiche, rets[i])
+        dsr_uniforme(fiche, rets[i], essais_de(i))
         positions[i] = positions_fiche(fiche)
         fiche.update(drapeaux(fiche, positions[i]))
         _ecrire_json(fiche, os.path.join(sortie, f"{i}.json"))
@@ -1645,7 +1657,7 @@ def exporter(cotations: str, sortie: str, n_sim: int = 2000, grille: bool = True
             json.dump(json.load(fh), out, ensure_ascii=False, separators=(",", ":"))
     from .perso.tableau import non_testees
     index = dict(version=VERSION, genere_le=dt.datetime.now().strftime("%Y-%m-%d %H:%M"), strategies=liste, non_testees=non_testees(),
-                 essais_programme=ESSAIS_PROGRAMME, variance_sharpe=_js(var_ann), prop_candidats=len(prop["candidats"]),
+                 essais_programme=ESSAIS_PROGRAMME, essais_figes=ESSAIS_FIGES, variance_sharpe=_js(var_ann), prop_candidats=len(prop["candidats"]),
                  note="Resultats calcules sur des donnees sous licence (usage prive) : ne pas publier ce dossier.")
     _ecrire_json(index, os.path.join(sortie, "index.json"))
     from . import profil_horaire

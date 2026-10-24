@@ -108,6 +108,22 @@ def test_prop_fiabilite_statistiques_vectorbt():
     assert [c["ids"] for c in cb] == [["a"], ["b"], ["a", "b"]] and cb[2]["corr_max"] == abs(corr.loc["a", "b"])
 
 
+def test_essais_figes_pour_les_validees():
+    # S1, Gotobi et l ORB gardent les 430 essais du jour de leur validation ; les autres suivent le compteur cumule
+    from nexus import prop_combinaisons as PC
+    from nexus.tableau import ESSAIS_PROGRAMME, essais_de
+    assert essais_de("S1_NoiseAreaNQ") == essais_de("Gotobi_6J") == essais_de("ORB_NQ") == 430
+    assert essais_de("R_nouvelle") == ESSAIS_PROGRAMME >= 430
+    rng = np.random.default_rng(5)
+    idx = pd.bdate_range("2016-01-04", periods=2600)
+    R = pd.DataFrame({"S1_NoiseAreaNQ": rng.normal(0.0006, 0.01, len(idx)), "R_x": rng.normal(0.0006, 0.01, len(idx))}, idx)
+    conf = pd.DataFrame(0.0, index=R.columns, columns=R.columns)
+    out = PC.analyser(R, R.corr(), conf, 5000, dict(compte=50000, objectif=3000, perte_jour=1000, dd=2000, horizon=120),
+                      (1,), log=lambda *a: None, retenues=None, essais_membres={"S1_NoiseAreaNQ": 430})
+    assert abs(out["membres"]["S1_NoiseAreaNQ"]["dsr"] - PC.dsr(R["S1_NoiseAreaNQ"], 430)) < 1e-12
+    assert abs(out["membres"]["R_x"]["dsr"] - PC.dsr(R["R_x"], 5000)) < 1e-12
+
+
 def test_prop_evaluation_regles():
     from nexus import prop_combinaisons as PC
     regles = dict(compte=50000, objectif=300, perte_jour=1000, dd=2000, horizon=50)

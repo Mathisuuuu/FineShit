@@ -485,7 +485,7 @@ async function pageComparaison() {
   };
   $("#contenu").innerHTML = `<div class="entete"><h2>Comparaison</h2></div>
     <p class="resume">Toutes les stratégies du tableau, calculées par les mêmes objets vectorbt et passées par les mêmes tests
-      (Sharpe déflaté : ${ix.essais_programme} essais cumulés du programme). Le filtre de la barre de gauche s'applique ici.
+      (Sharpe déflaté : ${ix.essais_programme} essais cumulés du programme${ix.essais_figes ? `, figés à la date de validation pour ${Object.entries(ix.essais_figes).map(([k, n]) => `${esc(k)} (${n})`).join(", ")}` : ""}). Le filtre de la barre de gauche s'applique ici.
       Coche des stratégies pour leurs corrélations et leur portefeuille combiné. <span class="discret">${esc(ix.note || "")}</span></p>
     <div class="panneau"><h3>Stratégies (${rows.length})</h3><div class="table-defile"><table id="t-comp"><thead><tr><th></th>${COLS_COMP.map(([k, l, n]) =>
       `<th class="${n ? "n" : ""}" data-k="${k}" style="cursor:pointer">${l}${C.tri === k ? (C.sens > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead>

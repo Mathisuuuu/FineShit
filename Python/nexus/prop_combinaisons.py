@@ -254,14 +254,15 @@ def validation_choix(R: pd.DataFrame, positions_conf: pd.DataFrame, regles: dict
 #  Annexe complete
 # =============================================================================
 def analyser(R: pd.DataFrame, corr: pd.DataFrame, conf: pd.DataFrame, essais: int, regles_ref: dict, mults, log=print,
-             heures: dict | None = None, retenues=RETENUES_METHODE) -> dict:
+             heures: dict | None = None, retenues=RETENUES_METHODE, essais_membres: dict | None = None) -> dict:
     """R : rendements journaliers des candidates (NaN hors de leur periode). -> statistiques des strategies, de toutes
     les combinaisons, recommandation et validation du choix. heures : heures en position par an de chaque candidate ;
     seules les strategies courtes (<= HEURES_MAX) et retenues par la methode (`retenues`, None : toutes) entrent dans
-    les combinaisons et la validation."""
+    les combinaisons et la validation. essais_membres : nombre d essais propre a une strategie (fige a sa date de
+    validation), sinon `essais` ; les combinaisons gardent `essais` + leur nombre."""
     ids = list(R.columns)
     h = heures or {}
-    membres = {i: mesures(R[i], essais) for i in ids}
+    membres = {i: mesures(R[i], (essais_membres or {}).get(i, essais)) for i in ids}
     for i in ids:
         hi = h.get(i, math.nan)
         membres[i].update(heures_an=hi, courte=bool(heures is None or (math.isfinite(hi) and hi <= HEURES_MAX)),

@@ -192,7 +192,7 @@ const Prop = (function () {
       <div id="p-detail"></div>
       <div id="p-validation"></div>
       <div class="panneau"><h3>Strategies candidates (${nCand})</h3><p class="sous">Futures intraday du tableau, statistiques vectorbt de chacune.
-        Sharpe deflate : ${nf0.format(etatProgramme())} essais cumules du programme, variance du Sharpe sous l'hypothese nulle.</p>
+        Sharpe deflate : ${nf0.format(etatProgramme())} essais cumules du programme (figes a la date de validation pour les strategies validees), variance du Sharpe sous l'hypothese nulle.</p>
         <div class="tablebox"><table id="p-cands"><thead><tr><th>Strategie</th><th>Fiabilite</th><th>Contrats</th><th>Periode</th>
         <th class="num">Sharpe [IC 95 %]</th><th class="num">1re / 2e moitie</th><th class="num">P(Sharpe &gt; 0)</th><th class="num">Sharpe deflate</th>
         <th class="num">Perte max</th><th class="num">Heures / an</th><th class="num">% par 100 h</th></tr></thead><tbody></tbody></table></div>
