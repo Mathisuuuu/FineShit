@@ -1095,6 +1095,19 @@ identique au moteur (533 trades), 5 trades à la main. Résultat (2019-2026, hor
 brut par trade (t 1,2) au lieu de +49 ; MBT −21,5 pb net (frais moyens 31 pb, très lourds quand le bitcoin valait moins de
 10 000 $), Sharpe −0,95 ; contrat de base BTC +3,7 pb net, Sharpe 0,15 → **rejetée**.
 
+`python -m nexus.perso.ouverture_europe` → `recherche/resultats_ouverture_europe.txt` (2026-10-24, hypothèse n° 172,
+**essai n° 434**, premier test du crible des heures vides du groupe). Bondarenko & Muravyev (*JFQA* 2023) : sur
+2004-2018, tout le rendement de l'E-mini S&P se fait de 23:30 à 3:30 ET, autour de l'ouverture européenne (7,6 % par an,
+Sharpe 1,6). Test par dérogation demandée par l'utilisateur : texte complet non lu (payant ; annexe en ligne lue), papier
+contraire de la Fed de New York pour 2021-2025, puissance sous 3 sur l'ES (t attendu 2,6 ; NQ 4,3, YM 3,7, micros sous 1).
+Règle du papier, figée : achat à 23:30 ET la veille, vente à 3:30 ET, chaque nuit de semaine ; témoin : même achat de 4 h
+la même nuit de 19:30 à 23:30. Vérifications : pics de volume à 2:00 (Francfort) et 3:00 (Londres), prix inchangés quand
+on modifie les prix futurs, vectorbt identique au moteur (2 677 trades), 5 trades à la main dont 2 contre les barres
+brutes. Résultat ES : +1,38 pb brut par nuit (t 2,3) ; **2016-2020 +3,19 pb (t 3,1), le chiffre du papier**, puis
+**2021-2026 −0,23 pb** ; net −0,18 pb, Sharpe vectorbt −0,07 [−0,73 ; 0,51], Welch 1,3 ; MES −2,5 pb net. NQ et YM
+(répliques) : même effet avant 2021, disparu après ; MNQ et MYM perdants → **rejetée**. L'effet a existé et s'est
+éteint comme la dérive de nuit (n° 7). Aucune variante testée.
+
 `python -m nexus.perso.weekend_crypto` → `recherche/resultats_weekend_crypto.txt` (2026-10-19, piste 1 de
 `recherche/pistes.md`). Mourey, Shahrour & Şoiman (*FRL* 2025) : un week-end négatif des cryptomonnaies annonce un
 lundi négatif des actions. Signal : BTC du vendredi 16:00 au dimanche 18:00 ET ; 246 week-ends, 2021-2026. Le constat

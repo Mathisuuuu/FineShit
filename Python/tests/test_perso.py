@@ -1071,3 +1071,17 @@ def test_crypto_retour_heures_permises():
     assert not C.permis(t("2024-03-09 10:00"), t("2024-03-09 10:00") + two)[0]
     assert C.permis(t("2024-03-10 18:00"), t("2024-03-10 18:00") + two)[0]
     assert not C.permis(t("2024-03-08 15:00"), t("2024-03-08 15:00") + two)[0]
+
+
+def test_ouverture_europe_nuit_de_la_veille():
+    from types import SimpleNamespace
+    from nexus.perso import ouverture_europe as O
+    # barres 1 minute (fin de barre, UTC) du dimanche 7 au lundi 8 janvier 2024 ; prix = minute de la barre
+    t = pd.date_range("2024-01-07 23:01", "2024-01-08 12:00", freq="1min").as_unit("ns").asi8
+    px = np.arange(len(t), dtype=float)
+    m = SimpleNamespace(t=t, o=px, c=px + 0.5, n=len(t), offset=np.zeros(len(t)), rc=np.full(len(t), np.nan))
+    f = O.jambe(m, pd.DatetimeIndex(["2024-01-08"]), O.ENTREE, O.SORTIE_H, veille_a=True, veille_b=False)
+    # lundi : achat le dimanche 23:30 ET (= lundi 4:30 UTC), vente le lundi 3:30 ET (= 8:30 UTC), ouverture de la barre
+    a = (pd.Timestamp("2024-01-08 04:31") - pd.Timestamp("2024-01-07 23:01")) // pd.Timedelta(minutes=1)
+    b = (pd.Timestamp("2024-01-08 08:31") - pd.Timestamp("2024-01-07 23:01")) // pd.Timedelta(minutes=1)
+    assert f["motif"].iloc[0] == "" and f["pa"].iloc[0] == a and f["pb"].iloc[0] == b

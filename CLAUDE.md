@@ -37,8 +37,8 @@ et `cd Dashboard && node --test`.
 3. Lire d'abord le résumé ; s'il est cohérent avec notre cadre, lire le texte COMPLET avant toute règle ou tout test
    (texte introuvable : l'idée attend).
 4. Chercher et lire les papiers contraires (« disappearing », « replication », « out-of-sample »).
-5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (171
-   hypothèses au 2026-10-23, à compléter à chaque lecture ou test), puis `Python/recherche/`, en-têtes de
+5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (190
+   hypothèses au 2026-10-24, à compléter à chaque lecture ou test), puis `Python/recherche/`, en-têtes de
    `nexus/perso/`, `Python/.cache/`.
    Décision du 2026-10-21 : les tests faits sur simple résumé (Nikkei N1-N2-J1, argent A1, crypto H11-H12…) sont
    repris un à un ; on ne reteste que si le texte complet donne une règle DIFFÉRENTE de celle testée, et chaque
@@ -67,7 +67,7 @@ et `cd Dashboard && node --test`.
 14. Gain net > 0 sans les 3 meilleurs jours.
 15. Événements rares (< 60 cas) : t ≥ 2 et net positif ≥ 65 % des années, à la place des n° 10-11.
 16. **Sharpe déflaté ≥ 0,95** avec le nombre CUMULÉ d'essais (`ESSAIS_PROGRAMME` de `Python/nexus/tableau.py`,
-    **433** au 2026-10-22 ; l'augmenter à chaque essai).
+    **434** au 2026-10-24 ; l'augmenter à chaque essai).
 
 **D. Fiabilité vectorbt**
 
