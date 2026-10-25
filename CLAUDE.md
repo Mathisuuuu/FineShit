@@ -116,7 +116,7 @@ et `cd Dashboard && node --test`.
 | ORB 5 min NQ | 0,92 | 0,40 | 0,70 | 170 | candidate : à confirmer sur NQ 2010-2015 |
 | Boombitch (NQ, MBT) | 1,37-1,44 | 0,82-0,88 | 0,98-1,00 | 486-879 | fiables ; NQ redevient candidate (plafond de 400 h levé), en conflit de contrat avec S1 / ORB ; MBT rejetée (Welch 1,39) |
 | Or la nuit GC | 1,11 | 0,49 | 0,74 | 7 311 | garde la nuit et le week-end : prop firm spéciale |
-| Momentum 5 min M2 NQ (Kairos, membre supe) | 1,59 | 1,05 | 1,00 | 617 | passe 10-18 et 20 (corr. S1 0,26) ; seuils choisis par l'auteur sur NOTRE période : à confirmer hors échantillon (forward démo ou NQ 2010-2012) ; conflit de contrat avec S1 |
+| Momentum 5 min M2 NQ (Kairos, membre supe) | 1,59 | 1,05 | 1,00 | 617 | passe 10-18 et 20 (corr. S1 0,26) ; seuils choisis par l'auteur sur NOTRE période : à confirmer hors échantillon (forward démo ou NQ 2010-2012) ; conflit de contrat avec S1 ; répliques : ES 1,18 (déflaté 0,91), GC 0,59, YM 0,39 (éteint après 2021) |
 | IntradayVolBreakout NQ (Kairos) | 1,13 | 0,57 | 0,85 | 320 | fiable non retenue (déflaté < 0,95) ; famille de S1 |
 
 Onglet Prop firm (2026-10-21) : seules les stratégies qui passent les 24 critères entrent dans les combinaisons
@@ -148,12 +148,22 @@ les idées intraday documentées sont épuisées : il faut des données nouvelle
   modèles tiennent 3 300 à 3 900 h/an).
   Avant de proposer une piste, vérifier `.cache/` et `recherche/`. Inventaire : `Python/recherche/pistes_contrats_manquants.md`.
 - **Modèle prop firm (2026-10-25, `nexus/prop_comptes.py`, `resultats_prop_comptes.txt`)** : cycle de vie d'un compte
-  50K sur un an avec S1 (MNQ) + Gotobi (6J). Meilleur choix : Topstep, payout Standard, AVEC la perte journalière de
-  1 000 $ choisie à l'achat (règles officielles lues le 2026-10-25) : bootstrap +7 300 $/compte-an, 26 % d'années
-  perdantes ; Lucid et Tradeify nettement moins bons (médiane négative). Témoin « sans avantage » (repris du Kairos
-  Terminal) : SANS notre signal, tous les comptes perdent (Topstep avec perte journalière −637 $/an, 76 % d'années
-  perdantes) : le gain vient de S1 + Gotobi, pas des seules règles des firmes. Prochaine étape : nombre de comptes, et
-  vérifier l'offre limitée « plafonds doublés ».
+  50K sur un an avec S1 (MNQ) + Gotobi (6J). **Bug corrigé le soir même** : l'« année » comptait 252 séances ACTIVES
+  (≈ 1,6 an civil) ; calendrier CME complet depuis (`seances_cme`). Chiffres corrigés : meilleur choix Topstep,
+  payout Standard, AVEC la perte journalière de 1 000 $ choisie à l'achat : bootstrap **+2 782 $/compte-an, médiane
+  +617 $, 43 % d'années perdantes** (hors échantillon 2021-2026 : +4 728 $) ; Lucid et Tradeify à peu près nuls ou
+  négatifs. Témoin « sans avantage » : −747 $/an, 84 % d'années perdantes → le gain vient de S1 + Gotobi, pas des
+  règles. Le signal est trop rare (un jour sur deux) pour le modèle de Kairos.
+- **Book de plusieurs comptes (`nexus/prop_book.py`, `resultats_prop_book.txt`)** : jusqu'à 5 comptes Topstep (5 XFA
+  au plus, copieur permis). Des comptes copiés ne diversifient rien (corrélation 1,00) ; départs échelonnés d'un mois :
+  5 comptes S1 + Gotobi +13 350 $/an, médiane +7 358 $, 35 % d'années perdantes, capital de départ ≈ 7 100 $ (95 %) ;
+  5 comptes M2 + Gotobi +19 287 $/an, 26 % (M2 à confirmer). Mélanger des comptes S1 et M2 diversifierait vraiment
+  (corrélation 0,05-0,14 ; 20 % d'années perdantes), mais **Topstep interdit la couverture entre comptes d'un même
+  utilisateur** et S1 / M2 sont en sens contraire sur NQ 168 fois en 10 ans : interdit.
+- **M2 en NinjaScript préparée, PAS déployée** (`Strategies/NexusGroupeM2.cs`, `NxM2Logique`) : parité 2 072 / 2 072
+  ordres (`python -m nexus.live.parite_ninjascript`). À lancer en démo seulement sur décision de l'utilisateur.
+- Clé Databento de `.env.txt` refusée (erreur 401, 2026-10-25) : pas de devis possible ; il faut une nouvelle clé (les
+  nouveaux comptes ont 125 $ de crédit gratuit). GLBX (CME) commence le 2010-06-06.
 - Prop firms (2026-10-21) : Topstep la plus sûre (NKD permis, pas de nuit) ; seule Phidias Premium permet NKD + or +
   nuit ; proposition en cours : simuler le challenge Phidias Premium avec l'or de nuit.
 

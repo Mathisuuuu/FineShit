@@ -654,25 +654,35 @@ dans `recherche/resultats_prop_comptes.txt`.
 - Grille fixée avant le 1er calcul : 0-3 × 6J et S1 0-6 unités (`resultats_prop_comptes.txt`). Grille large,
   0-5 × 6J et S1 0-12 unités, en contrôle (`resultats_prop_comptes_grille_large.txt`).
 
+**Bug corrigé le 2026-10-25 au soir (avant ce tableau)** : la 1re version comptait une « année » de 252 séances
+ACTIVES. Les séances sans aucun trade de S1 ni de Gotobi disparaissaient (1 661 séances sur 2016-2026 au lieu de
+2 749). Une « année » durait donc environ 1,6 année civile, et les frais mensuels de Topstep étaient sous-comptés.
+On l'a vu en ajoutant M2, qui faisait passer le nombre de séances de 1 661 à 2 033. Correction : calendrier complet
+des séances CME (`seances_cme`, test `test_calendrier_garde_les_seances_sans_trade`). Les chiffres d'avant (Topstep
+avec perte journalière : +7 269 $/an au bootstrap) sont faux et remplacés par ceux-ci.
+
 | Firme 50K, grille initiale, coûts de référence | 2021-2026 hors échantillon | Bootstrap : moyenne / médiane | Années perdantes (bootstrap) |
 |---|---|---|---|
-| **Topstep Standard + perte journalière 1 000 $** | +12 637 $/an | **+7 269 / +5 794 $** | **26 %** |
-| Topstep Standard + perte journalière, offre limitée (plafond 4 000 $) | +20 097 $/an | +11 904 / +7 349 $ | 23 % |
-| Topstep Standard sans perte journalière | +9 825 $/an | +4 988 / +1 708 $ | 38 % |
-| Topstep Consistency sans perte journalière | +4 449 $/an | +1 801 / +927 $ | 40 % |
-| Lucid Flex (146 $) | +3 334 $/an | +2 031 / −1 218 $ | 59 % |
-| Tradeify Select (165 $) | −573 $/an | +722 / −2 145 $ | 72 % |
+| **Topstep Standard + perte journalière 1 000 $** | +4 728 $/an | **+2 782 / +617 $** | **43 %** |
+| Topstep Standard + perte journalière, offre limitée (plafond 4 000 $) | +8 069 $/an | +5 031 / +1 440 $ | 43 % |
+| Topstep Standard sans perte journalière | +3 275 $/an | +1 315 / −660 $ | 59 % |
+| Topstep Consistency sans perte journalière | +948 $/an | +61 / −1 379 $ | 57 % |
+| Lucid Flex (146 $) | +2 482 $/an | +731 / −1 022 $ | 64 % |
+| Tradeify Select (165 $) | −659 $/an | −265 / −1 980 $ | 76 % |
 
 **Lecture**
 - La perte journalière choisie à l'achat agit comme un stop quotidien, et c'est elle qui fait la différence.
-- Stress à 2 ticks : +6 375 $ en bootstrap, 33 % d'années perdantes.
-- Grille large : +6 125 $ en bootstrap, 30 % d'années perdantes.
-- Premier payout vers la 90e séance en médiane.
-- 1re version, du même jour, avec des règles Topstep tirées de sites tiers (perte journalière obligatoire, cohérence
-  50 %) : +9 510 $ en bootstrap.
+- Stress à 2 ticks : +2 358 $ en bootstrap (médiane +248), 47 % d'années perdantes.
+- Grille large : +1 769 $ en bootstrap, 49 % d'années perdantes (la grille initiale reste la référence).
+- Premier payout vers la 118e séance en médiane (environ 6 mois), dans 58 % des années seulement.
+- Témoin sans avantage (même compte, gain moyen retiré) : −747 $/an, 84 % d'années perdantes.
+
+Verdict honnête : avec S1 + Gotobi seuls, un compte Topstep rapporte en moyenne ≈ 2 800 $/an, mais la moitié des
+années rapportent moins de 620 $ et 43 % perdent. C'est positif, mais loin du « 90 % rentable en un mois » de Kairos.
+Le signal est trop rare : S1 et Gotobi ne tradent qu'un jour sur deux, ce qui retarde l'évaluation et les payouts.
 
 C'est un résultat par compte et par an. Avec N comptes copiés, le gain est multiplié par N mais le risque aussi :
-les comptes sautent ensemble.
+les comptes sautent ensemble (voir le book ci-dessous).
 
 **Réserves**
 - Règles de Lucid et Tradeify non vérifiées sur leurs pages officielles.
@@ -680,6 +690,54 @@ les comptes sautent ensemble.
 - Lucid : échelle simplifiée à 2 minis en financé ; plancher ramené à +100 au 1er payout, comme chez Tradeify, non
   confirmé.
 - Passage en compte réel après N payouts non modélisé.
+
+### Book de plusieurs comptes, comme Kairos (`nexus/prop_book.py`, 2026-10-25)
+
+Kairos ouvre plusieurs comptes en même temps et copie le même signal partout. On simule jusqu'à 5 comptes Topstep
+50K (Standard + perte journalière de 1 000 $), chacun avec son propre cycle de vie, sur le MÊME chemin de marché
+(bootstrap par blocs de 21 séances sur 2021-2026, 1 000 années). Lancer : `python -m nexus.prop_book --cache <pickle>`.
+Résultats dans `recherche/resultats_prop_book.txt`.
+
+**Deux types de compte** (taille choisie sur 2016-2020, comme pour un compte seul)
+- A : S1 (MNQ) + Gotobi (6J), validés par les 24 critères.
+- B : M2 (MNQ) + Gotobi (6J). M2 = momentum 5 min de 9:30 avec le filtre M2 (Kairos, essai 440), **à confirmer hors
+  échantillon**. Contrôle : rejoué dans vectorbt sur 1 MNQ, 1 036 trades sur 1 036, écart 0,00 $ par trade.
+
+**Règles officielles de Topstep qui comptent ici** (help.topstep.com, lu le 2026-10-25)
+- 5 comptes financés (XFA) actifs au plus ; le copieur de trades est permis.
+- Couverture interdite entre comptes, suivie au niveau de l'utilisateur : être long dans un compte et court dans un
+  autre sur le même instrument, même brièvement.
+- Mesure : S1 et M2 se retrouvent en sens contraire sur NQ en même temps 168 fois sur 2016-2026 (279 h). Un book qui
+  mélange des comptes A et B chez Topstep enfreindrait donc la règle. Seuls « tout A » ou « tout B » sont permis.
+
+**Résultats** (coûts de référence, départs échelonnés d'un mois ; capital = pire trésorerie, frais payés avant les
+premiers payouts)
+
+| Book | Net moyen / an | Médiane | Années perdantes | Capital de départ (95 %) |
+|---|---|---|---|---|
+| 1 compte A | +2 764 $ | +619 $ | 41 % | 1 525 $ |
+| 5 comptes A | +13 350 $ | +7 358 $ | 35 % | 7 094 $ |
+| 1 compte B | +3 748 $ | +2 442 $ | 34 % | 1 823 $ |
+| 5 comptes B | +19 287 $ | +17 462 $ | 26 % | 8 628 $ |
+| 3 A + 2 B (interdit chez Topstep) | +16 084 $ | +14 156 $ | 20 % | 6 996 $ |
+
+**Lecture**
+- Des comptes copiés sur le même signal ne diversifient rien : ouverts le même jour, 5 comptes A ont exactement le
+  même sort (corrélation 1,00). Le gain et la perte sont multipliés par 5, la probabilité de perdre reste 41 %.
+- Échelonner les départs d'un mois aide un peu : 5 comptes A passent de 41 % à 35 % d'années perdantes et la médiane
+  de +3 096 à +7 358 $.
+- Le vrai gain viendrait de signaux différents : un compte A et un compte B ne sont corrélés qu'à 0,05-0,14. Mais
+  chez Topstep, S1 et M2 se couvrent : interdit.
+- Témoin sans avantage, 5 comptes : −3 757 $ (A) et −4 746 $ (B), 84-85 % d'années perdantes.
+- Stress à 2 ticks : 5 A échelonnés +11 307 $ (42 % d'années perdantes), 5 B +19 089 $ (27 %).
+
+**Ce qu'il faudrait pour faire comme Kairos**
+1. Plus de stratégies validées qui ne tiennent pas NQ en sens contraire de S1 (or, ES aux heures où S1 ne trade
+   pas…), pour diversifier DANS chaque compte.
+2. Confirmer M2 hors échantillon : forward en démo (NinjaScript prêt, voir la section 17) ou NQ 2010-2012
+   (Databento : la clé de `.env.txt` est refusée, erreur 401 ; il faut une nouvelle clé).
+3. Une variante de S1 qui ne prend pas de position contraire à M2 permettrait de mélanger A et B. Ce serait un
+   nouvel essai.
 
 ## 13. Fiche 15 — rebalancement des ETF à levier sur NQ / ES (candidate, `nexus/letf.py`)
 
@@ -1347,10 +1405,22 @@ Ces stratégies sont testées telles que leurs auteurs les ont publiées, sans r
   nos données. Ce n'est donc pas un test indépendant, et notre Sharpe déflaté ne compte pas ses essais à lui.
 - Il faut le confirmer hors échantillon : NQ 2010-2012, avec l'achat Databento déjà en attente, ou forward en démo.
 - Il tient NQ aux mêmes heures que S1 : il irait dans un autre compte, pas dans le même.
+- Répliques du filtre M2 sur d'autres marchés (mêmes seuils, pas d'essai ; `repliques_m2()` →
+  `recherche/resultats_kairos_m2_repliques.txt`) :
+
+  | Marché | Trades | Net / trade | Sharpe [IC 95 %] | Avant / après 2021 | Déflaté |
+  |---|---|---|---|---|---|
+  | ES | 678 | +13,57 pb | 1,18 [0,64 ; 1,71] | 1,63 / 0,86 | 0,91 |
+  | GC | 445 | +5,79 pb | 0,59 [−0,03 ; 1,18] | | 0,15 |
+  | YM | 924 | +3,00 pb | 0,39 [−0,25 ; 0,96] | 1,43 / −0,39 | 0,04 |
+
+  Le filtre tient sur les indices technologiques et larges (NQ, ES), pas sur le Dow ni sur l'or. Sur YM il
+  s'éteint après 2021 : signe possible que l'effet s'use, raison de plus pour le confirmer hors échantillon.
 
 **Témoin « sans avantage »** : repris du simulateur prop du Kairos Terminal, ajouté à `nexus/prop_comptes.py`. On
 retire leur gain moyen à S1 et à Gotobi et on rejoue les mêmes comptes. Résultat : tous les comptes perdent. Topstep
-avec perte journalière fait −637 $/an au bootstrap, 76 % d'années perdantes, contre +7 269 $ avec le signal. Les
+avec perte journalière fait −747 $/an au bootstrap, 84 % d'années perdantes, contre +2 782 $ avec le signal
+(chiffres corrigés du calendrier, voir plus haut). Les
 règles des firmes, seules, ne rapportent rien : le gain vient de notre avantage.
 
 ## 17. Groupe en direct sur NinjaTrader (stratégies NinjaScript `NexusGroupe*`, AddOn `NexusTableau`)
@@ -1381,6 +1451,21 @@ python -m nexus.live.rapport ── statistiques vectorbt du forward -> Dashboar
 |---|---|---|---|
 | `NexusGroupeS1` | MNQ de l'échéance courante (données : NQ de la même échéance, 75 000 minutes de chauffe chargées par la stratégie) | décision à la clôture des minutes de contrôle 10:00 … 15:30 New York, sortie à 16:00 (13:00 les demi-séances) | capital 100 000 $, au plus 10 contrats |
 | `NexusGroupeGotobi` | 6J de l'échéance courante | jours gotobi : vente à 08:00, achat à 09:55, sortie à 11:00 (heure de Tokyo), au premier tick de la barre qui commence à l'heure prévue | capital 100 000 $, exposition 0,95, au plus 2 contrats |
+
+**M2 préparée, PAS déployée (2026-10-25)** : `Strategies\NexusGroupeM2.cs` et `NxM2Logique` (dans
+`AddOns\NexusGroupeLogique.cs`) reproduisent la règle K5 de `nexus/perso/kairos_publiees.py` : barres 5 minutes de NQ
+(EMA 12, ATR 14 de Wilder), décision à la clôture de 9:34-9:35 New York, trade seulement si |clôture − EMA| > 2,2 ATR
+ou si la veille (9:35 → 15:55) a perdu plus de 60 pb dans le sens du jour, sortie à 15:55 ; contrats fixes (MNQ).
+Parité (`python -m nexus.live.parite_ninjascript`, banc `m2`) : les 2 072 ordres de la recherche sont reproduits à
+l'identique. Le banc passe 4 ordres de plus (2 trades), les 4 et 11 janvier 2016 : la recherche démarre sa liste
+de jours 5 jours après le début des données, et ce n'est donc que la chauffe. Deux cas ont été alignés sur la
+recherche :
+- jour de bourse après une fermeture exceptionnelle (deuil national, 2018-12-05 et 2025-01-09) ;
+- pas de trade si la barre de 9:35 manque (marché arrêté, 2020-03-16).
+
+À ne lancer en démo que sur décision de l'utilisateur, et jamais avec S1 sur un compte du même utilisateur chez
+Topstep (couverture, voir « Book de plusieurs comptes »). `Installer.ps1` copie tous les fichiers : M2 apparaît dans
+la liste des stratégies de NinjaTrader, mais rien ne la lance tant qu'on ne l'active pas.
 
 ### Installer et lancer
 

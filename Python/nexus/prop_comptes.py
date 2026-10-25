@@ -148,6 +148,14 @@ def _jour(L, H, C, W, eq, tailles, plafond, d):
 def cycle(L, H, C, W, eq, idx, t_eval, t_fin, R):
     """Une annee de compte sur les seances idx. R : vecteur_regles. -> [net, frais, payouts_recus, n_payouts,
     evaluations_achetees, evaluations_reussies, comptes_finances_perdus, seance_du_1er_payout (-1 : aucun)]."""
+    return cycle_flux(L, H, C, W, eq, idx, t_eval, t_fin, R, np.zeros(0))
+
+
+@njit(cache=True)
+def cycle_flux(L, H, C, W, eq, idx, t_eval, t_fin, R, flux):
+    """cycle, et si flux a la longueur de idx : solde de tresorerie cumule (payouts recus - frais payes) a la fin de
+    chaque seance (utilise par nexus.prop_book pour le capital de depart d un book de comptes)."""
+    trace = flux.shape[0] == len(idx)
     obj, mll, intra_e, verrou_e, dll_e, coh, jmin = R[0], R[1], R[2], R[3], R[4], R[5], R[6]
     prix_eval, mensuel, prix_reset, activation = R[7], R[8], R[9], R[10]
     verrou_f, jpay, gjour, part, cap_pay, minp, partage = R[11], R[12], R[13], R[14], R[15], R[16], R[17]
@@ -158,6 +166,8 @@ def cycle(L, H, C, W, eq, idx, t_eval, t_fin, R):
     solde, seuil, pic, meilleur, jours, jours_mois, gagnants = 0.0, -mll, 0.0, 0.0, 0, 0, 0
     base, meilleur_pay, jours_pay = 0.0, 0.0, 0         # depuis le dernier payout : solde de reference, meilleur jour, jours
     for j in range(len(idx)):
+        if trace and j > 0:
+            flux[j - 1] = recus - frais
         d = idx[j]
         if phase == 0:
             lo, hi, cl = _jour(L, H, C, W, eq, t_eval, cap_e, d)
@@ -223,6 +233,8 @@ def cycle(L, H, C, W, eq, idx, t_eval, t_fin, R):
                         seuil = max(seuil, verrou_f)
                     if premier < 0:
                         premier = j + 1
+    if trace and len(idx) > 0:
+        flux[len(idx) - 1] = recus - frais
     out = np.empty(8)
     out[0], out[1], out[2], out[3] = recus - frais, frais, recus, npay
     out[4], out[5], out[6], out[7] = nevals, nok, nperdus, premier
@@ -409,10 +421,20 @@ def charger(cotations: str):
     return df_brut, df_adj, eq, trades, m, brut6
 
 
-def tableaux(blocs: list[pd.DataFrame], poids: list[pd.Series]):
-    """Seances communes -> L, H, C, W (strategies x seances)."""
-    jours = blocs[0].index
-    for b in blocs[1:]:
+def seances_cme(index_utc: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    """Toutes les seances CME (17:00 New York -> seance du lendemain, lundi a vendredi) ou le marche a cote, avec ou
+    sans trade : une annee de compte = 252 de ces seances (calendrier reel, frais mensuels, jours de payout)."""
+    ny = pd.DatetimeIndex(index_utc).tz_localize(None).tz_localize("UTC").tz_convert(NY).tz_localize(None)
+    s = pd.DatetimeIndex((ny + pd.Timedelta(hours=7)).normalize().unique())
+    return s[s.dayofweek < 5]
+
+
+def tableaux(blocs: list[pd.DataFrame], poids: list[pd.Series], calendrier: pd.DatetimeIndex | None = None):
+    """Seances (calendrier complet si fourni, sinon seances actives seulement) -> L, H, C, W (strategies x seances).
+    Bug corrige le 2026-10-25 : sans calendrier, les seances sans aucun trade disparaissaient et « une annee » de 252
+    seances durait en fait environ 1,6 annee civile."""
+    jours = blocs[0].index if calendrier is None else calendrier
+    for b in (blocs[1:] if calendrier is None else blocs):
         jours = jours.union(b.index)
     L = np.vstack([b["bas"].reindex(jours).fillna(0.0).to_numpy() for b in blocs])
     H = np.vstack([b["haut"].reindex(jours).fillna(0.0).to_numpy() for b in blocs])
@@ -461,7 +483,9 @@ def main():
     for ticks, nom_cout in ((1.0, "couts de reference (1 tick + commission par cote)"), (2.0, "stress (2 ticks par cote)")):
         s1, w1, pf1, c1 = s1_un_contrat(df_brut, df_adj, eq, trades, "MNQ", ticks)
         go, pfg, cg = gotobi_un_contrat(m, brut6, "6J", ticks)
-        jours, L, H, C, W = tableaux([go, s1], [pd.Series(1.0, index=go.index), w1])
+        cal = seances_cme(df_adj.index)
+        cal = cal[(cal >= min(go.index.min(), s1.index.min())) & (cal <= max(go.index.max(), s1.index.max()))]
+        jours, L, H, C, W = tableaux([go, s1], [pd.Series(1.0, index=go.index), w1], cal)
         eqv = np.array([CONTRATS["6J"]["micros"], CONTRATS["MNQ"]["micros"]], float)
         if ticks == 1.0:
             pr("Controles (critere 9)")
@@ -474,6 +498,7 @@ def main():
                 cl = b["clot"].reindex(jours).fillna(0.0)
                 pr(f"  {nom_s} : {int((b['clot'] != 0).sum())} seances actives sur {len(jours)}, gain moyen {cl.mean():+.1f} $/seance, "
                    f"ecart-type {cl.std():.1f} $, Sharpe {cl.mean() / cl.std() * math.sqrt(252):.2f}")
+            pr(f"  calendrier : {len(jours)} seances CME de {jours[0]:%Y-%m-%d} a {jours[-1]:%Y-%m-%d} (avec ou sans trade)")
             pr(f"  unite S1 = taille de S1 pour 10 000 $ : {w1.median():.2f} MNQ en mediane "
                f"({w1[w1.index >= '2025-01-01'].median():.2f} en 2025-2026)")
             pr()

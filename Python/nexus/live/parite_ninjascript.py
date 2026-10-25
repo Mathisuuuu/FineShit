@@ -5,7 +5,9 @@
 La logique des strategies NinjaTrader (AddOns/NexusGroupeLogique.cs, sans type NinjaTrader) est compilee dans le banc
 Tests/PariteGroupe et rejouee sur les barres 1 minute de la recherche (Databento, depot Cotations) :
   S1     : comparee a S1_NoiseAreaNQ.backtest (memes rolls ajustes, meme capital du jour) : jour, heure, position ;
-  Gotobi : comparee a gotobi.signaux (memes rolls ajustes) : instant et sens de chaque position.
+  Gotobi : comparee a gotobi.signaux (memes rolls ajustes) : instant et sens de chaque position ;
+  M2     : comparee a perso.kairos_publiees.trades(NQ, "K5") (meme serie continue) : instant et sens (ajoute le
+           2026-10-25 ; M2 est a confirmer hors echantillon, la strategie NinjaScript n est pas deployee).
 """
 from __future__ import annotations
 
@@ -113,6 +115,34 @@ def parite_gotobi(cotations: str, debut: str | None, dossier: str, log=print) ->
     return out
 
 
+def parite_m2(debut: str | None, dossier: str, log=print) -> dict:
+    from ..perso import kairos_publiees as KP
+    from ..perso.soixante import NS_MIN, marche
+    m = marche("NQ")
+    f = KP.trades(m, "K5")
+    ok = f[f["motif"] == ""]
+    ref = pd.concat([pd.DataFrame(dict(t=ok["t_entree"].to_numpy(np.int64), sens=ok["sens"].to_numpy(int))),
+                     pd.DataFrame(dict(t=ok["t_sortie"].to_numpy(np.int64), sens=0))]).sort_values("t")
+    debut_ns = m.t - NS_MIN
+    barres = pd.DataFrame(dict(t=debut_ns // 1_000_000, o=m.o, h=m.h, l=m.l, c=m.c, v=0.0, d=m.offset))
+    if debut:
+        coupe = pd.Timestamp(debut).value
+        barres = barres[debut_ns >= coupe]
+        ref = ref[ref["t"] >= coupe]
+    ref["t"] = pd.to_datetime(ref["t"], unit="ns")
+    fb, fo = os.path.join(dossier, "m2_barres.csv"), os.path.join(dossier, "m2_ordres.csv")
+    barres.to_csv(fb, header=False, index=False, float_format="%.10g", na_rep="NaN")
+    ex = _banc("m2", fb, fo, None, log)
+    cs = pd.DataFrame(dict(t=pd.to_datetime(ex["t"], unit="ms"), sens=np.sign(ex["position"]).astype(int)))
+    fus = ref.merge(cs, on="t", how="outer", suffixes=("_ref", "_cs"), indicator=True)
+    egal = (fus["_merge"] == "both") & (fus["sens_ref"] == fus["sens_cs"])
+    out = dict(reference=len(ref), csharp=len(cs), identiques=int(egal.sum()), parite=float(egal.sum() / max(1, len(fus))))
+    log(f"[M2] ordres : recherche {len(ref)}, NinjaScript {len(cs)}, identiques {out['identiques']} ({out['parite']:.2%})")
+    if not egal.all():
+        log("[M2] ecarts :\n" + fus[~egal].head(10).to_string(index=False))
+    return out
+
+
 def main(argv=None) -> dict:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -121,7 +151,8 @@ def main(argv=None) -> dict:
     ap.add_argument("--debut", default=None)
     a = ap.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="parite_nt_") as d:
-        return dict(S1=parite_s1(a.cotations, a.debut, d), Gotobi=parite_gotobi(a.cotations, a.debut, d))
+        return dict(S1=parite_s1(a.cotations, a.debut, d), Gotobi=parite_gotobi(a.cotations, a.debut, d),
+                    M2=parite_m2(a.debut, d))
 
 
 if __name__ == "__main__":

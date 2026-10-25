@@ -12,6 +12,10 @@
 //                  cloture (16:00, 13:00 les demi-seances).
 //  NxGotobiLogique Gotobi 6J (Python/nexus/gotobi.py) : 08:00 vente, 09:55
 //                  achat, 11:00 sortie (heure de Tokyo), jours gotobi.
+//  NxM2Logique     momentum 5 min de 9:30 avec le filtre M2 (Kairos, essai
+//                  440, Python/nexus/perso/kairos_publiees.py, regle K5) :
+//                  A CONFIRMER hors echantillon avant tout usage ; ecrite le
+//                  2026-10-25, pas deployee.
 //  Calendriers (feries et demi-seances NYSE, jours gotobi 2015-2035) generes
 //  depuis le code Python valide : memes dates, a l identique.
 //
@@ -497,6 +501,125 @@ namespace NinjaTrader.NinjaScript.AddOns.Nexus
                 else Poser(Contrats, "09:55 Tokyo : achat apres le fixing", res);
             }
             return res;
+        }
+
+        private void Poser(int q, string motif, List<NxDecision> res)
+        {
+            Cible = q;
+            res.Add(new NxDecision(q, motif));
+        }
+    }
+
+    // =========================================================================
+    //  M2 : momentum 5 min de 9:30, filtre M2 (Kairos, regle K5 de la recherche)
+    // =========================================================================
+    public class NxM2Logique
+    {
+        public const double SeuilEcart = 2.2, SeuilVeille = -0.006;
+        public const int PeriodeEma = 12, PeriodeAtr = 14, Entree = 9 * 60 + 35, Sortie = 15 * 60 + 55;
+        private static readonly long Cinq = TimeSpan.FromMinutes(5).Ticks;
+
+        public int Contrats = 1;                        // taille fixe (MNQ)
+
+        private long seau = long.MinValue;              // barre 5 minutes en cours (debut, ticks UTC)
+        private double sh, sl, sc, ema, atr, precC = double.NaN;
+        private bool premier = true;
+        private DateTime jour = DateTime.MinValue;      // dernier jour de bourse vu (New York)
+        private double o935 = double.NaN, dec935, rCourant = double.NaN;
+        private bool decide;
+        private DateTime finCourante;
+        // fermetures exceptionnelles du NYSE (deuil national) : jours de bourse pour le rendement de la veille, comme
+        // dans la recherche (calendrier des seuls feries reguliers) ; le rendement y est inconnu (pas de barre de 9:35)
+        private static readonly HashSet<int> Exceptionnelles = new HashSet<int> { 20181205, 20250109 };
+
+        public int Cible { get; private set; }
+        public double Ema { get { return ema; } }
+        public double Atr { get { return atr; } }
+        public double RVeille { get; private set; }
+        public double Ecart { get; private set; }
+        public DateTime Jour { get { return jour; } }
+
+        public NxM2Logique() { RVeille = double.NaN; Ecart = double.NaN; }
+
+        private static bool JourDeBourse(DateTime d)
+        {
+            return d.DayOfWeek != DayOfWeek.Saturday && d.DayOfWeek != DayOfWeek.Sunday
+                   && (!NxGroupeCalendrier.FerieNyse(d) || Exceptionnelles.Contains(NxGroupeCalendrier.Cle(d)));
+        }
+
+        /// <summary>Barre 1 minute de NQ close (fin de barre en UTC) -> decisions, a executer a l ouverture de la barre
+        /// suivante. decalage : prix ajuste - prix reel (banc de parite sur la serie continue ; 0 en direct).</summary>
+        public List<NxDecision> SurBarre(DateTime finUtc, double o, double h, double l, double c, double decalage = 0)
+        {
+            List<NxDecision> res = new List<NxDecision>();
+            finCourante = finUtc;
+            DateTime debut = finUtc.AddMinutes(-1);
+            DateTime n = NxGroupeCalendrier.VersNewYork(debut);
+            DateTime d = n.Date;
+            int m = n.Hour * 60 + n.Minute;
+            if (d != jour && JourDeBourse(d))
+            {
+                if (Cible != 0) Poser(0, "nouveau jour : securite", res);
+                jour = d;
+                RVeille = rCourant;                     // rendement 9:35 -> 15:55 du jour de bourse precedent
+                rCourant = double.NaN;
+                o935 = double.NaN;
+                decide = false;
+                Ecart = double.NaN;
+            }
+            if (d == jour)
+            {
+                if (m == Entree) { o935 = o - decalage; dec935 = decalage; }
+                if (m == Sortie && !double.IsNaN(o935) && Math.Abs(decalage - dec935) < 1e-6) rCourant = Math.Log((o - decalage) / o935);
+            }
+            long b = debut.Ticks / Cinq * Cinq;
+            if (b != seau)
+            {
+                if (seau != long.MinValue) Clore5(res);
+                seau = b;
+                sh = h; sl = l; sc = c;
+            }
+            else
+            {
+                sh = Math.Max(sh, h); sl = Math.Min(sl, l); sc = c;
+            }
+            if ((finUtc.Ticks % Cinq) == 0) { Clore5(res); seau = long.MinValue; }
+            DateTime nf = NxGroupeCalendrier.VersNewYork(finUtc);
+            if (Cible != 0 && nf.Date == jour && nf.Hour * 60 + nf.Minute >= Sortie) Poser(0, "15:55 : sortie", res);
+            return res;
+        }
+
+        /// <summary>Horloge (UTC) : sortie si la barre de 15:55 n arrive pas.</summary>
+        public List<NxDecision> SurHorloge(DateTime utc)
+        {
+            List<NxDecision> res = new List<NxDecision>();
+            DateTime n = NxGroupeCalendrier.VersNewYork(utc);
+            if (Cible != 0 && (n.Date != jour || (n.Hour * 60 + n.Minute) * 60 + n.Second >= Sortie * 60 + 10)) Poser(0, "15:55 manquee : sortie", res);
+            return res;
+        }
+
+        private void Clore5(List<NxDecision> res)
+        {
+            double tr = double.IsNaN(precC) ? sh - sl : Math.Max(sh, precC) - Math.Min(sl, precC);
+            if (premier) { ema = sc; atr = tr; premier = false; }
+            else
+            {
+                ema += 2.0 / (PeriodeEma + 1) * (sc - ema);
+                atr += (tr - atr) / PeriodeAtr;
+            }
+            precC = sc;
+            DateTime n = NxGroupeCalendrier.VersNewYork(new DateTime(seau, DateTimeKind.Utc));
+            if (decide || n.Date != jour || n.Hour * 60 + n.Minute != 9 * 60 + 30 || NxGroupeCalendrier.DemiSeance(jour)
+                || NxGroupeCalendrier.FerieNyse(jour)) return;
+            decide = true;
+            DateTime f = NxGroupeCalendrier.VersNewYork(finCourante);
+            if (f.Hour * 60 + f.Minute > Entree + 1) return;              // ouverture manquee (marche arrete) : pas de trade
+            int s = sc > ema ? 1 : -1;
+            Ecart = Math.Abs(sc - ema) / atr;
+            bool ok = Ecart > SeuilEcart || (!double.IsNaN(RVeille) && s * RVeille < SeuilVeille);
+            if (ok && Contrats > 0)
+                Poser(s * Contrats, string.Format(CultureInfo.InvariantCulture, "9:35 {0} : ecart {1:0.00} ATR, veille {2:0.0000}",
+                                                   s > 0 ? "achat" : "vente", Ecart, RVeille), res);
         }
 
         private void Poser(int q, string motif, List<NxDecision> res)

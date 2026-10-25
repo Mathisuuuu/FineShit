@@ -111,3 +111,33 @@ def test_temoin_sans_avantage():
     L0, H0, C0 = P.sans_avantage(L, H, C)
     assert np.isclose(C0[0, C[0] != 0].mean(), 0.0) and C0[0, 0] == 0.0
     assert (L0 <= np.minimum(C0, 0)).all() and (H0 >= np.maximum(C0, 0)).all()
+
+
+def test_calendrier_garde_les_seances_sans_trade():
+    # bug du 2026-10-25 : sans calendrier, une seance sans trade disparaissait (« annee » de 252 seances actives)
+    t = pd.DatetimeIndex(["2024-03-04 15:00", "2024-03-05 15:00", "2024-03-06 15:00", "2024-03-08 23:30"])  # UTC
+    cal = P.seances_cme(t)
+    assert list(cal.strftime("%m-%d")) == ["03-04", "03-05", "03-06"]   # vendredi 18:30 NY -> samedi, ecarte
+    b = pd.DataFrame({"bas": [-5.0], "haut": [8.0], "clot": [3.0]}, index=pd.DatetimeIndex(["2024-03-05"]))
+    jours, L, H, C, W = P.tableaux([b], [pd.Series(1.0, index=b.index)], cal)
+    assert len(jours) == 3 and C[0].tolist() == [0.0, 3.0, 0.0]
+
+
+def test_flux_de_tresorerie_et_book():
+    from nexus import prop_book as PB
+    g = np.array([1000.0] * 3 + [400.0] * 10)
+    L, H, C = np.minimum(g, 0)[None, :], np.maximum(g, 0)[None, :], g[None, :]
+    W, eq, t = np.ones_like(C), np.array([1.0]), np.array([1.0])
+    R = P.vecteur_regles(R0)
+    flux = np.zeros(len(g))
+    x = P.cycle_flux(L, H, C, W, eq, np.arange(len(g)), t, t, R, flux)
+    assert flux[0] == -100 and flux[2] == -150 and np.isclose(flux[-1], x[0])   # eval, puis activation, puis payouts
+    assert np.allclose(P.cycle(L, H, C, W, eq, np.arange(len(g)), t, t, R), x)
+    mats = {"A": (L, H, C, W, eq)}
+    ancien = P.HORIZON
+    try:
+        P.HORIZON = len(g)
+        r = PB.book(np.arange(len(g)), ["A", "A"], {"A": (t, t)}, mats, R, 0)
+    finally:
+        P.HORIZON = ancien
+    assert np.isclose(r["net"], 2 * x[0]) and r["capital"] == 300.0                # deux comptes identiques

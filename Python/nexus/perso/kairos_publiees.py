@@ -358,3 +358,34 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
+
+
+# =============================================================================
+#  Repliques supplementaires de M2 (2026-10-25, apres le calcul ; PAS des essais)
+# =============================================================================
+def repliques_m2(roots=("YM", "GC", "ES"), sortie: str | None = None, log=print) -> dict:
+    """Regle K5 telle quelle sur des marches que l auteur n a pas utilises pour fixer ses seuils (il a regle M2 sur
+    NQ) : test d independance partiel. Memes couts, memes criteres ; aucun nouvel essai, aucun reglage."""
+    L: list[str] = []
+    pr = L.append
+    pr("Repliques de K5 (momentum 5 min, filtre M2) hors NQ - pas des essais (deflate avec 440 essais)")
+    out = {}
+    for root in roots:
+        m = marche(root)
+        f = trades(m, "K5")
+        ok = f[f["motif"] == ""]
+        prix = float(np.nanmedian(ok["pe"]))
+        c1, cm = cout_pb(root, prix), cout_pb(root, prix, micro=True)
+        crit = criteres(ok["brut_pb"], ok["temoin_pb"], c1)
+        x = PC.mesures(serie_journaliere(f, c1), 440)
+        xm = PC.mesures(serie_journaliere(f, cm), 440)
+        out[root] = dict(crit=crit, mesures=x, micro=xm)
+        pr(f"  {root} : {crit['n']} trades, net {crit['net']:+.2f} pb (t {crit['t']:+.2f} ; 2016-2020 t {crit['t1']:+.2f}, "
+           f"2021-2026 t {crit['t2']:+.2f}), Welch {crit['welch']:+.2f} | Sharpe {x['sharpe']:+.2f} [{x['ic_bas']:+.2f} ; "
+           f"{x['ic_haut']:+.2f}], avant / apres 2021 {x['sharpe_p1']:+.2f} / {x['sharpe_p2']:+.2f}, deflate {x['dsr']:.2f} | "
+           f"micro Sharpe {xm['sharpe']:+.2f}")
+    sortie = sortie or os.path.join(PY_DIR, "recherche", "resultats_kairos_m2_repliques.txt")
+    with open(sortie, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(L) + "\n")
+    log("\n".join(L))
+    return out

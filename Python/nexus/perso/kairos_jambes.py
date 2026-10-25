@@ -67,7 +67,7 @@ try:
 except ImportError:  # pragma: no cover
     vbt = None
 
-MICRO = {"GC": ("MGC", 10.0), "ES": ("MES", 5.0), "NQ": ("MNQ", 2.0)}
+MICRO = {"GC": ("MGC", 10.0), "ES": ("MES", 5.0), "NQ": ("MNQ", 2.0), "YM": ("MYM", 0.5)}
 JAMBES = {
     "K1": dict(nom="Or, cassure Asie -> Londres", root="GC", essai=436, range_=((19, 0), (3, 0)), veille=True,
                entree=((3, 0), (8, 0)), sortie=(11, 30), stop="borne"),
