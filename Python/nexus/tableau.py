@@ -43,7 +43,7 @@ VERSION = 2
 # Nombre CUMULE d essais du programme de recherche (sessions cloud + locales, voir la memoire « methode-strategie-papiers »)
 # et variance des Sharpe annualises des essais : le Sharpe deflate de TOUTES les strategies du tableau est calcule avec ces
 # deux valeurs (memes tests pour toutes). La variance est remplacee a l export par celle des strategies exportees.
-ESSAIS_PROGRAMME = 434        # 431e etf_nuit, 432e tiers_vendredi, 433e crypto_retour (2026-10-22), 434e ouverture_europe (2026-10-24), tous rejetes
+ESSAIS_PROGRAMME = 435        # 431e etf_nuit, 432e tiers_vendredi, 433e crypto_retour (2026-10-22), 434e ouverture_europe (2026-10-24), 435e pente_fomc (2026-10-25)
 VAR_SHARPE_PROGRAMME = 0.5
 # Strategies validees : nombre d essais fige a leur date de validation (decision du 2026-10-24). Le compteur valait 430 le
 # 2026-10-21, jour ou S1, Gotobi et l ORB ont passe les criteres ; les essais faits ensuite sur d autres idees ne les

@@ -1,0 +1,56 @@
+====================================================================================================================
+ PARIS DE PENTIFICATION (COT) ET ES LE JOUR DU FOMC, 9:30 -> 13:45 ET - PARK (FEDS 2019-025) - UN ESSAI (n° 435)
+====================================================================================================================
+Regle figee : STEEP (moyenne sur 91 jours du binaire EXSP_3M > 0 et EXSP_30Y < 0, rapports publies) a la reunion
+precedente ; prevu = -0,01 + 0,44 x STEEP (%) ; achat si prevu > 0, vente sinon ; 3M = Eurodollar jusqu au 2023-04-11,
+SOFR 3 mois ensuite. Temoin : meme sens, meme fenetre, 7 jours apres la reunion.
+
+Calcul de puissance (critere 6, effet du papier 28.5 pb par reunion, ecart-type 74.2 pb) :
+  ES : t attendu +3.32 (cout 1.55 pb, 84 reunions) | MES +3.04 (cout 3.87 pb)
+  NQ : t attendu +3.44 (cout 0.62 pb, 84 reunions) | MNQ +3.21 (cout 2.48 pb)
+  YM : t attendu +3.40 (cout 0.96 pb, 84 reunions) | MYM +3.04 (cout 3.82 pb)
+
+Verification du calcul (critere 9)
+  (a) horodatage, jours de FOMC (volume median de la barre / 3 barres precedentes) : 9:30 ouverture x8.1, 13:45 sortie x1.1, 14:00 annonce x8.5 | 4 plus gros volumes medians : 9:30, 14:00, 15:59, 16:00
+  (b) anticipation : (b1) prix futurs x1,5 sur les 84 trades -> prix d entree et de sortie INCHANGES ; (b2) rapports COT publies apres la date du signal tires au hasard sur 30 reunions -> STEEP INCHANGE
+  (c) rejeu vectorbt : 84 trades contre 84 au moteur, ecart maximal de P&L brut 0.000000 $ -> IDENTIQUE
+  (d) 5 trades tires au hasard (graine 7), a verifier a la main :
+      FOMC du 2018-08-01 : STEEP 0.000 (12 rapports au 2018-06-13) -> prevu -0.010 % -> VENTE Wed 09:30 ET a 2819.50 | debouclage 13:45 ET a 2811.50 | brut +400.00 $ - frais 30.00 $ = +370.00 $
+      FOMC du 2019-10-30 : STEEP 0.583 (12 rapports au 2019-09-18) -> prevu +0.247 % -> ACHAT Wed 09:30 ET a 3038.00 | debouclage 13:45 ET a 3031.75 | brut -312.50 $ - frais 30.00 $ = -342.50 $
+      FOMC du 2021-03-17 : STEEP 0.750 (12 rapports au 2021-01-27) -> prevu +0.320 % -> ACHAT Wed 09:30 ET a 3937.50 | debouclage 13:45 ET a 3933.25 | brut -212.50 $ - frais 30.00 $ = -242.50 $
+      FOMC du 2022-09-21 : STEEP 0.000 (12 rapports au 2022-07-27) -> prevu -0.010 % -> VENTE Wed 09:30 ET a 3893.00 | debouclage 13:45 ET a 3898.00 | brut -250.00 $ - frais 30.00 $ = -280.00 $
+      FOMC du 2024-05-01 : STEEP 0.000 (12 rapports au 2024-03-20) -> prevu -0.010 % -> VENTE Wed 09:30 ET a 5058.00 | debouclage 13:45 ET a 5050.75 | brut +362.50 $ - frais 30.00 $ = +332.50 $
+  (e) comptes ES : 84 reunions 2016-01-27 -> 2026-07-29 ; retenue 84 ; achats 32, ventes 52 ; temoin retenu 82 ; rapports COT par signal : min 2, median 12, max 12 ; rapports 2014-01-07 -> 2026-10-06 (3M : ED 484, SR3 182) ; 34 h/an
+
+--- ES (ESSAI) : 84 reunions
+    brut -3.45 pb (t -1.07) | 2016-2020 +0.43 (t +0.08) | 2021-2026 -6.82 (t -1.71) | papier 2003-2017 : +28.5
+    temoin (7 jours apres) -11.75 pb -> Welch +1.08 | achat systematique (reference) -1.93 pb (t -0.60)
+    cout aller-retour 1.55 pb -> net -5.00 pb ; sans les 3 meilleures reunions -7.41 pb ; stress 2 ticks -6.29 pb ; gain total -420 pb
+    net par annee (pb) : 2016:-1.1 2017:+11.3 2018:-13.9 2019:+0.6 2020:-2.7 2021:-24.3 2022:-21.6 2023:+2.1 2024:+7.6 2025:-3.6 2026:-11.7
+    vectorbt (ES, 1 tick) : Sharpe -0.47 [IC 95 % -1.00 ; +0.12] | avant 2021 -0.09 | apres -0.86 | deflate (435 essais) 0.00 | perte max -5.5%
+    micro MES (cout 3.87 pb) : net -7.32 pb | Sharpe -0.68 [IC bas -1.21] | deflate 0.00
+    heures en position : 34 h/an ; rendement net par heure -1.18 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+--- NQ (replique, pas un essai) : 84 reunions
+    brut -2.43 pb (t -0.52) | 2016-2020 +5.77 (t +0.91) | 2021-2026 -9.54 (t -1.45) | papier 2003-2017 : +28.5
+    temoin (7 jours apres) -14.15 pb -> Welch +1.06 | achat systematique (reference) -3.46 pb (t -0.75)
+    cout aller-retour 0.62 pb -> net -3.05 pb ; sans les 3 meilleures reunions -6.26 pb ; stress 2 ticks -3.46 pb ; gain total -256 pb
+    net par annee (pb) : 2016:+19.1 2017:+22.2 2018:-15.5 2019:-3.5 2020:+3.2 2021:-18.9 2022:-38.5 2023:+3.4 2024:+12.2 2025:-12.1 2026:-5.3
+    vectorbt (NQ, 1 tick) : Sharpe -0.20 [IC 95 % -0.81 ; +0.40] | avant 2021 +0.37 | apres -0.64 | deflate (435 essais) 0.00 | perte max -6.6%
+    micro MNQ (cout 2.48 pb) : net -4.91 pb | Sharpe -0.32 [IC bas -0.91] | deflate 0.00
+    heures en position : 34 h/an ; rendement net par heure -0.72 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+--- YM (replique, pas un essai) : 84 reunions
+    brut -2.79 pb (t -0.79) | 2016-2020 -2.88 (t -0.58) | 2021-2026 -2.72 (t -0.54) | papier 2003-2017 : +28.5
+    temoin (7 jours apres) -11.06 pb -> Welch +1.12 | achat systematique (reference) -0.33 pb (t -0.09)
+    cout aller-retour 0.96 pb -> net -3.75 pb ; sans les 3 meilleures reunions -6.47 pb ; stress 2 ticks -4.39 pb ; gain total -315 pb
+    net par annee (pb) : 2016:-7.7 2017:+4.9 2018:-15.0 2019:+6.4 2020:-8.3 2021:-21.7 2022:-10.3 2023:+1.2 2024:+3.0 2025:+11.2 2026:-6.7
+    vectorbt (YM, 1 tick) : Sharpe -0.32 [IC 95 % -0.92 ; +0.30] | avant 2021 -0.35 | apres -0.31 | deflate (435 essais) 0.00 | perte max -4.3%
+    micro MYM (cout 3.82 pb) : net -6.61 pb | Sharpe -0.57 [IC bas -1.14] | deflate 0.00
+    heures en position : 34 h/an ; rendement net par heure -0.88 pb
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+Synthese : REJETEE (l essai ES echoue). Aucune variante ne sera testee (pas de surajustement).
+Calcul en 45 s.

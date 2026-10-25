@@ -1110,6 +1110,22 @@ brutes. Résultat ES : +1,38 pb brut par nuit (t 2,3) ; **2016-2020 +3,19 pb (t 
 (répliques) : même effet avant 2021, disparu après ; MNQ et MYM perdants → **rejetée**. L'effet a existé et s'est
 éteint comme la dérive de nuit (n° 7). Aucune variante testée.
 
+`python -m nexus.perso.pente_fomc` → `recherche/resultats_pente_fomc.txt` (2026-10-25, hypothèse n° 318, **essai
+n° 435**, seule candidate testable sans achat après le crible de 321 hypothèses). Park (Réserve fédérale, FEDS 2019-025,
+textes complets lus) : quand les spéculateurs du rapport COT parient sur une pentification de la courbe (plus nombreux
+qu'en moyenne à l'achat sur l'Eurodollar, moins sur le 30 ans, moyenne sur un trimestre = STEEP), les futures S&P montent
+le jour du FOMC de 9:30 à 15 min avant l'annonce (1997-2017 : t 3,77 ; hors échantillon, Sharpe 1,085 contre 0,748 pour
+l'achat systématique). Puissance : ES 3,32, MES 3,04. Règle du papier, figée : STEEP connu à la réunion précédente
+(rapports réellement publiés, retards des fermetures de l'État 2018-2019 et 2025 compris), coefficients du papier
+(achat si STEEP > 0, vente sinon), 9:30 → 13:45 ET ; **substitut figé avant le calcul** : Eurodollar jusqu'au
+2023-04-11, SOFR 3 mois ensuite (conversion du CME le 14/04/2023) ; témoin : même sens, même fenêtre, 7 jours après.
+Vérifications : pics de volume à 9:30 et 14:00 les jours de FOMC, prix et STEEP inchangés quand on modifie le futur,
+vectorbt identique au moteur (84 trades), 5 trades à la main. Résultat ES (84 réunions 2016-2026, 32 achats, 52 ventes) :
+**−3,45 pb brut par réunion (t −1,07)** au lieu de +28,5 ; 2016-2020 +0,4, 2021-2026 −6,8 ; net −5,0 pb, Sharpe
+vectorbt −0,47 [−1,00 ; 0,12], Welch 1,1 ; MES −7,3 pb net ; NQ et YM (répliques) aussi négatifs → **rejetée**. L'achat
+systématique de la même fenêtre est lui aussi nul (−1,9 pb, t −0,6) : la dérive d'avant le FOMC n'existe plus sur nos
+données, avec ou sans le signal. Aucune variante testée.
+
 `python -m nexus.perso.weekend_crypto` → `recherche/resultats_weekend_crypto.txt` (2026-10-19, piste 1 de
 `recherche/pistes.md`). Mourey, Shahrour & Şoiman (*FRL* 2025) : un week-end négatif des cryptomonnaies annonce un
 lundi négatif des actions. Signal : BTC du vendredi 16:00 au dimanche 18:00 ET ; 246 week-ends, 2021-2026. Le constat

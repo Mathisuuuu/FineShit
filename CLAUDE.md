@@ -32,12 +32,14 @@ et `cd Dashboard && node --test`.
 
 **A. Choisir les papiers**
 1. Source sérieuse : revue à comité, banque centrale, grande université.
-2. Récente de préférence (les effets publiés avant 2016-2018 sont nuls ou inversés sur nos données) ; un papier ancien
-   doit être confirmé par un travail récent.
+2. Récente de préférence (les effets publiés avant 2016-2018 sont nuls ou inversés sur nos données). Décision du
+   2026-10-25 : un papier ancien est accepté s'il est encore vivant aujourd'hui (confirmé par un travail récent, ou
+   par notre test sur 2016-2026, critère 11). Tous les marchés sont permis (Chine, Europe, Asie…), pas seulement le
+   CME ; noter pour chaque piste si une prop firm permet de la jouer.
 3. Lire d'abord le résumé ; s'il est cohérent avec notre cadre, lire le texte COMPLET avant toute règle ou tout test
    (texte introuvable : l'idée attend).
 4. Chercher et lire les papiers contraires (« disappearing », « replication », « out-of-sample »).
-5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (301
+5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (329
    hypothèses au 2026-10-25, à compléter à chaque lecture ou test), puis `Python/recherche/`, en-têtes de
    `nexus/perso/`, `Python/.cache/`.
    Décision du 2026-10-21 : les tests faits sur simple résumé (Nikkei N1-N2-J1, argent A1, crypto H11-H12…) sont
@@ -67,7 +69,7 @@ et `cd Dashboard && node --test`.
 14. Gain net > 0 sans les 3 meilleurs jours.
 15. Événements rares (< 60 cas) : t ≥ 2 et net positif ≥ 65 % des années, à la place des n° 10-11.
 16. **Sharpe déflaté ≥ 0,95** avec le nombre CUMULÉ d'essais (`ESSAIS_PROGRAMME` de `Python/nexus/tableau.py`,
-    **434** au 2026-10-24 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
+    **435** au 2026-10-25 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
     stratégie validée garde le nombre d'essais du jour de sa validation (`ESSAIS_FIGES` : S1, Gotobi et ORB figées à
     **430**, compteur du 2026-10-21) ; les essais faits ensuite sur d'autres idées ne la pénalisent plus.
 
@@ -107,7 +109,7 @@ Onglet Prop firm (2026-10-21) : seules les stratégies qui passent les 24 critè
 (`RETENUES_METHODE` de `Python/nexus/prop_combinaisons.py` : S1, Gotobi, boombitch NQ conforme ; à tenir à jour) ;
 recommandation : S1 + Gotobi (Sharpe 2,04 [1,47 ; 2,59], 519 h/an).
 
-Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : fin de mois Trésor (`fin_de_mois_taux.py`),
+Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : paris de pentification COT et ES le jour du FOMC (`pente_fomc.py`, essai 435, 2026-10-25), fin de mois Trésor (`fin_de_mois_taux.py`),
 enchère de clôture C1 (abandonnée à la lecture, aucun essai). Avec nos 9 contrats (ES NQ YM GC CL 6E 6B 6J 6A),
 les idées intraday documentées sont épuisées : il faut des données nouvelles.
 

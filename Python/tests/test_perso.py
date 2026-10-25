@@ -1085,3 +1085,27 @@ def test_ouverture_europe_nuit_de_la_veille():
     a = (pd.Timestamp("2024-01-08 04:31") - pd.Timestamp("2024-01-07 23:01")) // pd.Timedelta(minutes=1)
     b = (pd.Timestamp("2024-01-08 08:31") - pd.Timestamp("2024-01-07 23:01")) // pd.Timedelta(minutes=1)
     assert f["motif"].iloc[0] == "" and f["pa"].iloc[0] == a and f["pb"].iloc[0] == b
+
+
+def test_pente_fomc_signal_publie_et_substitut_sofr():
+    from nexus.perso import pente_fomc as P
+    # rapports du mardi : 3M au-dessus de la moyenne, 30 ans en dessous -> binaire 1 ; Eurodollar puis SOFR 3 mois
+    dates = pd.date_range("2023-01-03", "2023-06-27", freq="7D")
+    lignes = []
+    for d in dates:
+        ed = 50.0 if d <= P.DERNIER_ED else -500.0          # Eurodollar residuel apres la conversion : ignore
+        sr3 = 50.0 if d >= P.PREMIER_SR3 else -500.0        # SOFR ignore avant la conversion
+        for marche, sp in (("ED", ed), ("SR3", sr3), ("10Y", 0.0), ("30Y", -50.0)):
+            lignes.append(dict(marche=marche, date=d, longs=100.0 + sp, courts=100.0, sp=sp))
+    b = P.binaire(pd.DataFrame(lignes))
+    assert (b.binaire == 1).all() and (b.loc[:P.DERNIER_ED, "source_3m"] == "ED").all()
+    # un rapport ne sert qu apres son delai de publication (mesure + 6 jours) : le mercredi 2023-03-22, le rapport du
+    # mardi 21 et celui du 14 (publie le 20, < 22) ; le 21 est exclu
+    s, n = P.steep(b, pd.Timestamp("2023-03-22"))
+    assert s == 1.0 and n == len([d for d in dates if d + pd.Timedelta(days=6) < pd.Timestamp("2023-03-22")
+                                  and d > pd.Timestamp("2023-03-22") - pd.Timedelta(days=91)])
+    # fermeture de l Etat 2025 : rapport du 2025-10-07 publie le 2026-01-23 seulement
+    p = P.publication(pd.Series(pd.to_datetime(["2025-09-23", "2025-10-07"])))
+    assert p.iloc[0] == pd.Timestamp("2025-09-29") and p.iloc[1] == pd.Timestamp("2026-01-23")
+    # sens fige du papier : vente si STEEP = 0, achat des le premier rapport de pentification
+    assert P.B0 + P.B1 * 0.0 < 0 < P.B0 + P.B1 / 13
