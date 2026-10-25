@@ -51,7 +51,7 @@ et `cd Dashboard && node --test`.
 3. Lire d'abord le résumé ; s'il est cohérent avec notre cadre, lire le texte COMPLET avant toute règle ou tout test
    (texte introuvable : l'idée attend).
 4. Chercher et lire les papiers contraires (« disappearing », « replication », « out-of-sample »).
-5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (349
+5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (350
    hypothèses au 2026-10-25, à compléter à chaque lecture ou test), puis `Python/recherche/`, en-têtes de
    `nexus/perso/`, `Python/.cache/`.
    Décision du 2026-10-21 : les tests faits sur simple résumé (Nikkei N1-N2-J1, argent A1, crypto H11-H12…) sont
@@ -81,7 +81,7 @@ et `cd Dashboard && node --test`.
 14. Gain net > 0 sans les 3 meilleurs jours.
 15. Événements rares (< 60 cas) : t ≥ 2 et net positif ≥ 65 % des années, à la place des n° 10-11.
 16. **Sharpe déflaté ≥ 0,95** avec le nombre CUMULÉ d'essais (`ESSAIS_PROGRAMME` de `Python/nexus/tableau.py`,
-    **437** au 2026-10-25 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
+    **440** au 2026-10-25 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
     stratégie validée garde le nombre d'essais du jour de sa validation (`ESSAIS_FIGES` : S1, Gotobi et ORB figées à
     **430**, compteur du 2026-10-21) ; les essais faits ensuite sur d'autres idées ne la pénalisent plus.
 
@@ -116,12 +116,14 @@ et `cd Dashboard && node --test`.
 | ORB 5 min NQ | 0,92 | 0,40 | 0,70 | 170 | candidate : à confirmer sur NQ 2010-2015 |
 | Boombitch (NQ, MBT) | 1,37-1,44 | 0,82-0,88 | 0,98-1,00 | 486-879 | fiables ; NQ redevient candidate (plafond de 400 h levé), en conflit de contrat avec S1 / ORB ; MBT rejetée (Welch 1,39) |
 | Or la nuit GC | 1,11 | 0,49 | 0,74 | 7 311 | garde la nuit et le week-end : prop firm spéciale |
+| Momentum 5 min M2 NQ (Kairos, membre supe) | 1,59 | 1,05 | 1,00 | 617 | passe 10-18 et 20 (corr. S1 0,26) ; seuils choisis par l'auteur sur NOTRE période : à confirmer hors échantillon (forward démo ou NQ 2010-2012) ; conflit de contrat avec S1 |
+| IntradayVolBreakout NQ (Kairos) | 1,13 | 0,57 | 0,85 | 320 | fiable non retenue (déflaté < 0,95) ; famille de S1 |
 
 Onglet Prop firm (2026-10-21) : seules les stratégies qui passent les 24 critères entrent dans les combinaisons
 (`RETENUES_METHODE` de `Python/nexus/prop_combinaisons.py` : S1, Gotobi, boombitch NQ conforme ; à tenir à jour) ;
 recommandation : S1 + Gotobi (Sharpe 2,04 [1,47 ; 2,59], 519 h/an).
 
-Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : jambes Kairos sans papier, or Asie → Londres et
+Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : stratégies publiées sur Kairos (`kairos_publiees.py`, essais 438-440 : momentum C rejeté), jambes Kairos sans papier, or Asie → Londres et
 cassure de l'initial balance ES (`kairos_jambes.py`, essais 436-437, 2026-10-25), paris de pentification COT et ES le jour du FOMC (`pente_fomc.py`, essai 435, 2026-10-25), fin de mois Trésor (`fin_de_mois_taux.py`),
 enchère de clôture C1 (abandonnée à la lecture, aucun essai). Avec nos 9 contrats (ES NQ YM GC CL 6E 6B 6J 6A),
 les idées intraday documentées sont épuisées : il faut des données nouvelles.
@@ -148,7 +150,9 @@ les idées intraday documentées sont épuisées : il faut des données nouvelle
 - **Modèle prop firm (2026-10-25, `nexus/prop_comptes.py`, `resultats_prop_comptes.txt`)** : cycle de vie d'un compte
   50K sur un an avec S1 (MNQ) + Gotobi (6J). Meilleur choix : Topstep, payout Standard, AVEC la perte journalière de
   1 000 $ choisie à l'achat (règles officielles lues le 2026-10-25) : bootstrap +7 300 $/compte-an, 26 % d'années
-  perdantes ; Lucid et Tradeify nettement moins bons (médiane négative). Prochaine étape : nombre de comptes, et
+  perdantes ; Lucid et Tradeify nettement moins bons (médiane négative). Témoin « sans avantage » (repris du Kairos
+  Terminal) : SANS notre signal, tous les comptes perdent (Topstep avec perte journalière −637 $/an, 76 % d'années
+  perdantes) : le gain vient de S1 + Gotobi, pas des seules règles des firmes. Prochaine étape : nombre de comptes, et
   vérifier l'offre limitée « plafonds doublés ».
 - Prop firms (2026-10-21) : Topstep la plus sûre (NKD permis, pas de nuit) ; seule Phidias Premium permet NKD + or +
   nuit ; proposition en cours : simuler le challenge Phidias Premium avec l'or de nuit.

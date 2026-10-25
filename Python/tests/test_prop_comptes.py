@@ -103,3 +103,11 @@ def test_echelle_de_contrats():
     x = P.cycle(L, H, C, np.ones((1, 6)), np.array([1.0]), np.arange(6), np.array([1.0]), np.array([5.0]),
                 P.vecteur_regles({**R0, **r, "jours_payout": 3, "gain_jour_payout": 1, "plafond_payout": 1e9, "part_payout": 1.0}))
     assert np.isclose(x[2], 0.9 * (1000 + 1000 + 3000))
+
+
+def test_temoin_sans_avantage():
+    C = np.array([[0.0, 100.0, -50.0, 250.0]])
+    L, H = np.minimum(C, 0) - 10, np.maximum(C, 0) + 10
+    L0, H0, C0 = P.sans_avantage(L, H, C)
+    assert np.isclose(C0[0, C[0] != 0].mean(), 0.0) and C0[0, 0] == 0.0
+    assert (L0 <= np.minimum(C0, 0)).all() and (H0 >= np.maximum(C0, 0)).all()

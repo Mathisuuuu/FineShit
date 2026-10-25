@@ -1129,3 +1129,15 @@ def test_kairos_jambes_cassure_stop_et_sortie():
     tr = K.jour_trade(o, h, l2, c, 0, 3, 3, 6, 6, 0.25, "borne")
     assert tr[5] == "heure"                                                 # stop a l autre borne (8) non touche
     assert K.jour_trade(o, np.minimum(h, 10.1), np.maximum(l, 7.9), c, 0, 3, 3, 6, 6, 0.25, "borne") is None
+
+
+def test_kairos_publiees_stop_et_atr():
+    from types import SimpleNamespace
+    from nexus.perso import kairos_publiees as K
+    m = SimpleNamespace(o=np.array([100.0, 101.0, 99.0, 102.0]), h=np.array([101.0, 102.0, 100.0, 103.0]),
+                        l=np.array([99.5, 100.5, 97.0, 101.0]))
+    assert K._tenir(m, 1, 0, None, 3) == (3, 102.0, "heure")
+    assert K._tenir(m, 1, 0, 98.0, 3) == (2, 98.0, "stop")             # touche a la barre 2 (ouverture 99 au-dessus)
+    assert K._tenir(m, -1, 0, 101.5, 3) == (1, 101.5, "stop")          # vente : haut 102 >= 101,5
+    w = K.wilder(np.array([2.0, 2.0, 2.0, 7.0]), 5)
+    assert np.isclose(w[-1], 2.0 + (7.0 - 2.0) / 5)

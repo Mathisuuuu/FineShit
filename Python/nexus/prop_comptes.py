@@ -249,6 +249,19 @@ def grille(L, H, C, W, eq, debuts, horizon, TE, TF, R):
     return g
 
 
+def sans_avantage(L, H, C):
+    """Temoin « sans avantage » (repris du simulateur du Kairos Terminal : meme compte, sans edge) : gain moyen des
+    seances actives retire a chaque strategie ; plus bas et plus haut decales d autant (bornes a 0)."""
+    L2, H2, C2 = L.copy(), H.copy(), C.copy()
+    for k in range(C.shape[0]):
+        actif = C[k] != 0
+        mu = C[k, actif].mean() if actif.any() else 0.0
+        C2[k, actif] = C[k, actif] - mu
+        L2[k, actif] = np.minimum(np.minimum(L[k, actif] - mu, C2[k, actif]), 0.0)
+        H2[k, actif] = np.maximum(np.maximum(H[k, actif] - mu, C2[k, actif]), 0.0)
+    return L2, H2, C2
+
+
 def bootstrap(L, H, C, W, eq, t_eval, t_fin, R, lignes: np.ndarray, b: int = B_BOOT, seed: int = SEED,
               horizon: int = HORIZON, bloc: int = BLOC) -> np.ndarray:
     """b annees synthetiques : blocs de `bloc` seances consecutives tires parmi `lignes` (bootstrap circulaire,
@@ -483,12 +496,16 @@ def main():
             xt = departs(L, H, C, W, eqv, dep, HORIZON, te, tf, R)
             lb = np.flatnonzero(np.asarray(jours >= COUPURE))
             bo = bootstrap(L, H, C, W, eqv, te, tf, R, lb)
-            res[(ticks, cle)] = dict(te=te, tf=tf, a=resume_cycles(xa), b=resume_cycles(xb), t=resume_cycles(xt), boot=resume_cycles(bo))
+            L0, H0, C0 = sans_avantage(L, H, C)
+            b0 = bootstrap(L0, H0, C0, W, eqv, te, tf, R, lb)
+            res[(ticks, cle)] = dict(te=te, tf=tf, a=resume_cycles(xa), b=resume_cycles(xb), t=resume_cycles(xt), boot=resume_cycles(bo),
+                                     sans_avantage=resume_cycles(b0))
             ra, rb, rbo = res[(ticks, cle)]["a"], res[(ticks, cle)]["b"], res[(ticks, cle)]["boot"]
             pr(f"{r['nom']}")
             pr(f"  taille choisie sur 2016-2020 : evaluation {int(te[0])} x 6J + S1 {te[1]:.1f} unite(s) ; "
                f"finance {int(tf[0])} x 6J + S1 {tf[1]:.1f} unite(s)")
-            for nom_p, x in (("2016-2020 (choix)", ra), ("2021-2026 (hors echantillon)", rb), ("bootstrap 2021-2026", rbo)):
+            for nom_p, x in (("2016-2020 (choix)", ra), ("2021-2026 (hors echantillon)", rb), ("bootstrap 2021-2026", rbo),
+                             ("temoin sans avantage (boot.)", res[(ticks, cle)]["sans_avantage"])):
                 pr(f"  {nom_p:<29}: net {x['net_moyen']:+7,.0f} $/compte-an (mediane {x['net_median']:+,.0f}, "
                    f"5 % {x['net_p5']:+,.0f}, 95 % {x['net_p95']:+,.0f}), perte {x['p_perte']:.0%} ; frais {x['frais']:,.0f} $, "
                    f"payouts {x['payouts']:,.0f} $ ({x['n_payouts']:.1f}), evals {x['evaluations']:.1f}, "

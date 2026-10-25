@@ -1,0 +1,114 @@
+====================================================================================================================
+ STRATEGIES PUBLIEES SUR LE SERVEUR KAIROS, TESTEES TELLES QUE PUBLIEES - TROIS ESSAIS (n° 438, 439, 440)
+====================================================================================================================
+K3 : IntradayVolBreakout (gratuite, equipe Kairos) ; K4 : momentum 5 min de 9:30, variante C ; K5 : filtre M2.
+Kairos Max (site) : regles non publiees, non testable. Temoin : meme entree, sortie 15:55, sens au hasard.
+
+Verification du calcul (critere 9)
+  (a) horodatage : volume median de la barre de 9:30 = x7.7 les 3 precedentes
+  K3 (NQ)
+    (b) anticipation : prix apres l entree x1,5 sur 200 jours (fenetre de 40 jours) -> sens, heure et prix d entree INCHANGES
+    (c) rejeu vectorbt : 932 trades contre 932 au moteur, ecart maximal de P&L brut 0.000000 $ -> IDENTIQUE
+    (d) 5 trades tires au hasard (graine 7), a verifier a la main :
+        2016-03-10 : ACHAT Thu 10:00 ET a 4331.25 | sortie (stop) Thu 10:12 ET a 4314.88 | brut -327.32 $ - frais 15.00 $ = -342.32 $
+        2017-02-07 : ACHAT Tue 10:15 ET a 5183.75 | sortie (stop) Tue 12:49 ET a 5174.22 | brut -190.67 $ - frais 15.00 $ = -205.67 $
+        2021-11-16 : ACHAT Tue 09:45 ET a 16240.75 | sortie (heure) Tue 15:55 ET a 16311.50 | brut +1415.00 $ - frais 15.00 $ = +1400.00 $
+        2026-02-11 : VENTE Wed 10:15 ET a 25187.75 | sortie (stop) Wed 14:20 ET a 25332.12 | brut -2887.44 $ - frais 15.00 $ = -2902.44 $
+        2026-04-08 : VENTE Wed 10:30 ET a 25055.75 | sortie (heure) Wed 15:55 ET a 25038.50 | brut +345.00 $ - frais 15.00 $ = +330.00 $
+    (e) comptes : 2675 jours 2016-01-11 -> 2026-08-28 ; jour agite (filtre) 1152 ; trade 932 ; pas de signal 567 ; prix absent a la sortie 23 ; donnees manquantes 1 ; sorties au stop 462 ; achats 496 ; 88 trades par an, 320 h/an
+  K4 (NQ)
+    (b) anticipation : prix apres l entree x1,5 sur 200 jours (fenetre de 40 jours) -> sens, heure et prix d entree INCHANGES
+    (c) rejeu vectorbt : 2651 trades contre 2651 au moteur, ecart maximal de P&L brut 0.000000 $ -> IDENTIQUE
+    (d) 5 trades tires au hasard (graine 7), a verifier a la main :
+        2016-10-05 : ACHAT Wed 09:35 ET a 4868.75 | sortie (heure) Wed 15:55 ET a 4872.25 | brut +70.00 $ - frais 15.00 $ = +55.00 $
+        2017-02-17 : ACHAT Fri 09:35 ET a 5295.00 | sortie (heure) Fri 15:55 ET a 5320.00 | brut +500.00 $ - frais 15.00 $ = +485.00 $
+        2022-05-12 : VENTE Thu 09:35 ET a 11739.25 | sortie (heure) Thu 15:55 ET a 11888.50 | brut -2985.00 $ - frais 15.00 $ = -3000.00 $
+        2022-06-14 : VENTE Tue 09:35 ET a 11363.50 | sortie (heure) Tue 15:55 ET a 11316.75 | brut +935.00 $ - frais 15.00 $ = +920.00 $
+        2023-11-22 : ACHAT Wed 09:35 ET a 16137.25 | sortie (heure) Wed 15:55 ET a 16046.50 | brut -1815.00 $ - frais 15.00 $ = -1830.00 $
+    (e) comptes : 2675 jours 2016-01-11 -> 2026-08-28 ; trade 2651 ; prix absent a la sortie 23 ; donnees manquantes 1 ; sorties au stop 0 ; achats 1352 ; 249 trades par an, 1580 h/an
+  K5 (NQ)
+    (b) anticipation : prix apres l entree x1,5 sur 200 jours (fenetre de 40 jours) -> sens, heure et prix d entree INCHANGES
+    (c) rejeu vectorbt : 1036 trades contre 1036 au moteur, ecart maximal de P&L brut 0.000000 $ -> IDENTIQUE
+    (d) 5 trades tires au hasard (graine 7), a verifier a la main :
+        2016-09-16 : VENTE Fri 09:35 ET a 4807.75 | sortie (heure) Fri 15:55 ET a 4816.00 | brut -165.00 $ - frais 15.00 $ = -180.00 $
+        2022-06-28 : ACHAT Tue 09:35 ET a 12145.50 | sortie (heure) Tue 15:55 ET a 11700.50 | brut -8900.00 $ - frais 15.00 $ = -8915.00 $
+        2023-06-05 : ACHAT Mon 09:35 ET a 14605.75 | sortie (heure) Mon 15:55 ET a 14592.00 | brut -275.00 $ - frais 15.00 $ = -290.00 $
+        2024-05-24 : ACHAT Fri 09:35 ET a 18773.00 | sortie (heure) Fri 15:55 ET a 18868.50 | brut +1910.00 $ - frais 15.00 $ = +1895.00 $
+        2025-02-07 : ACHAT Fri 09:35 ET a 21945.25 | sortie (heure) Fri 15:55 ET a 21603.00 | brut -6845.00 $ - frais 15.00 $ = -6860.00 $
+    (e) comptes : 2675 jours 2016-01-11 -> 2026-08-28 ; filtre M2 1615 ; trade 1036 ; prix absent a la sortie 23 ; donnees manquantes 1 ; sorties au stop 0 ; achats 492 ; 97 trades par an, 617 h/an
+
+--- K3 IntradayVolBreakout (strategie gratuite Kairos) - NQ (ESSAI n° 438) : 932 trades
+    brut +8.98 pb (t +3.88) | 2016-2020 +8.49 (t +2.58) | 2021-2026 +9.39 (t +2.89)
+    temoin (sens au hasard) -1.93 pb -> Welch +2.92
+    cout aller-retour 0.62 pb -> net +8.36 pb ; sans les 3 meilleurs jours +7.24 pb ; stress 2 ticks +7.94 pb
+    net par annee (pb) : 2016:+6.1 2017:+4.1 2018:+24.6 2019:+4.1 2020:-0.8 2021:+8.7 2022:+13.9 2023:+4.8 2024:+9.9 2025:+6.6 2026:+7.7
+    vectorbt (NQ, 1 tick) : Sharpe +1.13 [IC 95 % +0.57 ; +1.68] | avant 2021 +1.09 | apres +1.16 | deflate (438 essais) 0.85 | perte max -8.8%
+    micro MNQ (cout 2.50 pb) : net +6.48 pb | Sharpe +0.89 [IC bas +0.31] | deflate 0.53
+    heures en position : 320 h/an
+    VERDICT : ECHOUE (Sharpe deflate >= 0,95)
+
+--- K3 IntradayVolBreakout (strategie gratuite Kairos) - ES (replique, pas un essai) : 797 trades
+    brut +5.42 pb (t +2.84) | 2016-2020 +4.73 (t +1.61) | 2021-2026 +6.03 (t +2.42)
+    temoin (sens au hasard) -1.55 pb -> Welch +2.28
+    cout aller-retour 1.55 pb -> net +3.87 pb ; sans les 3 meilleurs jours +2.69 pb ; stress 2 ticks +2.57 pb
+    net par annee (pb) : 2016:+1.6 2017:+0.5 2018:+17.3 2019:+2.6 2020:-7.2 2021:+2.8 2022:+9.2 2023:+5.3 2024:+5.0 2025:+3.2 2026:-0.7
+    vectorbt (ES, 1 tick) : Sharpe +0.64 [IC 95 % +0.01 ; +1.20] | avant 2021 +0.51 | apres +0.77 | deflate (438 essais) 0.21 | perte max -9.0%
+    micro MES (cout 3.89 pb) : net +1.54 pb | Sharpe +0.27 [IC bas -0.40] | deflate 0.02
+    heures en position : 271 h/an
+    VERDICT : ECHOUE (t >= 3 ; Sharpe deflate >= 0,95)
+
+--- K3 IntradayVolBreakout (strategie gratuite Kairos) - GC (replique, pas un essai) : 655 trades
+    brut +1.09 pb (t +0.67) | 2016-2020 +2.75 (t +1.17) | 2021-2026 -0.16 (t -0.07)
+    temoin (sens au hasard) +0.58 pb -> Welch +0.20
+    cout aller-retour 1.39 pb -> net -0.29 pb ; sans les 3 meilleurs jours -1.19 pb ; stress 2 ticks -1.40 pb
+    net par annee (pb) : 2016:+5.0 2017:-2.3 2018:-0.3 2019:-1.1 2020:+4.9 2021:-8.1 2022:+8.3 2023:-1.8 2024:-3.3 2025:-1.1 2026:-0.2
+    vectorbt (GC, 1 tick) : Sharpe -0.04 [IC 95 % -0.67 ; +0.57] | avant 2021 +0.28 | apres -0.27 | deflate (438 essais) 0.00 | perte max -10.1%
+    micro MGC (cout 3.88 pb) : net -2.79 pb | Sharpe -0.51 [IC bas -1.15] | deflate 0.00
+    heures en position : 234 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain moyen net > 0 ; gain net > 0 sans les 3 meilleurs jours ; IC bas du Sharpe > 0 ; Sharpe > 0 avant ET apres 2021 ; Sharpe deflate >= 0,95)
+
+--- K4 Momentum 5 min de 9:30, variante C (sans stop) - NQ (ESSAI n° 439) : 2651 trades
+    brut +7.64 pb (t +3.75) | 2016-2020 +11.15 (t +4.13) | 2021-2026 +4.55 (t +1.51)
+    temoin (sens au hasard) +2.34 pb -> Welch +1.84
+    cout aller-retour 0.63 pb -> net +7.01 pb ; sans les 3 meilleurs jours +6.16 pb ; stress 2 ticks +6.60 pb
+    net par annee (pb) : 2016:+12.9 2017:+4.9 2018:+19.1 2019:+3.2 2020:+12.5 2021:-0.8 2022:+4.0 2023:-1.7 2024:+4.8 2025:+6.5 2026:+14.2
+    vectorbt (NQ, 1 tick) : Sharpe +1.14 [IC 95 % +0.57 ; +1.75] | avant 2021 +1.81 | apres +0.64 | deflate (439 essais) 0.77 | perte max -21.7%
+    micro MNQ (cout 2.50 pb) : net +5.14 pb | Sharpe +0.85 [IC bas +0.29] | deflate 0.42
+    heures en position : 1580 h/an
+    VERDICT : ECHOUE (t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0,95)
+
+--- K4 Momentum 5 min de 9:30, variante C (sans stop) - ES (replique, pas un essai) : 2651 trades
+    brut +4.25 pb (t +2.73) | 2016-2020 +5.49 (t +2.56) | 2021-2026 +3.16 (t +1.41)
+    temoin (sens au hasard) +0.89 pb -> Welch +1.52
+    cout aller-retour 1.56 pb -> net +2.70 pb ; sans les 3 meilleurs jours +2.03 pb ; stress 2 ticks +1.40 pb
+    net par annee (pb) : 2016:+0.9 2017:-1.3 2018:+8.9 2019:+3.3 2020:+7.8 2021:-5.3 2022:+10.7 2023:+1.8 2024:-3.4 2025:+3.6 2026:+2.7
+    vectorbt (ES, 1 tick) : Sharpe +0.59 [IC 95 % +0.02 ; +1.20] | avant 2021 +0.88 | apres +0.37 | deflate (439 essais) 0.14 | perte max -26.7%
+    micro MES (cout 3.89 pb) : net +0.37 pb | Sharpe +0.14 [IC bas -0.45] | deflate 0.01
+    heures en position : 1580 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0,95)
+
+--- K5 Momentum 5 min de 9:30, filtre M2 (ajoute apres coup par l auteur) - NQ (ESSAI n° 440) : 1036 trades
+    brut +18.55 pb (t +5.26) | 2016-2020 +21.12 (t +4.24) | 2021-2026 +16.60 (t +3.37)
+    temoin (sens au hasard) +5.97 pb -> Welch +2.51
+    cout aller-retour 0.60 pb -> net +17.96 pb ; sans les 3 meilleurs jours +15.80 pb ; stress 2 ticks +17.56 pb
+    net par annee (pb) : 2016:+13.3 2017:+8.5 2018:+30.7 2019:+4.9 2020:+35.3 2021:+10.9 2022:+14.4 2023:+2.9 2024:+28.2 2025:+28.5 2026:+11.2
+    vectorbt (NQ, 1 tick) : Sharpe +1.59 [IC 95 % +1.05 ; +2.15] | avant 2021 +1.86 | apres +1.41 | deflate (440 essais) 1.00 | perte max -9.7%
+    micro MNQ (cout 2.39 pb) : net +16.16 pb | Sharpe +1.44 [IC bas +0.89] | deflate 0.98
+    heures en position : 617 h/an
+    VERDICT : PASSE les criteres 10-18
+    correlation journaliere : Gotobi_6J -0.05 (2673 jours) ; R_Gotobi_pre_fix_USD_JPY_Ito_Yamada +0.02 (2598 jours) ; R_Gotobi_seconde_jambe_vente_apres_le_fixing_hypothese -0.00 (2598 jours) ; R_S11_A_Price_discovery_or_long_seul_corrige +0.04 (2673 jours) ; R_S11_A_Price_discovery_or_long_seul_corrige_sans_stop +0.04 (2673 jours) ; R_S11_A_Price_discovery_or_long_seul_tel_que_code +0.04 (2673 jours) ; R_S11_B_Price_discovery_or_long_short_corrige +0.00 (2673 jours) ; R_S19_A_Rebalancement_LETF_derniere_1_2_h_US +0.09 (2673 jours) ; R_S19_B_Rebalancement_LETF_DAX_17_00_17_30 +0.03 (370 jours) ; S1_NoiseAreaNQ +0.26 (2673 jours)
+
+--- K5 Momentum 5 min de 9:30, filtre M2 (ajoute apres coup par l auteur) - ES (replique, pas un essai) : 678 trades
+    brut +15.08 pb (t +4.22) | 2016-2020 +20.92 (t +3.93) | 2021-2026 +11.03 (t +2.30)
+    temoin (sens au hasard) +2.46 pb -> Welch +2.48
+    cout aller-retour 1.51 pb -> net +13.57 pb ; sans les 3 meilleurs jours +11.01 pb ; stress 2 ticks +12.31 pb
+    net par annee (pb) : 2016:+8.1 2017:+0.3 2018:+15.2 2019:+10.3 2020:+44.8 2021:+7.3 2022:+11.6 2023:-5.7 2024:+6.5 2025:+26.2 2026:+13.5
+    vectorbt (ES, 1 tick) : Sharpe +1.18 [IC 95 % +0.64 ; +1.71] | avant 2021 +1.63 | apres +0.86 | deflate (440 essais) 0.91 | perte max -7.8%
+    micro MES (cout 3.78 pb) : net +11.30 pb | Sharpe +0.99 [IC bas +0.43] | deflate 0.73
+    heures en position : 404 h/an
+    VERDICT : ECHOUE (Sharpe deflate >= 0,95)
+
+Synthese K3 : REJETEE. Aucune variante ne sera testee (pas de surajustement).
+Synthese K4 : REJETEE. Aucune variante ne sera testee (pas de surajustement).
+Synthese K5 : passe les criteres 10-18 ; restent la correlation (n° 20) et la validation.
+Calcul en 96 s.

@@ -1307,6 +1307,52 @@ l'en-tête du module avant tout calcul. Résultats dans `recherche/resultats_kai
 Les cassures simples ne suffisent pas. Le filtre de « force de l'IB » de Kairos n'est pas publié ; le reconstruire
 serait un nouvel essai, choisi sans source.
 
+### Stratégies publiées sur le serveur Kairos (`nexus/perso/kairos_publiees.py`, essais 438-440, 2026-10-25)
+
+Ces stratégies sont testées telles que leurs auteurs les ont publiées, sans réglage de notre part. Résultats dans
+`recherche/resultats_kairos_publiees.txt`.
+
+**Les trois stratégies**
+- **K3, IntradayVolBreakout** : la stratégie gratuite de l'équipe.
+  - Ancre = l'ouverture de 9:30 ; on achète si le cours dépasse l'ancre de 0,25 × ATR(5) journalier, on vend s'il
+    passe en dessous d'autant, contrôle toutes les 15 min de 9:45 à 11:00.
+  - Stop à 0,25 × ATR ; filtre « jour calme » ; sortie à 15:55.
+- **K4, momentum 5 min de 9:30** (un membre, supe) : sens de la bougie 9:30-9:35 par rapport à l'EMA(12) ; entrée
+  à 9:35, sortie à 15:55, sans stop.
+- **K5** : K4 avec le filtre M2 de l'auteur :
+  - on trade si |cours − EMA| / ATR(14) > 2,2,
+  - ou si la veille, dans le sens du signal du jour, a perdu plus de 60 pb.
+- « Kairos Max » (vendue sur leur site) : règles non publiées, donc non testable.
+
+**Vérifications**
+- Rejeu vectorbt identique au moteur.
+- Test d'anticipation inchangé.
+- Trade K4 du 17/02/2017 vérifié à la main sur les données brutes.
+
+**Résultats**
+
+| Stratégie (NQ) | Net / trade | t | Welch | Sharpe [IC 95 %] | Déflaté | Verdict |
+|---|---|---|---|---|---|---|
+| K3 IntradayVolBreakout (essai 438) | +8,36 pb | 3,88 | 2,92 | 1,13 [0,57 ; 1,68] | 0,85 | fiable, non retenue (déflaté) |
+| K4 momentum C (essai 439) | +7,01 pb | 3,75 | 1,84 | 1,14 [0,57 ; 1,75] | 0,77 | rejetée (Welch, déflaté) |
+| K5 momentum M2 (essai 440) | +17,96 pb | 5,26 | 2,51 | 1,59 [1,05 ; 2,15] | 1,00 | **passe les critères 10-18** |
+
+**K5**
+- Résultats complémentaires :
+  - MNQ : Sharpe 1,44, déflaté 0,98 ;
+  - 617 h/an ;
+  - corrélation 0,26 avec S1 et −0,05 avec Gotobi ;
+  - réplique ES : 1,18, déflaté 0,91.
+- Grosse réserve : les seuils 2,2 et −60 pb ont été choisis par l'auteur après avoir regardé 2013-2026, qui contient
+  nos données. Ce n'est donc pas un test indépendant, et notre Sharpe déflaté ne compte pas ses essais à lui.
+- Il faut le confirmer hors échantillon : NQ 2010-2012, avec l'achat Databento déjà en attente, ou forward en démo.
+- Il tient NQ aux mêmes heures que S1 : il irait dans un autre compte, pas dans le même.
+
+**Témoin « sans avantage »** : repris du simulateur prop du Kairos Terminal, ajouté à `nexus/prop_comptes.py`. On
+retire leur gain moyen à S1 et à Gotobi et on rejoue les mêmes comptes. Résultat : tous les comptes perdent. Topstep
+avec perte journalière fait −637 $/an au bootstrap, 76 % d'années perdantes, contre +7 269 $ avec le signal. Les
+règles des firmes, seules, ne rapportent rien : le gain vient de notre avantage.
+
 ## 17. Groupe en direct sur NinjaTrader (stratégies NinjaScript `NexusGroupe*`, AddOn `NexusTableau`)
 
 Depuis le 2026-10-21, le Groupe tourne **entièrement dans NinjaTrader**, en NinjaScript : plus de moteur Python ni
