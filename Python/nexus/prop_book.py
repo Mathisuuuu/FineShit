@@ -174,6 +174,97 @@ def compositions(max_comptes=MAX_COMPTES):
     return out
 
 
+# =============================================================================
+#  Compte N : S1 et M2 dans le MEME compte, position nette (comme un book Kairos a plusieurs strategies NQ)
+# =============================================================================
+# Hors critere 19 de la methode (pas deux strategies sur le meme contrat dans un compte) : pour DECISION de
+# l utilisateur. Regles fixees avant le calcul (2026-10-25) :
+#  - chemin de valeur minute par minute = n1 x (valeur de S1 sur 1 MNQ) + n2 x (valeur de M2 sur 1 MNQ), couts de
+#    chaque strategie inclus ; l economie de couts quand les deux se croisent est IGNOREE (prudent) ;
+#  - n1 = arrondi(u x poids du jour de S1), u dans {0 ; 1,5 ; 3 ; 4,5 ; 6} ; n2 dans {0 ; 2 ; 4 ; 8 ; 12} MNQ ;
+#  - plafond : une configuration n est admise que si la position nette reste sous le plafond de base (50 micros en
+#    evaluation, 20 en finance) dans au moins 99 % des seances 2016-2020 ;
+#  - taille choisie sur les departs 2016-2020, jugee au bootstrap 2021-2026, comme les comptes A et B.
+NETTING_U = (0.0, 1.5, 3.0, 4.5, 6.0)
+NETTING_K = (0, 2, 4, 8, 12)
+
+
+def netting(pf1, w1, pf2, go, jours, R, lb, tailles, mats, pr):
+    idx = pd.DatetimeIndex(pf1.wrapper.index)
+    ny = idx.tz_localize("UTC").tz_convert(P.NY).tz_localize(None)
+    seance = pd.DatetimeIndex((ny + pd.Timedelta(hours=7)).normalize())
+    dv1 = pf1.value().diff().fillna(0.0).to_numpy()
+    dv2 = pf2.value().diff().fillna(0.0).to_numpy()
+    a1, a2 = pf1.assets().to_numpy(), pf2.assets().to_numpy()
+    code = jours.get_indexer(seance)                       # -1 : minute hors calendrier (week-end)
+    garde = code >= 0
+    code, dv1, dv2, a1, a2 = code[garde], dv1[garde], dv2[garde], a1[garde], a2[garde]
+    wj = w1.reindex(jours).ffill().fillna(0.0).to_numpy()
+    debut = np.r_[0, np.flatnonzero(np.diff(code)) + 1]
+    sess = code[debut]
+    configs, Ls, Hs, Cs, adm_e, adm_f = [], [], [], [], [], []
+    periode_a = np.asarray(jours[sess] < P.COUPURE)
+    for u in NETTING_U:
+        n1 = np.floor(u * wj[code] + 0.5)
+        for k in NETTING_K:
+            if u == 0 and k == 0:
+                continue
+            d = n1 * dv1 + k * dv2
+            cum = np.cumsum(d)
+            base = np.r_[0.0, cum[debut[1:] - 1]]
+            rel = cum - np.repeat(base, np.diff(np.r_[debut, len(cum)]))
+            lo = np.minimum.reduceat(rel, debut)
+            hi = np.maximum.reduceat(rel, debut)
+            cl = rel[np.r_[debut[1:] - 1, len(rel) - 1]]
+            pos = np.maximum.reduceat(np.abs(n1 * a1 + k * a2), debut)
+            L = np.zeros(len(jours)); H = np.zeros(len(jours)); C = np.zeros(len(jours))
+            L[sess], H[sess], C[sess] = np.minimum(lo, 0.0), np.maximum(hi, 0.0), cl
+            configs.append((u, k)); Ls.append(L); Hs.append(H); Cs.append(C)
+            adm_e.append(np.mean(pos[periode_a] <= 50) >= 0.99)
+            adm_f.append(np.mean(pos[periode_a] <= 20) >= 0.99)
+    nc = len(configs)
+    LA, HA, CA, WA, _ = mats["A"]
+    ref_s1 = np.floor(1.5 * WA[1] + 0.5) * CA[1]
+    ref_m2 = 4 * CA[2]
+    e1 = np.abs(Cs[configs.index((1.5, 0))] - ref_s1).max()
+    e2 = np.abs(Cs[configs.index((0.0, 4))] - ref_m2).max()
+    pr(f"  controle : S1 seul (1,5 unite) et M2 seul (4 MNQ) refaits par le chemin minute : ecart max par seance "
+       f"{e1:.2f} $ et {e2:.2f} $")
+    Lg, Hg, Cg = LA[0], HA[0], CA[0]
+    L = np.vstack([Lg] + Ls); H = np.vstack([Hg] + Hs); C = np.vstack([Cg] + Cs)
+    W = np.ones_like(C)
+    eqv = np.r_[10.0, np.full(nc, 1e-9)]                  # plafond deja controle (configurations admises)
+    def te(adm):
+        return np.array([np.r_[g, np.eye(nc)[j]] for g in range(4) for j in range(nc) if adm[j]]
+                        + [np.r_[g, np.zeros(nc)] for g in range(1, 4)], float)
+    TE, TF = te(adm_e), te(adm_f)
+    seances = np.arange(len(jours))
+    dep = seances[: len(jours) - P.HORIZON: P.PAS_DEPART]
+    fin = np.array([jours[d + P.HORIZON - 1] for d in dep])
+    g = P.grille(L, H, C, W, eqv, dep[fin < P.COUPURE], P.HORIZON, TE, TF, R)
+    ia, ib = np.unravel_index(np.nanargmax(g), g.shape)
+    t_e, t_f = TE[ia], TF[ib]
+
+    def nom(t):
+        j = np.flatnonzero(t[1:])
+        u, k = configs[j[0]] if len(j) else (0.0, 0)
+        return f"{int(t[0])} x 6J + S1 {u:g} unite(s) + M2 {k} MNQ"
+    pr("  -- compte N : S1 et M2 dans le MEME compte (position nette), + Gotobi ; HORS critere 19, pour decision --")
+    pr(f"  configurations admises (plafond de base, 99 % des seances 2016-2020) : evaluation {int(sum(adm_e))} / {nc}, "
+       f"finance {int(sum(adm_f))} / {nc}")
+    pr(f"  taille choisie sur 2016-2020 : evaluation {nom(t_e)} ; finance {nom(t_f)}")
+    matsN = {"N": (L, H, C, W, eqv)}
+    tN = {"N": (t_e, t_f)}
+    for decalage, nom_d in ((0, "departs simultanes"), (DECALAGE, "departs echelonnes d un mois")):
+        for n in (1, 5):
+            x = bootstrap_book(["N"] * n, tN, matsN, R, lb, decalage)
+            pr(f"  {n} compte(s) N, {nom_d} : net {x['net_moyen']:+,.0f} $ (mediane {x['net_median']:+,.0f}, 5 % "
+               f"{x['net_p5']:+,.0f}), perte {x['p_perte']:.0%}, capital 95 % {x['capital_p95']:,.0f} $")
+    L0, H0, C0 = P.sans_avantage(L, H, C)
+    x = bootstrap_book(["N"], tN, {"N": (L0, H0, C0, W, eqv)}, R, lb, 0)
+    pr(f"  temoin sans avantage, 1 compte N : net {x['net_moyen']:+,.0f} $ (mediane {x['net_median']:+,.0f}), perte {x['p_perte']:.0%}")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Book de plusieurs comptes Topstep avec S1 + Gotobi et M2 + Gotobi.")
     ap.add_argument("--cotations", default=os.path.join("..", "Cotations"))
@@ -212,9 +303,9 @@ def main():
                   "indicatif seulement)"))
     pr()
     for ticks, nom_cout in ((1.0, "couts de reference (1 tick + commission par cote)"), (2.0, "stress (2 ticks par cote)")):
-        s1, w1, _, c1 = P.s1_un_contrat(df_brut, df_adj, eq, trades_s1, "MNQ", ticks)
+        s1, w1, pf1, c1 = P.s1_un_contrat(df_brut, df_adj, eq, trades_s1, "MNQ", ticks)
         go, _, _ = P.gotobi_un_contrat(m, brut6, "6J", ticks)
-        m2, _, cm = m2_un_contrat(df_brut, df_adj, f_m2, "MNQ", ticks)
+        m2, pfm2, cm = m2_un_contrat(df_brut, df_adj, f_m2, "MNQ", ticks)
         un = lambda b: pd.Series(1.0, index=b.index)
         cal = P.seances_cme(df_adj.index)
         cal = cal[(cal >= min(b.index.min() for b in (go, s1, m2))) & (cal <= max(b.index.max() for b in (go, s1, m2)))]
@@ -267,6 +358,8 @@ def main():
                     pr(f"  temoin sans avantage {MAX_COMPTES}{comp[0]} : net {x['net_moyen']:+,.0f} $ (mediane {x['net_median']:+,.0f}), "
                        f"perte {x['p_perte']:.0%}")
         pr("  (* : melange interdit chez Topstep si S1 et M2 se couvrent ; corr. : correlation moyenne des nets entre comptes)")
+        pr()
+        netting(pf1, w1, pfm2, go, jours, R, lb, tailles, mats, pr)
         pr()
     pr(f"(duree {time.time() - t0:.0f} s)")
     os.makedirs(os.path.dirname(a.sortie), exist_ok=True)

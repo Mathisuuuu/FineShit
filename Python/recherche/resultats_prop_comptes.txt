@@ -53,6 +53,34 @@ Topstep 50K, Standard + perte journaliere 1 000 $, offre limitee (plafond 4 000 
   bootstrap 2021-2026          : net  +5,031 $/compte-an (mediane +1,440, 5 % -1,576, 95 % +23,241), perte 43% ; frais 1,077 $, payouts 6,108 $ (1.9), evals 7.1, reussies 2.7, finances perdus 2.3, 1er payout seance 118 (58% des annees)
   temoin sans avantage (boot.) : net    -497 $/compte-an (mediane -1,231, 5 % -1,576, 95 % +4,058), perte 84% ; frais 1,262 $, payouts 765 $ (0.3), evals 10.9, reussies 1.7, finances perdus 1.6, 1er payout seance 139 (16% des annees)
 
+Topstep 100K, paiement Standard, perte journaliere 2 000 $ choisie a l achat
+  taille choisie sur 2016-2020 : evaluation 1 x 6J + S1 5.5 unite(s) ; finance 2 x 6J + S1 3.0 unite(s)
+  2016-2020 (choix)            : net  +2,576 $/compte-an (mediane +483, 5 % -1,782, 95 % +16,842), perte 46% ; frais 1,341 $, payouts 3,917 $ (3.0), evals 3.9, reussies 1.5, finances perdus 1.0, 1er payout seance 116 (84% des annees)
+  2021-2026 (hors echantillon) : net  +4,354 $/compte-an (mediane +1,665, 5 % -3,070, 95 % +15,273), perte 28% ; frais 1,833 $, payouts 6,187 $ (3.3), evals 8.5, reussies 2.8, finances perdus 2.3, 1er payout seance 85 (75% des annees)
+  bootstrap 2021-2026          : net  +2,703 $/compte-an (mediane +275, 5 % -2,700, 95 % +17,368), perte 47% ; frais 2,133 $, payouts 4,836 $ (2.7), evals 10.8, reussies 2.7, finances perdus 2.3, 1er payout seance 88 (85% des annees)
+  temoin sans avantage (boot.) : net  -1,824 $/compte-an (mediane -2,426, 5 % -3,565, 95 % +1,849), perte 89% ; frais 2,814 $, payouts 990 $ (0.8), evals 16.4, reussies 2.0, finances perdus 1.8, 1er payout seance 114 (48% des annees)
+
+Topstep 100K, paiement Standard, perte journaliere 2 000 $ + offre limitee (plafond double)
+  taille choisie sur 2016-2020 : evaluation 0 x 6J + S1 6.0 unite(s) ; finance 2 x 6J + S1 4.5 unite(s)
+  2016-2020 (choix)            : net  +2,580 $/compte-an (mediane +754, 5 % -1,638, 95 % +9,143), perte 40% ; frais 1,393 $, payouts 3,973 $ (2.5), evals 4.2, reussies 1.5, finances perdus 1.1, 1er payout seance 109 (74% des annees)
+  2021-2026 (hors echantillon) : net  +4,709 $/compte-an (mediane +4,302, 5 % -3,268, 95 % +13,153), perte 33% ; frais 2,000 $, payouts 6,709 $ (2.4), evals 9.1, reussies 2.8, finances perdus 2.4, 1er payout seance 91 (74% des annees)
+  bootstrap 2021-2026          : net  +2,892 $/compte-an (mediane +113, 5 % -2,971, 95 % +17,352), perte 49% ; frais 2,360 $, payouts 5,252 $ (2.1), evals 12.2, reussies 3.0, finances perdus 2.6, 1er payout seance 96 (78% des annees)
+  temoin sans avantage (boot.) : net  -1,864 $/compte-an (mediane -2,674, 5 % -3,763, 95 % +2,897), perte 87% ; frais 2,979 $, payouts 1,115 $ (0.6), evals 17.6, reussies 2.2, finances perdus 2.0, 1er payout seance 110 (39% des annees)
+
+Topstep 150K, paiement Standard, perte journaliere 3 000 $ choisie a l achat
+  taille choisie sur 2016-2020 : evaluation 3 x 6J + S1 6.0 unite(s) ; finance 2 x 6J + S1 3.5 unite(s)
+  2016-2020 (choix)            : net  +1,636 $/compte-an (mediane -859, 5 % -2,786, 95 % +16,036), perte 56% ; frais 2,236 $, payouts 3,872 $ (2.7), evals 2.7, reussies 1.4, finances perdus 1.0, 1er payout seance 122 (96% des annees)
+  2021-2026 (hors echantillon) : net  +2,860 $/compte-an (mediane +361, 5 % -4,328, 95 % +13,887), perte 49% ; frais 3,286 $, payouts 6,146 $ (2.7), evals 7.5, reussies 2.3, finances perdus 1.9, 1er payout seance 90 (77% des annees)
+  bootstrap 2021-2026          : net  +1,525 $/compte-an (mediane -1,138, 5 % -4,477, 95 % +16,676), perte 60% ; frais 3,545 $, payouts 5,070 $ (2.5), evals 8.9, reussies 2.4, finances perdus 2.1, 1er payout seance 90 (87% des annees)
+  temoin sans avantage (boot.) : net  -3,270 $/compte-an (mediane -4,278, 5 % -6,119, 95 % +3,878), perte 90% ; frais 4,722 $, payouts 1,452 $ (0.9), evals 13.4, reussies 1.6, finances perdus 1.5, 1er payout seance 114 (50% des annees)
+
+Topstep 150K, paiement Standard, perte journaliere 3 000 $ + offre limitee (plafond double)
+  taille choisie sur 2016-2020 : evaluation 3 x 6J + S1 6.0 unite(s) ; finance 2 x 6J + S1 3.5 unite(s)
+  2016-2020 (choix)            : net  +1,636 $/compte-an (mediane -859, 5 % -2,786, 95 % +16,036), perte 56% ; frais 2,236 $, payouts 3,872 $ (2.7), evals 2.7, reussies 1.4, finances perdus 1.0, 1er payout seance 122 (96% des annees)
+  2021-2026 (hors echantillon) : net  +3,141 $/compte-an (mediane +361, 5 % -4,328, 95 % +14,970), perte 49% ; frais 3,277 $, payouts 6,418 $ (2.7), evals 7.5, reussies 2.3, finances perdus 1.9, 1er payout seance 90 (77% des annees)
+  bootstrap 2021-2026          : net  +1,557 $/compte-an (mediane -1,138, 5 % -4,477, 95 % +17,819), perte 60% ; frais 3,577 $, payouts 5,134 $ (2.5), evals 9.0, reussies 2.4, finances perdus 2.1, 1er payout seance 90 (87% des annees)
+  temoin sans avantage (boot.) : net  -3,195 $/compte-an (mediane -4,278, 5 % -6,119, 95 % +4,166), perte 90% ; frais 4,737 $, payouts 1,542 $ (0.9), evals 13.5, reussies 1.7, finances perdus 1.5, 1er payout seance 114 (50% des annees)
+
 === stress (2 ticks par cote) ===
 Lucid Trading, LucidFlex 50K
   taille choisie sur 2016-2020 : evaluation 1 x 6J + S1 5.5 unite(s) ; finance 1 x 6J + S1 6.0 unite(s)
@@ -96,6 +124,34 @@ Topstep 50K, Standard + perte journaliere 1 000 $, offre limitee (plafond 4 000 
   bootstrap 2021-2026          : net  +4,559 $/compte-an (mediane +1,331, 5 % -2,015, 95 % +21,597), perte 40% ; frais 1,379 $, payouts 5,939 $ (1.9), evals 12.3, reussies 3.1, finances perdus 2.7, 1er payout seance 115 (64% des annees)
   temoin sans avantage (boot.) : net    -817 $/compte-an (mediane -1,766, 5 % -2,360, 95 % +4,769), perte 81% ; frais 1,836 $, payouts 1,019 $ (0.4), evals 21.1, reussies 2.4, finances perdus 2.3, 1er payout seance 123 (23% des annees)
 
+Topstep 100K, paiement Standard, perte journaliere 2 000 $ choisie a l achat
+  taille choisie sur 2016-2020 : evaluation 0 x 6J + S1 5.0 unite(s) ; finance 2 x 6J + S1 3.0 unite(s)
+  2016-2020 (choix)            : net  +1,761 $/compte-an (mediane -198, 5 % -1,683, 95 % +14,106), perte 56% ; frais 1,320 $, payouts 3,082 $ (2.1), evals 3.7, reussies 1.2, finances perdus 0.8, 1er payout seance 120 (70% des annees)
+  2021-2026 (hors echantillon) : net  +2,496 $/compte-an (mediane +2,404, 5 % -3,179, 95 % +9,317), perte 37% ; frais 2,008 $, payouts 4,504 $ (2.5), evals 9.5, reussies 2.4, finances perdus 2.0, 1er payout seance 102 (72% des annees)
+  bootstrap 2021-2026          : net  +1,036 $/compte-an (mediane -893, 5 % -2,823, 95 % +11,967), perte 60% ; frais 2,221 $, payouts 3,258 $ (1.9), evals 11.2, reussies 2.5, finances perdus 2.2, 1er payout seance 100 (75% des annees)
+  temoin sans avantage (boot.) : net  -1,642 $/compte-an (mediane -2,327, 5 % -3,320, 95 % +2,355), perte 87% ; frais 2,667 $, payouts 1,025 $ (0.8), evals 15.0, reussies 1.9, finances perdus 1.7, 1er payout seance 112 (46% des annees)
+
+Topstep 100K, paiement Standard, perte journaliere 2 000 $ + offre limitee (plafond double)
+  taille choisie sur 2016-2020 : evaluation 0 x 6J + S1 5.0 unite(s) ; finance 2 x 6J + S1 3.0 unite(s)
+  2016-2020 (choix)            : net  +1,761 $/compte-an (mediane -198, 5 % -1,683, 95 % +14,106), perte 56% ; frais 1,320 $, payouts 3,082 $ (2.1), evals 3.7, reussies 1.2, finances perdus 0.8, 1er payout seance 120 (70% des annees)
+  2021-2026 (hors echantillon) : net  +2,840 $/compte-an (mediane +3,740, 5 % -3,179, 95 % +9,338), perte 37% ; frais 2,019 $, payouts 4,859 $ (2.5), evals 9.6, reussies 2.4, finances perdus 2.0, 1er payout seance 102 (72% des annees)
+  bootstrap 2021-2026          : net  +1,282 $/compte-an (mediane -893, 5 % -2,823, 95 % +13,145), perte 60% ; frais 2,257 $, payouts 3,539 $ (1.9), evals 11.4, reussies 2.5, finances perdus 2.2, 1er payout seance 100 (75% des annees)
+  temoin sans avantage (boot.) : net  -1,612 $/compte-an (mediane -2,327, 5 % -3,320, 95 % +2,520), perte 87% ; frais 2,671 $, payouts 1,059 $ (0.8), evals 15.0, reussies 1.9, finances perdus 1.7, 1er payout seance 112 (46% des annees)
+
+Topstep 150K, paiement Standard, perte journaliere 3 000 $ choisie a l achat
+  taille choisie sur 2016-2020 : evaluation 0 x 6J + S1 6.0 unite(s) ; finance 2 x 6J + S1 3.0 unite(s)
+  2016-2020 (choix)            : net    +158 $/compte-an (mediane -1,711, 5 % -3,266, 95 % +12,768), perte 68% ; frais 2,522 $, payouts 2,680 $ (2.0), evals 3.4, reussies 1.1, finances perdus 0.7, 1er payout seance 127 (74% des annees)
+  2021-2026 (hors echantillon) : net  +2,117 $/compte-an (mediane +527, 5 % -4,567, 95 % +11,445), perte 47% ; frais 3,162 $, payouts 5,279 $ (2.6), evals 7.0, reussies 1.9, finances perdus 1.6, 1er payout seance 107 (77% des annees)
+  bootstrap 2021-2026          : net    +113 $/compte-an (mediane -2,076, 5 % -4,577, 95 % +12,347), perte 68% ; frais 3,573 $, payouts 3,686 $ (2.1), evals 8.7, reussies 2.1, finances perdus 1.8, 1er payout seance 100 (81% des annees)
+  temoin sans avantage (boot.) : net  -2,839 $/compte-an (mediane -3,930, 5 % -5,671, 95 % +4,109), perte 89% ; frais 4,370 $, payouts 1,531 $ (1.0), evals 11.8, reussies 1.5, finances perdus 1.3, 1er payout seance 118 (56% des annees)
+
+Topstep 150K, paiement Standard, perte journaliere 3 000 $ + offre limitee (plafond double)
+  taille choisie sur 2016-2020 : evaluation 0 x 6J + S1 6.0 unite(s) ; finance 2 x 6J + S1 3.0 unite(s)
+  2016-2020 (choix)            : net    +158 $/compte-an (mediane -1,711, 5 % -3,266, 95 % +12,768), perte 68% ; frais 2,522 $, payouts 2,680 $ (2.0), evals 3.4, reussies 1.1, finances perdus 0.7, 1er payout seance 127 (74% des annees)
+  2021-2026 (hors echantillon) : net  +2,117 $/compte-an (mediane +527, 5 % -4,567, 95 % +11,445), perte 47% ; frais 3,162 $, payouts 5,279 $ (2.6), evals 7.0, reussies 1.9, finances perdus 1.6, 1er payout seance 107 (77% des annees)
+  bootstrap 2021-2026          : net    +101 $/compte-an (mediane -2,076, 5 % -4,577, 95 % +12,605), perte 68% ; frais 3,594 $, payouts 3,695 $ (2.0), evals 8.8, reussies 2.1, finances perdus 1.8, 1er payout seance 100 (81% des annees)
+  temoin sans avantage (boot.) : net  -2,801 $/compte-an (mediane -3,930, 5 % -5,671, 95 % +4,608), perte 89% ; frais 4,379 $, payouts 1,578 $ (1.0), evals 11.8, reussies 1.5, finances perdus 1.3, 1er payout seance 118 (56% des annees)
+
 Firmes non simulees
   Apex Trader Funding : automatisation interdite ou douteuse selon les sources 2026 (il.ly, quantcrawler) : a lire sur leurs CGU
   Take Profit Trader : PRO : perte max suiveuse intraday et bots interdits selon plusieurs guides 2026 (proptradingvibes, pickmytrade)
@@ -107,5 +163,9 @@ Sources des regles
   Topstep, Trading Combine 50K + XFA, paiement Consistency (3 jours, meilleur jour <= 40 %) : help.topstep.com, lu le 2026-10-25 : article 8284233 (chemin Consistency) ; le reste comme Standard
   Topstep 50K, paiement Standard, perte journaliere 1 000 $ choisie a l achat : help.topstep.com, lu le 2026-10-25 : articles 8284197 (Combine : coherence 55 %, 5 minis, automatisation permise sous conditions), 8284204 (MLL 2 000 $ fin de journee, verrou au depart, mis a 0 au 1er payout), 8284233 (payouts), 10490293 (perte journaliere optionnelle), 14289835 (prix) ; echelle 2 / 3 / 5 lots : futureshive.com/blog/topstep-scaling-plan-explained (tableau officiel non lisible)
   Topstep 50K, Standard + perte journaliere 1 000 $, offre limitee (plafond 4 000 $) : help.topstep.com, lu le 2026-10-25 : articles 8284197 (Combine : coherence 55 %, 5 minis, automatisation permise sous conditions), 8284204 (MLL 2 000 $ fin de journee, verrou au depart, mis a 0 au 1er payout), 8284233 (payouts), 10490293 (perte journaliere optionnelle), 14289835 (prix) ; echelle 2 / 3 / 5 lots : futureshive.com/blog/topstep-scaling-plan-explained (tableau officiel non lisible)
+  Topstep 100K, paiement Standard, perte journaliere 2 000 $ choisie a l achat : help.topstep.com (articles 8284204, 14289835, 8284233, 10490293, 8284197), lus le 2026-10-25 ; echelle XFA : futureshive.com/blog/topstep-scaling-plan-explained
+  Topstep 100K, paiement Standard, perte journaliere 2 000 $ + offre limitee (plafond double) : help.topstep.com (articles 8284204, 14289835, 8284233, 10490293, 8284197), lus le 2026-10-25 ; echelle XFA : futureshive.com/blog/topstep-scaling-plan-explained
+  Topstep 150K, paiement Standard, perte journaliere 3 000 $ choisie a l achat : help.topstep.com (articles 8284204, 14289835, 8284233, 10490293, 8284197), lus le 2026-10-25 ; echelle XFA : futureshive.com/blog/topstep-scaling-plan-explained
+  Topstep 150K, paiement Standard, perte journaliere 3 000 $ + offre limitee (plafond double) : help.topstep.com (articles 8284204, 14289835, 8284233, 10490293, 8284197), lus le 2026-10-25 ; echelle XFA : futureshive.com/blog/topstep-scaling-plan-explained
 
-(duree 81 s)
+(duree 84 s)

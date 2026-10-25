@@ -160,6 +160,10 @@ les idées intraday documentées sont épuisées : il faut des données nouvelle
   5 comptes M2 + Gotobi +19 287 $/an, 26 % (M2 à confirmer). Mélanger des comptes S1 et M2 diversifierait vraiment
   (corrélation 0,05-0,14 ; 20 % d'années perdantes), mais **Topstep interdit la couverture entre comptes d'un même
   utilisateur** et S1 / M2 sont en sens contraire sur NQ 168 fois en 10 ans : interdit.
+- **Tailles de compte** : Topstep 100K + perte journalière 2 000 $ (grille large) : bootstrap +5 371 $/compte-an,
+  médiane +2 476 $, 42 % d'années perdantes, environ deux fois le 50K ; 150K : médiane négative. Mettre S1 et M2
+  dans le MÊME compte en position nette (hors critère 19) n'apporte rien : le plafond de 20 micros du compte financé
+  limite la taille (1 compte : médiane +1 702 $ contre +2 442 $ pour M2 + Gotobi seul).
 - **M2 en NinjaScript préparée, PAS déployée** (`Strategies/NexusGroupeM2.cs`, `NxM2Logique`) : parité 2 072 / 2 072
   ordres (`python -m nexus.live.parite_ninjascript`). À lancer en démo seulement sur décision de l'utilisateur.
 - Clé Databento de `.env.txt` refusée (erreur 401, 2026-10-25) : pas de devis possible ; il faut une nouvelle clé (les

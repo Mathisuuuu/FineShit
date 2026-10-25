@@ -102,15 +102,37 @@ REGLES["topstep_50k_dll"] = {**REGLES["topstep_50k"], "perte_jour": 1000, "perte
                              "nom": "Topstep 50K, paiement Standard, perte journaliere 1 000 $ choisie a l achat"}
 REGLES["topstep_50k_dll_offre"] = {**REGLES["topstep_50k_dll"], "plafond_payout": 4000,
                                    "nom": "Topstep 50K, Standard + perte journaliere 1 000 $, offre limitee (plafond 4 000 $)"}
+# comptes 100K et 150K (ajoutes le 2026-10-25 au soir) : help.topstep.com, articles 8284204 (MLL 3 000 / 4 500 $),
+# 14289835 (99 / 199 $ par mois, activation 149 $), 8284233 (payout Standard 3 000 / 5 000 $, offre 6 000 / 10 000 $),
+# 10490293 (perte journaliere optionnelle 2 000 / 3 000 $), 8284197 (10 / 15 minis en Combine) ; objectifs 6 000 /
+# 9 000 $ (blog et article coherence de Topstep) ; echelle XFA 3/4/5/10 et 3/4/5/10/15 minis (futureshive.com, le
+# tableau officiel est une image). Grille de reference pour ces tailles, fixee AVANT le calcul : la grille large
+# (la grille initiale plafonne a 42 micros, sous les paliers de ces comptes).
+for _cle, _t, _nom in (("topstep_100k_dll", dict(objectif=6000, perte_max=3000, perte_jour=2000, perte_jour_finance=2000,
+                                                  prix_eval=99, prix_reset=99, plafond_payout=3000, plafond_eval=100,
+                                                  plafond_finance=30, palier1=1500, plafond_palier1=40, palier2=2000,
+                                                  plafond_palier2=50, palier3=3000, plafond_palier3=100),
+                        "Topstep 100K, paiement Standard, perte journaliere 2 000 $ choisie a l achat"),
+                       ("topstep_150k_dll", dict(objectif=9000, perte_max=4500, perte_jour=3000, perte_jour_finance=3000,
+                                                  prix_eval=199, prix_reset=199, plafond_payout=5000, plafond_eval=150,
+                                                  plafond_finance=30, palier1=1500, plafond_palier1=40, palier2=2000,
+                                                  plafond_palier2=50, palier3=3000, plafond_palier3=100, palier4=4500,
+                                                  plafond_palier4=150),
+                        "Topstep 150K, paiement Standard, perte journaliere 3 000 $ choisie a l achat")):
+    REGLES[_cle] = {**REGLES["topstep_50k_dll"], **_t, "nom": _nom,
+                    "source": "help.topstep.com (articles 8284204, 14289835, 8284233, 10490293, 8284197), lus le 2026-10-25 ; "
+                              "echelle XFA : futureshive.com/blog/topstep-scaling-plan-explained"}
+    REGLES[_cle + "_offre"] = {**REGLES[_cle], "plafond_payout": 2 * _t["plafond_payout"],
+                               "nom": _nom.replace("choisie a l achat", "+ offre limitee (plafond double)")}
 # valeurs par defaut des regles ajoutees le 2026-10-25 (Lucid et Tradeify : plancher verrouille au 1er payout selon
 # spicyfutures.com ; pas d echelle de contrats connue)
 DEFAUTS = dict(verrou_apres_payout=1, mode_payout=0, coherence_payout=0, palier1=1e12, plafond_palier1=0,
-               palier2=1e12, plafond_palier2=0)
+               palier2=1e12, plafond_palier2=0, palier3=1e12, plafond_palier3=0, palier4=1e12, plafond_palier4=0)
 CHAMPS = ["objectif", "perte_max", "intraday", "verrou_eval", "perte_jour", "coherence", "jours_min", "prix_eval",
           "mensuel", "prix_reset", "activation", "verrou_finance", "jours_payout", "gain_jour_payout", "part_payout",
           "plafond_payout", "min_payout", "partage", "plafond_eval", "plafond_finance", "intraday_finance",
           "perte_jour_finance", "verrou_apres_payout", "mode_payout", "coherence_payout", "palier1", "plafond_palier1",
-          "palier2", "plafond_palier2"]
+          "palier2", "plafond_palier2", "palier3", "plafond_palier3", "palier4", "plafond_palier4"]
 NON_SIMULEES = {
     "Apex Trader Funding": "automatisation interdite ou douteuse selon les sources 2026 (il.ly, quantcrawler) : a lire sur leurs CGU",
     "Take Profit Trader": "PRO : perte max suiveuse intraday et bots interdits selon plusieurs guides 2026 (proptradingvibes, pickmytrade)",
@@ -161,6 +183,7 @@ def cycle_flux(L, H, C, W, eq, idx, t_eval, t_fin, R, flux):
     verrou_f, jpay, gjour, part, cap_pay, minp, partage = R[11], R[12], R[13], R[14], R[15], R[16], R[17]
     cap_e, cap_f, intra_f, dll_f = R[18], R[19], R[20], R[21]
     verrou_pay, mode_pay, coh_pay, pal1, cap1, pal2, cap2 = R[22], R[23], R[24], R[25], R[26], R[27], R[28]
+    pal3, cap3, pal4, cap4 = R[29], R[30], R[31], R[32]
     frais, recus, npay, nevals, nok, nperdus, premier = prix_eval, 0.0, 0, 1, 0, 0, -1
     phase = 0                                       # 0 : evaluation, 1 : compte finance
     solde, seuil, pic, meilleur, jours, jours_mois, gagnants = 0.0, -mll, 0.0, 0.0, 0, 0, 0
@@ -173,7 +196,8 @@ def cycle_flux(L, H, C, W, eq, idx, t_eval, t_fin, R, flux):
             lo, hi, cl = _jour(L, H, C, W, eq, t_eval, cap_e, d)
             intra, dll, verrou = intra_e, dll_e, verrou_e
         else:
-            cap = cap2 if solde >= pal2 else (cap1 if solde >= pal1 else cap_f)   # echelle (solde de la veille)
+            cap = cap4 if solde >= pal4 else (cap3 if solde >= pal3 else (cap2 if solde >= pal2 else
+                                                                            (cap1 if solde >= pal1 else cap_f)))  # echelle (solde de la veille)
             lo, hi, cl = _jour(L, H, C, W, eq, t_fin, cap, d)
             intra, dll, verrou = intra_f, dll_f, verrou_f
         if dll > 0 and lo <= -dll:                  # la firme coupe la journee a la perte journaliere

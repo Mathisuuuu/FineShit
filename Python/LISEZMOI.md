@@ -670,6 +670,22 @@ avec perte journalière : +7 269 $/an au bootstrap) sont faux et remplacés par 
 | Lucid Flex (146 $) | +2 482 $/an | +731 / −1 022 $ | 64 % |
 | Tradeify Select (165 $) | −659 $/an | −265 / −1 980 $ | 76 % |
 
+**Comptes plus gros (ajoutés le 2026-10-25 au soir)** : Topstep 100K et 150K, règles officielles (perte max
+3 000 / 4 500 $, objectif 6 000 / 9 000 $, perte journalière 2 000 / 3 000 $, 99 / 199 $ par mois, payout Standard
+3 000 / 5 000 $ au plus). L'échelle de contrats du compte financé (3/4/5/10 et 3/4/5/10/15 minis) vient d'un site
+tiers, car le tableau officiel est une image ; le simulateur gère désormais 4 paliers. Grille de référence pour ces
+tailles, fixée avant le calcul : la grille large, car la grille initiale plafonne sous leurs paliers.
+
+| Topstep, perte journalière, grille large | 2021-2026 hors échantillon | Bootstrap : moyenne / médiane | Années perdantes | Stress 2 ticks (bootstrap) |
+|---|---|---|---|---|
+| 50K (pour comparer ; référence = grille initiale, ci-dessous) | +3 301 $/an | +1 769 / +30 $ | 49 % | +1 088 $ |
+| **100K** | +11 154 $/an | **+5 371 / +2 476 $** | **42 %** | +2 518 $ (médiane −644) |
+| 150K | +12 262 $/an | +5 629 / −447 $ | 53 % | +4 983 $ |
+| 100K, offre limitée (plafond 6 000 $) | +18 908 $/an | +9 707 / +2 676 $ | 38 % | +5 583 $ |
+
+Le 100K rapporte environ deux fois le 50K pour un risque d'année perdante voisin. Mais les tailles choisies touchent
+souvent le bord de la grille (S1 à 12 unités), et le stress à 2 ticks divise le gain par deux.
+
 **Lecture**
 - La perte journalière choisie à l'achat agit comme un stop quotidien, et c'est elle qui fait la différence.
 - Stress à 2 ticks : +2 358 $ en bootstrap (médiane +248), 47 % d'années perdantes.
@@ -730,6 +746,17 @@ premiers payouts)
   chez Topstep, S1 et M2 se couvrent : interdit.
 - Témoin sans avantage, 5 comptes : −3 757 $ (A) et −4 746 $ (B), 84-85 % d'années perdantes.
 - Stress à 2 ticks : 5 A échelonnés +11 307 $ (42 % d'années perdantes), 5 B +19 089 $ (27 %).
+
+**Compte N : S1 et M2 dans le MÊME compte, en position nette** (comme un book Kairos à plusieurs stratégies NQ ; hors
+critère 19, simulé pour décision). Le chemin de valeur minute par minute est la somme des deux stratégies ; contrôle :
+S1 seul et M2 seul refaits à 0,00 $ près. L'économie de coûts quand elles se croisent est ignorée (prudent). Une
+taille n'est admise que si la position nette reste sous le plafond de base (50 micros en évaluation, 20 en financé)
+dans 99 % des séances 2016-2020.
+- 1 compte N : +4 242 $/an, médiane +1 702 $, 41 % d'années perdantes. C'est moins bien qu'un compte B seul (médiane
+  +2 442 $, 34 %), car le plafond de 20 micros du compte financé empêche d'additionner les deux tailles.
+- 5 comptes N échelonnés : +21 351 $, médiane +14 073 $, 33 %.
+- Témoin sans avantage : −1 305 $.
+- Conclusion : la mise en commun ne vaut pas d'assouplir le critère 19.
 
 **Ce qu'il faudrait pour faire comme Kairos**
 1. Plus de stratégies validées qui ne tiennent pas NQ en sens contraire de S1 (or, ES aux heures où S1 ne trade
