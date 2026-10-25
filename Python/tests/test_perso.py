@@ -1109,3 +1109,23 @@ def test_pente_fomc_signal_publie_et_substitut_sofr():
     assert p.iloc[0] == pd.Timestamp("2025-09-29") and p.iloc[1] == pd.Timestamp("2026-01-23")
     # sens fige du papier : vente si STEEP = 0, achat des le premier rapport de pentification
     assert P.B0 + P.B1 * 0.0 < 0 < P.B0 + P.B1 / 13
+
+
+def test_kairos_jambes_cassure_stop_et_sortie():
+    from nexus.perso import kairos_jambes as K
+    # range sur les barres 0-2 (haut 10, bas 8), entree sur 3-5, sortie a l ouverture de la barre 6
+    o = np.array([9.0, 9.0, 9.0, 9.5, 10.5, 10.0, 11.0])
+    h = np.array([10.0, 9.5, 9.5, 9.8, 10.8, 10.4, 11.2])
+    l = np.array([8.0, 8.5, 8.5, 9.2, 10.2, 9.6, 10.8])
+    c = o.copy()
+    tr = K.jour_trade(o, h, l, c, 0, 3, 3, 6, 6, 0.25, "milieu")
+    # cassure du haut + 1 tick (10,25) a la barre 4, ouverture 10,5 au-dela : rempli a 10,5 ; stop au milieu (9) jamais
+    # touche ; sortie a l ouverture de la barre 6
+    assert tr == (1, 4, 10.5, 6, 11.0, "heure")
+    l2 = l.copy()
+    l2[5] = 8.9
+    tr = K.jour_trade(o, h, l2, c, 0, 3, 3, 6, 6, 0.25, "milieu")
+    assert tr[0] == 1 and tr[3] == 5 and tr[4] == 9.0 and tr[5] == "stop"   # stop au milieu de l IB (ouverture 10 au-dessus)
+    tr = K.jour_trade(o, h, l2, c, 0, 3, 3, 6, 6, 0.25, "borne")
+    assert tr[5] == "heure"                                                 # stop a l autre borne (8) non touche
+    assert K.jour_trade(o, np.minimum(h, 10.1), np.maximum(l, 7.9), c, 0, 3, 3, 6, 6, 0.25, "borne") is None

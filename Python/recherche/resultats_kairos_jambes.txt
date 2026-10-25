@@ -1,0 +1,64 @@
+====================================================================================================================
+ JAMBES DU BOOK KAIROS SANS PAPIER (critere 1 assoupli le 2026-10-25) - DEUX ESSAIS (n° 436 et 437)
+====================================================================================================================
+K1 : or, range 19:00 -> 3:00 ET, cassure 3:00 -> 8:00, stop a l autre borne, sortie 11:30.
+K2 : ES, initial balance 9:30 -> 10:30, cassure 10:30 -> 15:00, stop au milieu de l IB, sortie 15:55.
+Temoin : meme jour, meme instant d entree, sortie a l heure, sans stop, sens au hasard (graine 7).
+
+Verification du calcul (critere 9)
+  K1 (GC)
+    (a) horodatage (volume median de la barre / 3 barres precedentes) : 3:00 Londres x2.5, 8:20 COMEX x3.2, 8:30 chiffres US x2.5, 9:30 New York x2.4
+    (b) anticipation : prix apres l entree x1,5 sur 200 jours -> heure, sens et prix d entree INCHANGEES
+    (c) rejeu vectorbt : 2114 trades contre 2114 au moteur, ecart maximal de P&L brut 0.000000 $ -> IDENTIQUE
+    (d) 5 trades tires au hasard (graine 7), a verifier a la main :
+        2016-04-11 : ACHAT Mon 03:14 ET a 1254.70 | sortie (heure) Mon 11:30 ET a 1258.90 | brut +420.00 $ - frais 25.00 $ = +395.00 $
+        2021-02-11 : ACHAT Thu 03:05 ET a 1844.60 | sortie (heure) Thu 11:30 ET a 1837.50 | brut -710.00 $ - frais 25.00 $ = -735.00 $
+        2021-03-24 : ACHAT Wed 05:43 ET a 1733.70 | sortie (heure) Wed 11:30 ET a 1729.60 | brut -410.00 $ - frais 25.00 $ = -435.00 $
+        2024-01-10 : ACHAT Wed 03:07 ET a 2038.50 | sortie (heure) Wed 11:30 ET a 2031.60 | brut -690.00 $ - frais 25.00 $ = -715.00 $
+        2025-10-06 : ACHAT Mon 04:02 ET a 3969.10 | sortie (heure) Mon 11:30 ET a 3973.90 | brut +480.00 $ - frais 25.00 $ = +455.00 $
+    (e) comptes : 2679 jours 2016-01-05 -> 2026-08-28 ; trade 2114 ; pas de cassure 480 ; range incomplet 64 ; changement d echeance 20 ; prix absent a la sortie 1 ; sorties au stop 727 ; achats 1091 ; 199 trades par an, 1255 h/an
+  K2 (ES)
+    (a) horodatage (volume median de la barre / 3 barres precedentes) : 3:00 Londres x5.3, 8:20 COMEX x1.2, 8:30 chiffres US x2.0, 9:30 New York x8.3
+    (b) anticipation : prix apres l entree x1,5 sur 200 jours -> heure, sens et prix d entree INCHANGEES
+    (c) rejeu vectorbt : 2559 trades contre 2559 au moteur, ecart maximal de P&L brut 0.000000 $ -> IDENTIQUE
+    (d) 5 trades tires au hasard (graine 7), a verifier a la main :
+        2017-08-28 : VENTE Mon 10:30 ET a 2441.00 | sortie (stop) Mon 11:01 ET a 2445.25 | brut -212.50 $ - frais 30.00 $ = -242.50 $
+        2017-10-11 : ACHAT Wed 11:10 ET a 2549.75 | sortie (heure) Wed 15:55 ET a 2552.00 | brut +112.50 $ - frais 30.00 $ = +82.50 $
+        2017-11-14 : ACHAT Tue 10:46 ET a 2576.25 | sortie (heure) Tue 15:55 ET a 2577.00 | brut +37.50 $ - frais 30.00 $ = +7.50 $
+        2018-06-15 : VENTE Fri 10:31 ET a 2772.00 | sortie (stop) Fri 10:58 ET a 2775.88 | brut -193.75 $ - frais 30.00 $ = -223.75 $
+        2021-09-15 : ACHAT Wed 11:27 ET a 4449.00 | sortie (heure) Wed 15:55 ET a 4472.50 | brut +1175.00 $ - frais 30.00 $ = +1145.00 $
+    (e) comptes : 2679 jours 2016-01-05 -> 2026-08-28 ; trade 2559 ; pas de cassure 94 ; prix absent a la sortie 21 ; range incomplet 5 ; sorties au stop 1422 ; achats 1373 ; 240 trades par an, 701 h/an
+
+--- K1 Or, cassure Asie -> Londres - GC (ESSAI n° 436) : 2114 trades
+    brut +2.16 pb (t +1.52) | 2016-2020 +1.94 (t +1.05) | 2021-2026 +2.35 (t +1.11)
+    temoin (sens au hasard) -2.07 pb -> Welch +2.02
+    cout aller-retour 1.40 pb -> net +0.76 pb ; sans les 3 meilleurs jours +0.14 pb ; stress 2 ticks -0.36 pb
+    net par annee (pb) : 2016:-0.1 2017:-0.1 2018:+3.9 2019:-1.9 2020:+1.0 2021:-2.3 2022:+3.0 2023:-4.6 2024:+2.0 2025:+4.0 2026:+6.0
+    vectorbt (GC, 1 tick) : Sharpe +0.21 [IC 95 % -0.40 ; +0.78] | avant 2021 +0.17 | apres +0.24 | deflate (436 essais) 0.01 | perte max -17.3%
+    micro MGC (cout 3.92 pb) : net -1.76 pb | Sharpe -0.34 [IC bas -0.96] | deflate 0.00
+    heures en position : 1255 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; IC bas du Sharpe > 0 ; Sharpe deflate >= 0,95)
+
+--- K2 ES, cassure de l initial balance (1re heure) - ES (ESSAI n° 437) : 2559 trades
+    brut +2.03 pb (t +2.14) | 2016-2020 +1.46 (t +1.04) | 2021-2026 +2.54 (t +1.96)
+    temoin (sens au hasard) +1.33 pb -> Welch +0.43
+    cout aller-retour 1.55 pb -> net +0.48 pb ; sans les 3 meilleurs jours +0.06 pb ; stress 2 ticks -0.81 pb
+    net par annee (pb) : 2016:-2.5 2017:-2.2 2018:+5.6 2019:-3.9 2020:+2.5 2021:-0.5 2022:+10.0 2023:-2.8 2024:+0.5 2025:-0.7 2026:-1.2
+    vectorbt (ES, 1 tick) : Sharpe +0.19 [IC 95 % -0.38 ; +0.77] | avant 2021 +0.01 | apres +0.36 | deflate (437 essais) 0.01 | perte max -15.2%
+    micro MES (cout 3.88 pb) : net -1.84 pb | Sharpe -0.55 [IC bas -1.17] | deflate 0.00
+    heures en position : 701 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; IC bas du Sharpe > 0 ; Sharpe deflate >= 0,95)
+
+--- K2 ES, cassure de l initial balance (1re heure) - NQ (replique, pas un essai) : 2510 trades
+    brut +3.01 pb (t +2.34) | 2016-2020 +1.88 (t +1.08) | 2021-2026 +4.00 (t +2.14)
+    temoin (sens au hasard) +0.59 pb -> Welch +1.13
+    cout aller-retour 0.62 pb -> net +2.38 pb ; sans les 3 meilleurs jours +1.67 pb ; stress 2 ticks +1.97 pb
+    net par annee (pb) : 2016:-0.1 2017:-0.5 2018:+4.9 2019:+0.2 2020:+1.6 2021:+3.2 2022:+14.9 2023:+1.3 2024:+1.2 2025:+2.8 2026:-6.7
+    vectorbt (NQ, 1 tick) : Sharpe +0.61 [IC 95 % +0.09 ; +1.18] | avant 2021 +0.37 | apres +0.80 | deflate (437 essais) 0.18 | perte max -15.6%
+    micro MNQ (cout 2.49 pb) : net +0.51 pb | Sharpe +0.17 [IC bas -0.36] | deflate 0.01
+    heures en position : 731 h/an
+    VERDICT : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; Sharpe deflate >= 0,95)
+
+Synthese K1 : REJETEE. Aucune variante ne sera testee (pas de surajustement).
+Synthese K2 : REJETEE. Aucune variante ne sera testee (pas de surajustement).
+Calcul en 78 s.

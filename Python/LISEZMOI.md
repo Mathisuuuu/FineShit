@@ -614,6 +614,73 @@ Statut : **candidate, non validée**. Points faibles :
 - l'écart avec l'or gardé en permanence n'est pas prouvé (+0,31 de Sharpe, p = 0,09) ;
 - Sharpe déflaté strict à 0 %.
 
+### Cycle de vie des comptes prop firm : S1 + Gotobi (`nexus/prop_comptes.py`, 2026-10-25)
+
+But fixé le 2026-10-25 : le modèle « arbitrage de prop firm » de l'équipe Kairos. On simule une année complète
+d'un compte 50K :
+1. évaluation ;
+2. compte financé avec ses payouts ;
+3. si le compte saute, on rachète une évaluation.
+
+Le gain net = payouts reçus − frais. Lancer : `python -m nexus.prop_comptes --cotations ../Cotations`. Résultats
+dans `recherche/resultats_prop_comptes.txt`.
+
+**Données**
+- S1 : les trades du backtest figé, rejoués dans vectorbt sur 1 MNQ. Contrôle : 1 828 trades sur 1 828, écart
+  par trade de 0,0000 $. La taille du jour suit la règle de S1. Une « unité » vaut la taille de S1 pour un capital
+  de 10 000 $, soit environ 2 MNQ en 2025-2026.
+- Gotobi : les signaux figés, rejoués sur 1 contrat 6J. Contrôle : 1 492 trades sur 1 492, corrélation par trade
+  de 0,995.
+- Coûts : 1 tick + commission par côté (0,60 $ le micro, 2,50 $ le 6J), avec un stress à 2 ticks.
+
+**Règles des firmes**
+- Topstep : pages officielles de help.topstep.com, lues le 2026-10-25 :
+  - cohérence de 55 % en évaluation ;
+  - perte max de 2 000 $ en fin de journée, ramenée au départ (0) dès le 1er payout ;
+  - perte journalière optionnelle (1 000 $ si on la choisit à l'achat) ;
+  - payout Standard (5 jours ≥ 150 $, 50 % du solde, 2 000 $ au plus) ou Consistency (3 jours, meilleur jour ≤ 40 %,
+    3 000 $ au plus) ;
+  - 49 $/mois + 149 $ d'activation ;
+  - échelle de contrats 2 / 3 / 5 minis (tableau officiel illisible, repris d'un site tiers) ;
+  - automatisation permise sous conditions.
+- Lucid et Tradeify : sites tiers, prix catalogue.
+- Apex et Take Profit Trader ne sont pas simulées : les bots y seraient interdits selon plusieurs sources.
+
+**Méthode de choix**
+- La taille est choisie sur les départs de 2016-2020 seulement, séparément en évaluation et en financé, puis
+  jugée sur 2021-2026.
+- IC : bootstrap par blocs de 21 séances sur 2021-2026 (1 000 années synthétiques).
+- Ce n'est pas un nouvel essai : le signal ne change pas.
+- Grille fixée avant le 1er calcul : 0-3 × 6J et S1 0-6 unités (`resultats_prop_comptes.txt`). Grille large,
+  0-5 × 6J et S1 0-12 unités, en contrôle (`resultats_prop_comptes_grille_large.txt`).
+
+| Firme 50K, grille initiale, coûts de référence | 2021-2026 hors échantillon | Bootstrap : moyenne / médiane | Années perdantes (bootstrap) |
+|---|---|---|---|
+| **Topstep Standard + perte journalière 1 000 $** | +12 637 $/an | **+7 269 / +5 794 $** | **26 %** |
+| Topstep Standard + perte journalière, offre limitée (plafond 4 000 $) | +20 097 $/an | +11 904 / +7 349 $ | 23 % |
+| Topstep Standard sans perte journalière | +9 825 $/an | +4 988 / +1 708 $ | 38 % |
+| Topstep Consistency sans perte journalière | +4 449 $/an | +1 801 / +927 $ | 40 % |
+| Lucid Flex (146 $) | +3 334 $/an | +2 031 / −1 218 $ | 59 % |
+| Tradeify Select (165 $) | −573 $/an | +722 / −2 145 $ | 72 % |
+
+**Lecture**
+- La perte journalière choisie à l'achat agit comme un stop quotidien, et c'est elle qui fait la différence.
+- Stress à 2 ticks : +6 375 $ en bootstrap, 33 % d'années perdantes.
+- Grille large : +6 125 $ en bootstrap, 30 % d'années perdantes.
+- Premier payout vers la 90e séance en médiane.
+- 1re version, du même jour, avec des règles Topstep tirées de sites tiers (perte journalière obligatoire, cohérence
+  50 %) : +9 510 $ en bootstrap.
+
+C'est un résultat par compte et par an. Avec N comptes copiés, le gain est multiplié par N mais le risque aussi :
+les comptes sautent ensemble.
+
+**Réserves**
+- Règles de Lucid et Tradeify non vérifiées sur leurs pages officielles.
+- Tableau de l'échelle de contrats de Topstep illisible sur leur site.
+- Lucid : échelle simplifiée à 2 minis en financé ; plancher ramené à +100 au 1er payout, comme chez Tradeify, non
+  confirmé.
+- Passage en compte réel après N payouts non modélisé.
+
 ## 13. Fiche 15 — rebalancement des ETF à levier sur NQ / ES (candidate, `nexus/letf.py`)
 
 Portage Python du NinjaScript `Strategies/Nexus15_LetfRebalancing.cs` (session cloud du 14/10/2026), mêmes
@@ -1213,6 +1280,32 @@ ou 1/N, régression bêta / alpha), familles courtes de variantes motivées, dé
 2021-2026 (une variante n'est retenue que si elle bat l'originale sur les deux périodes avec un Sharpe déflaté
 ≥ 90 %), PBO par famille, marchés de contrôle sans ré-optimisation. Les variantes retenues sont ajoutées au runner
 (lignes « (alternative) ») et passent donc dans le rapport prop et le tableau de bord.
+
+### Jambes du book Kairos testées sans papier (`nexus/perso/kairos_jambes.py`, essais 436 et 437, 2026-10-25)
+
+Le critère 1 a été assoupli le 2026-10-25 pour viser un book proche de celui de Kairos. Le protocole est figé dans
+l'en-tête du module avant tout calcul. Résultats dans `recherche/resultats_kairos_jambes.txt`.
+
+**Les deux jambes**
+- **K1, or** : range de 19:00 à 3:00 ET, cassure entre 3:00 et 8:00, stop à l'autre borne, sortie à 11:30.
+- **K2, ES** : initial balance de 9:30 à 10:30, cassure entre 10:30 et 15:00, stop au milieu, sortie à 15:55.
+
+**Vérifications**
+- Rejeu vectorbt identique au moteur.
+- Test d'anticipation inchangé.
+- Trade du 15/09/2021 vérifié à la main sur les données brutes.
+- Bug trouvé avant tout calcul de gain : le range du lundi partait du samedi. Corrigé, il est documenté dans l'en-tête.
+
+**Résultats**
+
+| Jambe | Net / trade | t | Welch | Sharpe [IC 95 %] | Déflaté | Verdict |
+|---|---|---|---|---|---|---|
+| K1 GC (essai 436) | +0,76 pb | 1,52 | 2,02 | 0,21 [−0,40 ; 0,78] | 0,01 | **rejetée** (MGC négatif) |
+| K2 ES (essai 437) | +0,48 pb | 2,14 | 0,43 | 0,19 [−0,38 ; 0,77] | 0,01 | **rejetée** (MES négatif) |
+| K2 NQ (réplique) | +2,38 pb | 2,34 | 1,13 | 0,61 [0,09 ; 1,18] | 0,18 | échoue (t, deux périodes, Welch, déflaté) |
+
+Les cassures simples ne suffisent pas. Le filtre de « force de l'IB » de Kairos n'est pas publié ; le reconstruire
+serait un nouvel essai, choisi sans source.
 
 ## 17. Groupe en direct sur NinjaTrader (stratégies NinjaScript `NexusGroupe*`, AddOn `NexusTableau`)
 

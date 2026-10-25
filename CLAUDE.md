@@ -1,14 +1,20 @@
 # Guide pour un nouveau Claude (lu automatiquement par Claude Code)
 
-État au 2026-10-21. Lire ce fichier en entier avant d'agir, puis `LISEZMOI.md` (racine), `Python/LISEZMOI.md` et
+État au 2026-10-25. Lire ce fichier en entier avant d'agir, puis `LISEZMOI.md` (racine), `Python/LISEZMOI.md` et
 `Dashboard/LISEZMOI.md` selon la tâche.
 
 ## L'utilisateur et le but
 
 - Il parle français : répondre en français, simplement, sans jargon (il a dit « t'explique trop mal » quand c'était
   trop technique). Expliquer les notions (Sharpe déflaté, puissance…) en une phrase avec un exemple.
-- But : un portefeuille de stratégies de **futures intraday COURTES, fiables, non corrélées**, jouables en **prop firm**
-  (le moins de temps possible devant l'écran, le plus rentable à long terme).
+- **SEUL BUT depuis le 2026-10-25 : le modèle économique « arbitrage de prop firm »** (celui de l'équipe Kairos,
+  registre n° 344-349) : l'argent vient surtout des règles des prop firms (plusieurs comptes en parallèle, mise
+  calibrée pour passer l'évaluation vite sans sauter, puis payouts réguliers), avec nos stratégies validées (S1 +
+  Gotobi) comme signal à espérance positive. Tout le travail sert ce but : simuler les vraies règles de chaque firme
+  (drawdown suiveur, objectif, jours minimum, règle de cohérence, plafonds et fréquence des payouts, prix de l'éval et
+  de l'activation) et choisir mise et nombre de comptes qui maximisent le gain net espéré (payouts − frais), avec le
+  risque de sauter. Plus de recherche de papiers sauf demande (la méthode ci-dessous reste la règle si on en refait).
+  Ancien but (jusqu'au 2026-10-25) : portefeuille de stratégies intraday courtes, fiables, non corrélées.
 - Toute décision repose sur les **statistiques vectorbt**, jamais sur une intuition ni sur « rien de Claude » dans les
   calculs : en cas de doute, tout recalculer (`python -m nexus tableau`).
 
@@ -32,6 +38,12 @@ et `cd Dashboard && node --test`.
 
 **A. Choisir les papiers**
 1. Source sérieuse : revue à comité, banque centrale, grande université.
+   **Assoupli le 2026-10-25 (décision de l'utilisateur)** : pour atteindre un book de 8-9 stratégies proche de celui de
+   Kairos (≈ 4 NQ, 3 or, 1 ES), les familles de règles de Kairos et des praticiens (cassure Asie → Londres sur l'or,
+   cassure de l'initial balance, cassure de volatilité sur ES / GC, ORB filtrée…) peuvent être testées SANS papier.
+   Tous les autres critères restent (règles figées avant le calcul, puissance quand un chiffre existe, t ≥ 3, deux
+   périodes, Welch, Sharpe déflaté ≥ 0,95 avec le compteur cumulé, IC > 0, coûts, conformité prop) ; chaque test
+   compte un essai.
 2. Récente de préférence (les effets publiés avant 2016-2018 sont nuls ou inversés sur nos données). Décision du
    2026-10-25 : un papier ancien est accepté s'il est encore vivant aujourd'hui (confirmé par un travail récent, ou
    par notre test sur 2016-2026, critère 11). Tous les marchés sont permis (Chine, Europe, Asie…), pas seulement le
@@ -69,7 +81,7 @@ et `cd Dashboard && node --test`.
 14. Gain net > 0 sans les 3 meilleurs jours.
 15. Événements rares (< 60 cas) : t ≥ 2 et net positif ≥ 65 % des années, à la place des n° 10-11.
 16. **Sharpe déflaté ≥ 0,95** avec le nombre CUMULÉ d'essais (`ESSAIS_PROGRAMME` de `Python/nexus/tableau.py`,
-    **435** au 2026-10-25 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
+    **437** au 2026-10-25 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
     stratégie validée garde le nombre d'essais du jour de sa validation (`ESSAIS_FIGES` : S1, Gotobi et ORB figées à
     **430**, compteur du 2026-10-21) ; les essais faits ensuite sur d'autres idées ne la pénalisent plus.
 
@@ -109,7 +121,8 @@ Onglet Prop firm (2026-10-21) : seules les stratégies qui passent les 24 critè
 (`RETENUES_METHODE` de `Python/nexus/prop_combinaisons.py` : S1, Gotobi, boombitch NQ conforme ; à tenir à jour) ;
 recommandation : S1 + Gotobi (Sharpe 2,04 [1,47 ; 2,59], 519 h/an).
 
-Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : paris de pentification COT et ES le jour du FOMC (`pente_fomc.py`, essai 435, 2026-10-25), fin de mois Trésor (`fin_de_mois_taux.py`),
+Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : jambes Kairos sans papier, or Asie → Londres et
+cassure de l'initial balance ES (`kairos_jambes.py`, essais 436-437, 2026-10-25), paris de pentification COT et ES le jour du FOMC (`pente_fomc.py`, essai 435, 2026-10-25), fin de mois Trésor (`fin_de_mois_taux.py`),
 enchère de clôture C1 (abandonnée à la lecture, aucun essai). Avec nos 9 contrats (ES NQ YM GC CL 6E 6B 6J 6A),
 les idées intraday documentées sont épuisées : il faut des données nouvelles.
 
@@ -132,6 +145,11 @@ les idées intraday documentées sont épuisées : il faut des données nouvelle
   du micro bitcoin : close le 2026-10-21 (Zarattini-Pagani-Barbon 2025 lu en entier : aucune version courte, tous ses
   modèles tiennent 3 300 à 3 900 h/an).
   Avant de proposer une piste, vérifier `.cache/` et `recherche/`. Inventaire : `Python/recherche/pistes_contrats_manquants.md`.
+- **Modèle prop firm (2026-10-25, `nexus/prop_comptes.py`, `resultats_prop_comptes.txt`)** : cycle de vie d'un compte
+  50K sur un an avec S1 (MNQ) + Gotobi (6J). Meilleur choix : Topstep, payout Standard, AVEC la perte journalière de
+  1 000 $ choisie à l'achat (règles officielles lues le 2026-10-25) : bootstrap +7 300 $/compte-an, 26 % d'années
+  perdantes ; Lucid et Tradeify nettement moins bons (médiane négative). Prochaine étape : nombre de comptes, et
+  vérifier l'offre limitée « plafonds doublés ».
 - Prop firms (2026-10-21) : Topstep la plus sûre (NKD permis, pas de nuit) ; seule Phidias Premium permet NKD + or +
   nuit ; proposition en cours : simuler le challenge Phidias Premium avec l'or de nuit.
 
