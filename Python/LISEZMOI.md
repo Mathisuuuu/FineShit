@@ -766,6 +766,33 @@ dans 99 % des séances 2016-2020.
 3. Une variante de S1 qui ne prend pas de position contraire à M2 permettrait de mélanger A et B. Ce serait un
    nouvel essai.
 
+### Écart avec Kairos : combien de jambes faut-il ? (`python -m nexus.prop_book --ecart-kairos`, 2026-10-26)
+
+Un compte Topstep 50K (Standard + perte journalière de 1 000 $) reçoit N copies indépendantes de notre paire S1 + Gotobi,
+jouées l'une après l'autre comme les jambes Asie / Londres / New York d'un book Kairos. Ce sont des jambes
+hypothétiques : les mêmes séries décalées dans le calendrier. La taille commune par copie est choisie sur 2016-2020, puis
+on fait un bootstrap sur 2021-2026. Variante prudente : des jambes deux fois moins bonnes (on retire la moitié de leur
+gain moyen). Résultats dans `recherche/resultats_ecart_kairos.txt`.
+
+| Jambes | Sharpe du book | Net / compte-an | Médiane | Années perdantes | 1er payout (médiane) |
+|---|---|---|---|---|---|
+| 2 (nous aujourd'hui) | 1,39 | +2 782 $ | +617 $ | 43 % | 118 séances |
+| 4 | 1,97 | +5 125 $ | +2 483 $ | 32 % | 92 séances |
+| 6 | 2,45 | +8 453 $ | +6 436 $ | 21 % | 79 séances |
+| 8 (taille de Kairos) | 2,80 | +6 764 $ | +3 862 $ | 25 % | 72 séances |
+| 8 deux fois moins bonnes | 1,40 | +2 353 $ | +96 $ | 48 % | 96 séances |
+
+**Lecture**
+- Il manque 4 jambes de la qualité de S1 (Sharpe ≈ 1,3 ou plus), non corrélées, sans couverture avec S1 chez Topstep.
+  Avec elles, le gain par compte serait multiplié par 3 et les années perdantes divisées par 2.
+- Au-delà de 6 jambes, le plafond de 20 micros du compte financé limite la taille : 8 jambes ne font pas mieux.
+- Des jambes médiocres (Sharpe ≈ 0,7 chacune) n'aident presque pas : 8 jambes deux fois moins bonnes rapportent moins
+  que nos 2 jambes actuelles. Toutes les cassures simples de Kairos testées sur nos données sont sous ce niveau (K1, K2,
+  K6-K8) ; IntradayVolBreakout (1,13) et M2 (1,59, à confirmer) sont les seules au niveau voulu, et toutes deux tiennent
+  NQ aux heures de S1.
+- Même avec 8 bonnes jambes, le premier payout arrive en médiane après 72 séances (≈ 3,5 mois). Le chiffre de Kairos,
+  « 90 % des cas rentables en un mois », n'est pas atteint dans notre simulation (leur chiffre n'est pas vérifié).
+
 ## 13. Fiche 15 — rebalancement des ETF à levier sur NQ / ES (candidate, `nexus/letf.py`)
 
 Portage Python du NinjaScript `Strategies/Nexus15_LetfRebalancing.cs` (session cloud du 14/10/2026), mêmes
@@ -1449,6 +1476,23 @@ retire leur gain moyen à S1 et à Gotobi et on rejoue les mêmes comptes. Résu
 avec perte journalière fait −747 $/an au bootstrap, 84 % d'années perdantes, contre +2 782 $ avec le signal
 (chiffres corrigés du calendrier, voir plus haut). Les
 règles des firmes, seules, ne rapportent rien : le gain vient de notre avantage.
+
+### Jambes Kairos, deuxième lot (`nexus/perso/kairos_jambes2.py`, essais 441-443, 2026-10-26)
+
+Demande du 2026-10-26 : trouver des stratégies qui correspondent au book de Kairos. Les familles de leur book jamais
+testées chez nous sont testées avec les règles standard des praticiens, figées dans l'en-tête avant le calcul. Le moteur,
+les coûts, le témoin et les critères sont ceux du premier lot. Résultats dans `recherche/resultats_kairos_jambes2.txt`.
+
+| Jambe | Règle | Net / trade | t | Sharpe [IC 95 %] | Micro | Verdict |
+|---|---|---|---|---|---|---|
+| K6 NQ (essai 441) | range 19:00-3:00, cassure 3:00-8:00, stop à l'autre borne, sortie 9:25 | −0,13 pb | 0,51 | −0,01 [−0,60 ; 0,55] | MNQ −0,60 | **rejetée** |
+| K7 GC (essai 442) | range du COMEX 8:20-8:35, cassure jusqu'à 11:00, sortie 13:25 | −1,25 pb | 0,17 | −0,39 [−1,02 ; 0,19] | MGC −1,25 | **rejetée** |
+| K8 CL (essai 443) | range du NYMEX 9:00-9:15, cassure jusqu'à 11:30, sortie 14:25 | −3,24 pb | 0,28 | −0,32 [−0,94 ; 0,26] | MCL −1,22 | **rejetée** |
+
+Réplique de K6 sur ES : Sharpe −0,77. Les vérifications (horodatage, anticipation, rejeu vectorbt, trades contrôlés sur
+les barres brutes) sont bonnes. La série CL est ajustée par ratio : le prix réel n'est reconstitué qu'à quelques cents
+près, sans effet sur les trades. Avec K1 et K2, les cinq cassures simples du book de Kairos sont toutes rejetées sur nos
+données. Aucune variante ne sera testée.
 
 ## 17. Groupe en direct sur NinjaTrader (stratégies NinjaScript `NexusGroupe*`, AddOn `NexusTableau`)
 

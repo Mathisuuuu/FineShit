@@ -1131,6 +1131,25 @@ def test_kairos_jambes_cassure_stop_et_sortie():
     assert K.jour_trade(o, np.minimum(h, 10.1), np.maximum(l, 7.9), c, 0, 3, 3, 6, 6, 0.25, "borne") is None
 
 
+def test_kairos_jambes2_regles_figees():
+    from nexus.perso import kairos_jambes as KJ
+    from nexus.perso import kairos_jambes2 as K2
+    # protocole du 2026-10-26 : trois essais 441-443, stop a l autre borne, K6 sort avant l ouverture de New York
+    assert [p["essai"] for p in K2.JAMBES.values()] == [441, 442, 443]
+    assert all(p["stop"] == "borne" for p in K2.JAMBES.values())
+    assert K2.JAMBES["K6"]["sortie"] < (9, 30) and K2.JAMBES["K6"]["range_"] == KJ.JAMBES["K1"]["range_"]
+    assert all(k in KJ.REGISTRE for k in K2.JAMBES)
+    assert KJ.MICRO["CL"] == ("MCL", 100.0)
+
+
+def test_copies_independantes_du_book():
+    from nexus import prop_book as B
+    L = np.arange(12, dtype=float).reshape(2, 6)
+    Lc, Hc, Cc, Wc, ec = B.copies(L, L, L, L, np.array([10.0, 1.0]), 3)
+    assert Lc.shape == (6, 6) and list(ec) == [10.0, 1.0] * 3
+    assert np.array_equal(Lc[:2], L) and np.array_equal(Lc[2:4], np.roll(L, 2, axis=1))
+
+
 def test_kairos_publiees_stop_et_atr():
     from types import SimpleNamespace
     from nexus.perso import kairos_publiees as K

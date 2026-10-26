@@ -67,7 +67,7 @@ try:
 except ImportError:  # pragma: no cover
     vbt = None
 
-MICRO = {"GC": ("MGC", 10.0), "ES": ("MES", 5.0), "NQ": ("MNQ", 2.0), "YM": ("MYM", 0.5)}
+MICRO = {"GC": ("MGC", 10.0), "ES": ("MES", 5.0), "NQ": ("MNQ", 2.0), "YM": ("MYM", 0.5), "CL": ("MCL", 100.0)}
 JAMBES = {
     "K1": dict(nom="Or, cassure Asie -> Londres", root="GC", essai=436, range_=((19, 0), (3, 0)), veille=True,
                entree=((3, 0), (8, 0)), sortie=(11, 30), stop="borne"),
@@ -75,6 +75,7 @@ JAMBES = {
                veille=False, entree=((10, 30), (15, 0)), sortie=(15, 55), stop="milieu"),
 }
 REPLIQUES = {"K2": ["NQ"]}
+REGISTRE = dict(JAMBES)            # toutes les jambes connues de trades() (kairos_jambes2 y ajoute les siennes)
 COUVERTURE_MIN = 0.8
 
 
@@ -114,7 +115,7 @@ def jour_trade(o, h, l, c, i0, i1, e0, e1, sortie, tick, mode):
 
 def trades(m, cle: str, root: str | None = None, o=None, h=None, l=None, seul=None) -> pd.DataFrame:
     """Tous les jours de la jambe -> table (un jour par ligne, motif d exclusion, trade et temoin)."""
-    p = JAMBES[cle]
+    p = REGISTRE[cle]
     root = root or p["root"]
     o = m.o if o is None else o
     h = m.h if h is None else h
@@ -241,19 +242,28 @@ def verif_cinq(root: str, f: pd.DataFrame) -> list[str]:
 # =============================================================================
 #  Etude
 # =============================================================================
-def etude(sortie: str | None = None, log=print) -> dict:
+TITRE = [" JAMBES DU BOOK KAIROS SANS PAPIER (critere 1 assoupli le 2026-10-25) - DEUX ESSAIS (n° 436 et 437)",
+         "K1 : or, range 19:00 -> 3:00 ET, cassure 3:00 -> 8:00, stop a l autre borne, sortie 11:30.",
+         "K2 : ES, initial balance 9:30 -> 10:30, cassure 10:30 -> 15:00, stop au milieu de l IB, sortie 15:55."]
+
+
+def etude(sortie: str | None = None, log=print, jambes=None, repliques=None, titre=None,
+          fichier="resultats_kairos_jambes.txt") -> dict:
+    jambes = JAMBES if jambes is None else jambes
+    repliques = REPLIQUES if repliques is None else repliques
+    titre = TITRE if titre is None else titre
     t0 = datetime.now()
     L: list[str] = []
     pr = L.append
     pr("=" * 116)
-    pr(" JAMBES DU BOOK KAIROS SANS PAPIER (critere 1 assoupli le 2026-10-25) - DEUX ESSAIS (n° 436 et 437)")
+    pr(titre[0])
     pr("=" * 116)
-    pr("K1 : or, range 19:00 -> 3:00 ET, cassure 3:00 -> 8:00, stop a l autre borne, sortie 11:30.")
-    pr("K2 : ES, initial balance 9:30 -> 10:30, cassure 10:30 -> 15:00, stop au milieu de l IB, sortie 15:55.")
+    for ligne in titre[1:]:
+        pr(ligne)
     pr("Temoin : meme jour, meme instant d entree, sortie a l heure, sans stop, sens au hasard (graine 7).\n")
     res = {}
-    for cle, p in JAMBES.items():
-        for root in [p["root"]] + REPLIQUES.get(cle, []):
+    for cle, p in jambes.items():
+        for root in [p["root"]] + repliques.get(cle, []):
             m = marche(root)
             f = trades(m, cle, root)
             ok = f[f["motif"] == ""]
@@ -267,7 +277,7 @@ def etude(sortie: str | None = None, log=print) -> dict:
             res[(cle, root)] = dict(f=f, crit=crit, mesures=x, micro=xm, cout=c1, stress=c2, cout_micro=cm, r=r,
                                     heures_an=float(ok["minutes"].sum() / 60 / ans), m=m)
     pr("Verification du calcul (critere 9)")
-    for cle, p in JAMBES.items():
+    for cle, p in jambes.items():
         z = res[(cle, p["root"])]
         m, f = z["m"], z["f"]
         pr(f"  {cle} ({p['root']})")
@@ -285,7 +295,7 @@ def etude(sortie: str | None = None, log=print) -> dict:
            f"{len(ok) / ans:.0f} trades par an, {z['heures_an']:.0f} h/an")
     pr("")
     for (cle, root), z in res.items():
-        p = JAMBES[cle]
+        p = REGISTRE[cle]
         crit, x, xm, c1, c2, cm = z["crit"], z["mesures"], z["micro"], z["cout"], z["stress"], z["cout_micro"]
         essai = root == p["root"]
         net = z["f"].loc[z["f"]["motif"] == "", "brut_pb"] - c1
@@ -316,12 +326,12 @@ def etude(sortie: str | None = None, log=print) -> dict:
         if not echecs:
             pr("    " + correlations(z["r"]))
         pr("")
-    for cle, p in JAMBES.items():
+    for cle, p in jambes.items():
         v = res[(cle, p["root"])]["echecs"]
         pr(f"Synthese {cle} : " + ("passe les criteres 10-18 ; restent la correlation (n° 20) et la validation."
                                    if not v else "REJETEE. Aucune variante ne sera testee (pas de surajustement)."))
     pr(f"Calcul en {(datetime.now() - t0).total_seconds():.0f} s.")
-    sortie = sortie or os.path.join(PY_DIR, "recherche", "resultats_kairos_jambes.txt")
+    sortie = sortie or os.path.join(PY_DIR, "recherche", fichier)
     with open(sortie, "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")
     log("\n".join(L))

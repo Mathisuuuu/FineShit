@@ -285,13 +285,14 @@ def grille(L, H, C, W, eq, debuts, horizon, TE, TF, R):
     return g
 
 
-def sans_avantage(L, H, C):
+def sans_avantage(L, H, C, part: float = 1.0):
     """Temoin « sans avantage » (repris du simulateur du Kairos Terminal : meme compte, sans edge) : gain moyen des
-    seances actives retire a chaque strategie ; plus bas et plus haut decales d autant (bornes a 0)."""
+    seances actives retire a chaque strategie ; plus bas et plus haut decales d autant (bornes a 0). part = 0,5 : on ne
+    retire que la moitie du gain moyen (strategie deux fois moins bonne)."""
     L2, H2, C2 = L.copy(), H.copy(), C.copy()
     for k in range(C.shape[0]):
         actif = C[k] != 0
-        mu = C[k, actif].mean() if actif.any() else 0.0
+        mu = part * C[k, actif].mean() if actif.any() else 0.0
         C2[k, actif] = C[k, actif] - mu
         L2[k, actif] = np.minimum(np.minimum(L[k, actif] - mu, C2[k, actif]), 0.0)
         H2[k, actif] = np.maximum(np.maximum(H[k, actif] - mu, C2[k, actif]), 0.0)

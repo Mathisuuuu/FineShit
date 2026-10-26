@@ -51,8 +51,8 @@ et `cd Dashboard && node --test`.
 3. Lire d'abord le résumé ; s'il est cohérent avec notre cadre, lire le texte COMPLET avant toute règle ou tout test
    (texte introuvable : l'idée attend).
 4. Chercher et lire les papiers contraires (« disappearing », « replication », « out-of-sample »).
-5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (350
-   hypothèses au 2026-10-25, à compléter à chaque lecture ou test), puis `Python/recherche/`, en-têtes de
+5. Vérifier que l'idée n'est pas déjà testée : d'abord le registre `Python/recherche/inventaire_hypotheses.md` (353
+   hypothèses au 2026-10-26, à compléter à chaque lecture ou test), puis `Python/recherche/`, en-têtes de
    `nexus/perso/`, `Python/.cache/`.
    Décision du 2026-10-21 : les tests faits sur simple résumé (Nikkei N1-N2-J1, argent A1, crypto H11-H12…) sont
    repris un à un ; on ne reteste que si le texte complet donne une règle DIFFÉRENTE de celle testée, et chaque
@@ -81,7 +81,7 @@ et `cd Dashboard && node --test`.
 14. Gain net > 0 sans les 3 meilleurs jours.
 15. Événements rares (< 60 cas) : t ≥ 2 et net positif ≥ 65 % des années, à la place des n° 10-11.
 16. **Sharpe déflaté ≥ 0,95** avec le nombre CUMULÉ d'essais (`ESSAIS_PROGRAMME` de `Python/nexus/tableau.py`,
-    **440** au 2026-10-25 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
+    **443** au 2026-10-26 ; l'augmenter à chaque essai) pour toute NOUVELLE candidate. Décision du 2026-10-24 : une
     stratégie validée garde le nombre d'essais du jour de sa validation (`ESSAIS_FIGES` : S1, Gotobi et ORB figées à
     **430**, compteur du 2026-10-21) ; les essais faits ensuite sur d'autres idées ne la pénalisent plus.
 
@@ -123,7 +123,7 @@ Onglet Prop firm (2026-10-21) : seules les stratégies qui passent les 24 critè
 (`RETENUES_METHODE` de `Python/nexus/prop_combinaisons.py` : S1, Gotobi, boombitch NQ conforme ; à tenir à jour) ;
 recommandation : S1 + Gotobi (Sharpe 2,04 [1,47 ; 2,59], 519 h/an).
 
-Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : stratégies publiées sur Kairos (`kairos_publiees.py`, essais 438-440 : momentum C rejeté), jambes Kairos sans papier, or Asie → Londres et
+Tout le reste est rejeté (voir `Python/recherche/`). Derniers rejets : deuxième lot de jambes Kairos (`kairos_jambes2.py`, essais 441-443, 2026-10-26 : NQ Asie → Londres, ORB du COMEX sur l'or, ORB du NYMEX sur le pétrole, Sharpe ≤ 0), stratégies publiées sur Kairos (`kairos_publiees.py`, essais 438-440 : momentum C rejeté), jambes Kairos sans papier, or Asie → Londres et
 cassure de l'initial balance ES (`kairos_jambes.py`, essais 436-437, 2026-10-25), paris de pentification COT et ES le jour du FOMC (`pente_fomc.py`, essai 435, 2026-10-25), fin de mois Trésor (`fin_de_mois_taux.py`),
 enchère de clôture C1 (abandonnée à la lecture, aucun essai). Avec nos 9 contrats (ES NQ YM GC CL 6E 6B 6J 6A),
 les idées intraday documentées sont épuisées : il faut des données nouvelles.
@@ -132,6 +132,14 @@ les idées intraday documentées sont épuisées : il faut des données nouvelle
 
 - S1 sur MNQ DEC26 et Gotobi sur 6J DEC26, compte de **démo DEMO8920103** (connexion « Simulation »), depuis le
   2026-10-21. Les stratégies refusent tout compte réel (`CompteSimule()` dans `NexusGroupeBase.cs`).
+- **Constat du 2026-10-25** : le Groupe ne tourne plus depuis le 22/10. Le compte de démo refuse les ordres faute
+  d'abonnement aux données temps réel (S1 et Gotobi se sont désactivées), et la connexion « Simulation » est perdue
+  depuis le 23/10 (« Logon failed » à la reconnexion : l'utilisateur doit se reconnecter). 2026-10-26 :
+  l'utilisateur s'est reconnecté (10:24) ; M2 compilée (NinjaTrader.Custom.dll du 26/10 10:27). Pas de compte Sim
+  séparé possible (« Add Simulation Account... » grisé en mode « Simulation ») : sur décision de l'utilisateur,
+  **M2 lancée le 2026-10-26 à 11:45 (heure serveur) sur MNQ DEC26, compte DEMO8920103** (celui de S1), en sachant que
+  ce compte refuse les ordres sans données temps réel (M2 se désactivera probablement à son premier ordre).
+  S1 et Gotobi restent désactivées, non touchées.
 - L'AddOn `NexusTableau` écrit `live.json` ; la tâche « Nexus - Rapport du Groupe » (15 min) calcule les stats vectorbt
   du forward ; le tableau de bord est protégé par mot de passe (`Dashboard/mot-de-passe.js`).
 - L'utilisateur a demandé le 2026-10-21 de **laisser NinjaTrader tranquille** : ne pas y toucher sans demande.
@@ -164,8 +172,13 @@ les idées intraday documentées sont épuisées : il faut des données nouvelle
   médiane +2 476 $, 42 % d'années perdantes, environ deux fois le 50K ; 150K : médiane négative. Mettre S1 et M2
   dans le MÊME compte en position nette (hors critère 19) n'apporte rien : le plafond de 20 micros du compte financé
   limite la taille (1 compte : médiane +1 702 $ contre +2 442 $ pour M2 + Gotobi seul).
-- **M2 en NinjaScript préparée, PAS déployée** (`Strategies/NexusGroupeM2.cs`, `NxM2Logique`) : parité 2 072 / 2 072
-  ordres (`python -m nexus.live.parite_ninjascript`). À lancer en démo seulement sur décision de l'utilisateur.
+- **Écart avec Kairos (2026-10-26, `python -m nexus.prop_book --ecart-kairos`, `resultats_ecart_kairos.txt`)** : dans un
+  compte Topstep 50K, 6 jambes de la qualité de S1 + Gotobi (copies indépendantes hypothétiques) donneraient +8 453 $/an,
+  médiane +6 436 $, 21 % d'années perdantes, contre +2 782 $ et 43 % avec nos 2 jambes ; 8 jambes ne font pas mieux
+  (plafond de 20 micros) ; des jambes deux fois moins bonnes (Sharpe ≈ 0,7) n'aident presque pas. **Il manque donc
+  ≈ 4 jambes de Sharpe ≥ 1,3, non corrélées et sans couverture avec S1** ; les cassures simples de Kairos n'y sont pas.
+- **M2 en NinjaScript, lancée en démo le 2026-10-26** (sur DEMO8920103, voir « En direct » ; barres temps réel reçues dès 12:05 serveur) (`Strategies/NexusGroupeM2.cs`, `NxM2Logique`) : parité 2 072 / 2 072
+  ordres (`python -m nexus.live.parite_ninjascript`).
 - Clé Databento de `.env.txt` refusée (erreur 401, 2026-10-25) : pas de devis possible ; il faut une nouvelle clé (les
   nouveaux comptes ont 125 $ de crédit gratuit). GLBX (CME) commence le 2010-06-06.
 - Prop firms (2026-10-21) : Topstep la plus sûre (NKD permis, pas de nuit) ; seule Phidias Premium permet NKD + or +
