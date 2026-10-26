@@ -1,0 +1,19 @@
+======================================================================================================================
+ MOMENTUM TRANSVERSAL (12 MOIS MOINS LE DERNIER) SUR NOS 9 FUTURES : STRATEGIE CONSTRUITE SUR SEPT TRAVAUX (AQR...)
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/momentum_transversal.py. TEST NON AVEUGLE (voir l en-tete) : verdict indicatif.
+
+ETAPE 1 - l anomalie (long-court par classe, sans mise a l echelle)
+  actions   : 2017-2020 +0.42 %/mois (t +1.34, 48 mois) | 2021-2026 -0.15 %/mois (t -0.34, 68 mois)
+  matieres  : 2017-2020 -0.63 %/mois (t -0.26, 48 mois) | 2021-2026 +0.71 %/mois (t +0.47, 68 mois)
+  devises   : 2017-2020 -0.14 %/mois (t -0.34, 48 mois) | 2021-2026 +0.27 %/mois (t +0.85, 68 mois)
+
+ETAPE 2 - strategies (rendements quotidiens nets de couts, en pb du capital)
+  --- V momentum AMP13 sur indices actions et devises : 2493 jours | net +0.50 pb/j (t +0.19) | 2017-2020 t +0.04 | 2021-2026 t +0.21
+      temoin toujours acheteur +6.55 pb/j, Welch -0.58 | sans les 3 meilleurs jours -0.46 | Sharpe net 0.06 (stress 2 ticks 0.04) | Sharpe deflate (51 essais) 0.02
+  --- R1 momentum AMP13 sur les trois classes : 2495 jours | net +4.67 pb/j (t +1.12) | 2017-2020 t +0.56 | 2021-2026 t +1.01
+      temoin toujours acheteur +6.55 pb/j, Welch -0.17 | sans les 3 meilleurs jours +2.85 | Sharpe net 0.36 (stress 2 ticks 0.34) | Sharpe deflate (51 essais) 0.12
+      temoin (toujours acheteur a risque egal, indices actions et devises) : Sharpe +0.21
+
+VERDICT (V, indicatif car non aveugle) : ECHOUE (t >= 3 ; meme signe et t >= 1,5 sur 2016-2020 et 2021-2026 ; t de Welch >= 2 contre le temoin ; gain net > 0 sans les 3 meilleurs jours ; Sharpe deflate >= 0.95)
+Calcul en 9 s.

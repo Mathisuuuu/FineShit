@@ -1,0 +1,28 @@
+Note : la lecture realiste de A1 (chemin dans la barre) a ete ajoutee apres la premiere execution, qui ne donnait
+que l hypothese prudente (Sharpe 0,56). Les 10 trades concernes ont ete examines un par un ; tous les autres chiffres
+sont identiques entre les deux executions. Aucune regle de la strategie n a ete modifiee.
+
+ORB NQ (regles figees) : 2016-01-04 -> 2026-08-28, 1174 trades, Sharpe vectorbt 0.92
+
+A1 barre d entree : stop atteignable dans la barre d entree pour 145 trades (12.4 %), dont 10 non sortis au stop dans la simulation
+   hypothese prudente (perte de 1 R pour ces trades) : Sharpe 0.56 (reference 0.92)  ALERTE
+   lecture realiste (chemin O-L-H-C / O-H-L-C) : 0 de ces 10 trades touchent le stop APRES l entree -> resultat inchange ; seules des donnees a la seconde trancheraient
+
+A2 pertes : pire -2.85 R ; pertes < -1,2 R : 13 (1.4 % des pertes)
+
+B trades : reussite 18.5 % ; gain moyen +6.32 R, perte moyenne -1.02 R ; esperance +0.334 R (t 3.37)
+   plus longue serie de pertes : 27 ; part du gain des 5 % meilleurs trades : 194 %  ALERTE ; gain net sans les 10 meilleurs : +103.4 % du capital
+
+C sens (R moyen par trade) :
+   achats n  581 | +0.268 R (t +2.04) | 16-20 +0.419 (t +1.96) | 21-26 +0.139 (t +0.86)
+   ventes n  593 | +0.398 R (t +2.69) | 16-20 +0.453 (t +1.84) | 21-26 +0.355 (t +1.97)
+
+D mecanisme (memes regles sans filtre) : jours retenus n 1174 +0.334 R (t +3.37) ; jours ecartes n 1297 +0.171 R (t +2.21) ; Welch +1.29
+   R moyen par tercile de volume relatif : bas +0.140 ; moyen +0.301 ; haut +0.304
+
+E jour de la semaine (R moyen) : lun +0.196 (n 191) ; mar +0.629 (n 222) ; mer +0.244 (n 244) ; jeu +0.114 (n 259) ; ven +0.487 (n 258)
+  annee (R moyen) : 2016 +0.178 ; 2017 +0.188 ; 2018 +0.825 ; 2019 +0.717 ; 2020 +0.242 ; 2021 +0.014 ; 2022 +0.238 ; 2023 +0.348 ; 2024 +0.526 ; 2025 +0.073 ; 2026 +0.310
+
+F ATR relatif connu avant la seance (R moyen) : basse +0.300 (t +1.71) ; moyenne +0.598 (t +3.09) ; haute +0.103 (t +0.73)
+
+G pertes journalieres (capital fixe, risque 1 % par trade) : pire jour -1.39 % ; jours < -1 % : 7 ; jours < -2 % : 0 ; perte max 28.8 R

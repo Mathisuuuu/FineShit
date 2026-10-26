@@ -1,0 +1,35 @@
+======================================================================================================================
+ WEEK-END CRYPTO -> LUNDI DES FUTURES D INDICES (MOUREY, SHAHROUR & SOIMAN 2025) : ES, REPLIQUE NQ ET YM
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/weekend_crypto.py (ecrit avant le calcul). Signal W = ln(BTC dim. 18:00 /
+BTC ven. 16:00), heure de New York. Rendements des futures en pb.
+Semaines retenues : 246 (week-ends negatifs : 104, positifs : 142) ; 11/01/2021 -> 24/08/2026
+
+ETAPE 1 - A1 / A2 : rendement de ES apres un week-end negatif ou positif, et pentes sur W (Newey-West)
+  A1 vendredi 16:00 -> lundi 16:00             apres W<0   -2.88 pb, apres W>0  +25.47 pb (Welch -2.32) | pente partie negative +0.095 (t +1.68), positive -0.020 (t -0.44)
+  A2 saut de reouverture (ven. 16 -> dim. 18)  apres W<0  -16.72 pb, apres W>0   +5.44 pb (Welch -4.62) | pente partie negative +0.066 (t +2.70), positive +0.042 (t +3.13)
+  A2 nuit (dim. 18 -> lun. 9:30)               apres W<0   -1.34 pb, apres W>0   +9.63 pb (Welch -1.31) | pente partie negative +0.056 (t +1.43), positive -0.036 (t -1.27)
+  A2 seance (lun. 9:30 -> 16:00)               apres W<0  +15.34 pb, apres W>0  +10.43 pb (Welch +0.52) | pente partie negative -0.028 (t -0.73), positive -0.025 (t -0.51)
+    avant LUNA  (n  57) : A1 pente partie negative -0.074 (t -1.67) ; apres la reouverture (dim. 18 -> lun. 16) -0.090 (t -1.92)
+    apres LUNA  (n 189) : A1 pente partie negative +0.248 (t +2.69) ; apres la reouverture (dim. 18 -> lun. 16) +0.119 (t +1.24)
+    1re moitie  (n 121) : A1 pente partie negative +0.043 (t +0.67) ; apres la reouverture (dim. 18 -> lun. 16) +0.018 (t +0.33)
+    2e moitie   (n 125) : A1 pente partie negative +0.171 (t +1.88) ; apres la reouverture (dim. 18 -> lun. 16) +0.033 (t +0.34)
+
+ETAPE 2 - strategies nettes (vente si W < 0 ; 1 tick + 2,50 $ par cote)
+  V   vente dim. 18:00 -> lun. 16:00 si W < 0     104 trades | net  -15.19 pb (t -1.43) | moities t -0.10 / -2.12 | avant / apres LUNA   -5.0 /  -18.2 pb | Sharpe -0.60 | perte max 21.0% | total -15.1%
+  V   couts 2 ticks                               104 trades | net  -16.21 pb (t -1.52) | moities t -0.16 / -2.19 | avant / apres LUNA   -6.2 /  -19.2 pb | Sharpe -0.64 | perte max 21.6% | total -16.0%
+  temoin : meme vente apres W > 0                 142 trades | net  -21.23 pb (t -3.68) | moities t -1.47 / -4.08 | avant / apres LUNA   -1.8 /  -27.1 pb | Sharpe -1.49 | perte max 28.1% | total -26.3%
+  R1  vente lun. 9:30 -> 16:00 si W < 0           104 trades | net  -16.57 pb (t -2.02) | moities t -0.59 / -2.25 | avant / apres LUNA   -7.8 /  -19.2 pb | Sharpe -0.84 | perte max 18.9% | total -16.1%
+  R0  vente ven. 16:00 -> lun. 16:00 (non executable)  104 trades | net   +1.65 pb (t +0.16) | moities t +0.61 / -0.56 | avant / apres LUNA   +3.5 /   +1.1 pb | Sharpe +0.07 | perte max 9.4% | total +1.1%
+  replique de V sur NQ                            104 trades | net  -13.75 pb (t -0.97) | moities t +0.01 / -1.52 | avant / apres LUNA  -12.8 /  -14.0 pb | Sharpe -0.41 | perte max 20.3% | total -14.3%
+  replique de V sur YM                            104 trades | net  -12.05 pb (t -1.32) | moities t +0.11 / -2.09 | avant / apres LUNA   +7.9 /  -18.0 pb | Sharpe -0.56 | perte max 18.7% | total -12.2%
+
+CRITERES (V, 104 trades ; cout moyen 1.23 pb) : brut -13.96 pb (t -1.31) | 1re moitie -0.21 (t -0.01) | 2e moitie -26.21 (t -2.04) | temoin -20.03 (Welch +0.50) | net -15.19 | net sans 3 meilleurs -23.64
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 375 essais : 0.00
+VERDICT : REJETEE
+(calcule en 9 s le 2026-10-19 16:10)

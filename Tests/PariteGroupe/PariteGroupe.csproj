@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Banc de parite du Groupe : la logique C# des strategies NinjaTrader (AddOns\NexusGroupeLogique.cs, sans type
+       NinjaTrader) rejouee sur les barres de la recherche ; Python/nexus/live/parite_ninjascript.py compare les ordres.
+       Lancement : dotnet run -c Release (arguments : s1|gotobi|m2 barres.csv ordres.csv [capital.csv]) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\AddOns\NexusGroupeLogique.cs" />
+  </ItemGroup>
+</Project>

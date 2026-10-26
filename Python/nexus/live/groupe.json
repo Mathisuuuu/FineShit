@@ -1,0 +1,17 @@
+{
+  "commentaire": "Groupe en direct (NinjaTrader, compte Sim101 d abord). Relu toutes les 5 s par python -m nexus.live : ajouter, retirer ou desactiver une strategie sans rien redemarrer. classe = module:Classe (derivee de nexus.live.strategie.StrategieLive). Retire le 2026-10-20 a la demande de l utilisateur : NQ 1-A (resultats des grandes capitalisations, 30 min apres le 8-K, MNQ).",
+  "strategies": [
+    {
+      "nom": "S1",
+      "classe": "nexus.live.strategies.s1:S1",
+      "actif": true,
+      "params": {"donnees": "NQ", "negocie": "MNQ", "capital": 100000, "max_contrats": 10}
+    },
+    {
+      "nom": "Gotobi",
+      "classe": "nexus.live.strategies.gotobi:Gotobi",
+      "actif": true,
+      "params": {"negocie": "6J", "capital": 100000, "exposition": 0.95, "max_contrats": 2}
+    }
+  ]
+}

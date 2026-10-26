@@ -1,0 +1,38 @@
+======================================================================================================================
+ RETOURNEMENT DU DAX AVANT LA CLOTURE DE XETRA : S19-B JOUEE A L ENVERS, HORS ECHANTILLON 02/01/2014 -> 10/03/2025
+======================================================================================================================
+Protocole et sources : en-tete de nexus/perso/dax_cloture.py (ecrit avant le calcul). CFD DAX HistData GRXEUR,
+heure de Berlin, taille d un contrat FDAX (1,10 $ / EUR). Rendements en pb du notionnel d un contrat.
+Donnees : 3 088 799 minutes du 02/01/2014 au 01/09/2026 ; jours de Xetra juges : 2853 (02/01/2014 -> 10/03/2025)
+Jours sans prix a 09:00, 17:00 ou 17:30 : 98
+
+ETAPE 1 - pentes de Newey-West (5 retards) ; entier / P1 (avant 01/07/2019) / P2
+  A1 r 17:00-17:30 sur r 09:00-17:00 (V : < 0)                      entier +0.0196 (t +2.73, n 2755) | P1 +0.0263 (t +2.60, n 1377) | P2 +0.0134 (t +1.35, n 1378)
+  A2 r 17:00-17:30 sur 1re demi-heure nuit comprise (LSU22 : > 0)   entier +0.0012 (t +1.24, n 2718) | P1 +0.0315 (t +2.19, n 1366) | P2 +0.0006 (t +1.00, n 1352)
+  A3 r 17:00-17:30 sur reste de la journee (BDLM21 : > 0)           entier +0.0023 (t +1.45, n 2723) | P1 +0.0326 (t +3.58, n 1368) | P2 +0.0010 (t +1.23, n 1355)
+  A4 r 17:30-09:00 suivant sur r 17:00-17:30 (pression : < 0)       entier +0.1030 (t +0.44, n 2742) | P1 -0.0223 (t -0.23, n 1365) | P2 +0.2590 (t +0.51, n 1377)
+  A5 r 12:00-12:30 sur r 09:00-12:00 (fenetre du temoin)            entier +0.0079 (t +0.56, n 2774) | P1 -0.0175 (t -1.75, n 1376) | P2 +0.0317 (t +1.33, n 1398)
+  A1 asymetrie : partie negative +0.0323 (t +2.86), partie positive +0.0052 (t +0.35) ; r 17:00-17:30 moyen apres un jour en baisse -1.35 pb, en hausse +2.19 pb (Welch -4.11)
+
+ETAPE 2 - strategies nettes (1 tick + 2,50 $ par cote et par contrat)
+  V   S19-B a l envers (17:00-17:30)                  2707 trades | net  -4.01 pb (t -4.92) | moities t -2.85 / -4.10 | gagnants 59% | Sharpe -1.46 | perte max 67.8% | -209 732 $ (Sharpe en $ -1.10)
+  V   couts 2 ticks                                   2707 trades | net  -6.10 pb (t -7.43) | moities t -4.09 / -6.39 | gagnants 56% | Sharpe -2.21 | perte max 81.6% | -321 877 $ (Sharpe en $ -1.69)
+  temoin : meme regle 12:00-12:30                     2708 trades | net  -2.23 pb (t -3.72) | moities t -1.52 / -3.42 | gagnants 60% | Sharpe -1.11 | perte max 46.3% | -134 181 $ (Sharpe en $ -0.97)
+  R0  anomalie brute, 1 contrat, sans stop            2751 trades | net  -3.41 pb (t -7.99) | moities t -5.30 / -6.07 | gagnants 42% | Sharpe -2.37 | perte max 61.4%
+  R1  ITSM de LSU22 (momentum)                        2718 trades | net  -0.81 pb (t -1.88) | moities t -0.23 / -2.57 | gagnants 47% | Sharpe -0.56 | perte max 23.5%
+  contexte : S19-B d origine (sens du jour)           2707 trades | net  -0.91 pb (t -1.13) | moities t -0.08 / -1.51 | gagnants 36% | Sharpe -0.34 | perte max 38.9% | -55 338 $ (Sharpe en $ -0.29)
+  V : sorties par l ancien stop (objectif) 55%, taille moyenne 1.51 contrat(s)
+  V par annee ($) : 2014 -53 518 ; 2015 -7 572 ; 2016 -38 635 ; 2017 -10 950 ; 2018 -3 435 ; 2019 -22 788 ; 2020 +5 343 ; 2021 -7 680 ; 2022 -40 315 ; 2023 -3 646 ; 2024 -20 815 ; 2025 -5 721
+  replique CAC 40 : non faite (historique FRAIDXEUR absent du cache)
+
+CONTROLE CFD / FDAX (11/03/2025 -> 28/08/2026  periode deja vue  pas un critere) : trades FDAX 370  CFD 371  jours communs 368  meme sens 97%  correlation des P&L quotidiens +0.68 ; V FDAX +118 299 $ (Sharpe +2.24)  V CFD +13 611 $ (Sharpe +0.30)
+
+CRITERES (V, 2707 trades) : avant frais -1.55 pb (t -1.91) | P1 -1.56 (t -1.39) | P2 -1.54 (t -1.31) | temoin -0.26 (Welch -1.28) | net -4.01 | net sans 3 meilleurs -4.28
+  [ ] t >= 3
+  [ ] meme signe et t >= 1,5 sur chaque moitie
+  [ ] t de Welch >= 2 contre le temoin
+  [ ] gain moyen net > 0
+  [ ] gain net > 0 sans les 3 meilleurs trades
+  [ ] Sharpe deflate >= 0.95 pour 378 essais : 0.00
+VERDICT : REJETEE
+(calcule en 208 s le 2026-10-19 17:16)

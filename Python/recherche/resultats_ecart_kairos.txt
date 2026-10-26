@@ -1,0 +1,14 @@
+(genere par python -m nexus.prop_book --ecart-kairos le 2026-10-26)
+Ecart avec Kairos : 1 compte Topstep 50K (Standard + perte journaliere 1 000 $) avec N copies independantes de S1 + Gotobi
+  (jambes hypothetiques de meme qualite, decalees dans le calendrier ; taille commune par copie choisie sur 2016-2020 ; bootstrap 2021-2026)
+  -- jambes meme qualite que S1 + Gotobi
+    2 jambes : Sharpe des jambes a 1 contrat 1.39 ; finance 0 x 6J + S1 6.0 unite(s) par copie | net +2,782 $/compte-an (mediane +617), annees perdantes 43%, payouts 2.1 (3,804 $), evals 6.7, 1er payout apres 118 seances (58% des annees)
+    4 jambes : Sharpe des jambes a 1 contrat 1.97 ; finance 0 x 6J + S1 5.0 unite(s) par copie | net +5,125 $/compte-an (mediane +2,483), annees perdantes 32%, payouts 3.7 (6,464 $), evals 11.6, 1er payout apres 92 seances (82% des annees)
+    6 jambes : Sharpe des jambes a 1 contrat 2.45 ; finance 0 x 6J + S1 6.0 unite(s) par copie | net +8,453 $/compte-an (mediane +6,436), annees perdantes 21%, payouts 5.5 (9,708 $), evals 10.1, 1er payout apres 79 seances (87% des annees)
+    8 jambes : Sharpe des jambes a 1 contrat 2.80 ; finance 0 x 6J + S1 3.0 unite(s) par copie | net +6,764 $/compte-an (mediane +3,862), annees perdantes 25%, payouts 5.2 (8,361 $), evals 13.7, 1er payout apres 72 seances (94% des annees)
+  -- jambes deux fois moins bonnes
+    2 jambes : Sharpe des jambes a 1 contrat 0.69 ; finance 3 x 6J + S1 3.5 unite(s) par copie | net +5 $/compte-an (mediane -457), annees perdantes 69%, payouts 1.4 (950 $), evals 8.3, 1er payout apres 110 seances (80% des annees)
+    4 jambes : Sharpe des jambes a 1 contrat 0.99 ; finance 0 x 6J + S1 5.0 unite(s) par copie | net +293 $/compte-an (mediane -948), annees perdantes 66%, payouts 1.2 (2,042 $), evals 18.4, 1er payout apres 106 seances (53% des annees)
+    6 jambes : Sharpe des jambes a 1 contrat 1.23 ; finance 0 x 6J + S1 2.0 unite(s) par copie | net -90 $/compte-an (mediane -1,130), annees perdantes 68%, payouts 1.6 (1,990 $), evals 24.0, 1er payout apres 99 seances (70% des annees)
+    8 jambes : Sharpe des jambes a 1 contrat 1.40 ; finance 0 x 6J + S1 4.0 unite(s) par copie | net +2,353 $/compte-an (mediane +96), annees perdantes 48%, payouts 2.4 (4,005 $), evals 15.4, 1er payout apres 96 seances (73% des annees)
+Calcul en 51 s.

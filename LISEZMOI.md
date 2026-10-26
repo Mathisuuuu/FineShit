@@ -1,8 +1,22 @@
-# Nexus — 14 stratégies + 3 modules en NinjaScript (NinjaTrader 8)
+# Nexus — 15 stratégies + 3 modules en NinjaScript (NinjaTrader 8)
+
+> **Version de travail : Python / vectorbt (dossier `Python/`) et tableau de bord Node.js
+> (dossier `Dashboard/`).** Démarrage rapide : section 11. Le code NinjaScript ci-dessous reste la référence.
+
+| Dossier | Contenu |
+|---|---|
+| `AddOns/`, `Strategies/`, `Tools/`, `Installer.ps1` | stratégies NinjaScript (fiches 1 à 15) et modules A, B, C |
+| `Tests/` | bancs d'essai C# (compilation, tests unitaires, simulateur Linux de la fiche 15) |
+| `Data/` | modèles des fichiers externes (actualités, résultats, facteurs, agenda, encours LETF, GEX) |
+| `Python/` | moteur vectorbt (`nexus/`), stratégies minute, recherche locale (`nexus/perso/`), tests (`tests/`) |
+| `Python/recherche/` | rapports de toutes les études (`resultats_*.txt`, `resultats_60.json`) |
+| `Dashboard/` | tableau de bord Node.js : serveur, interface, résultats exportés (`donnees/`, hors dépôt) |
+| `Cotations/` | barres 1 minute Databento (dépôt séparé, licence, hors dépôt) |
 
 Implémentation des 17 fiches « Fil Nexus r/algotrading » (08/10/2026). Chaque fiche a son
 fichier ; les trois modules transverses (A régime, B taille, C risque/validation) sont des
-bibliothèques branchées sur **toutes** les stratégies, plus deux outils exécutables.
+bibliothèques branchées sur **toutes** les stratégies, plus deux outils exécutables. La fiche 15
+(rebalancement des ETF à levier, NQ/ES en fin de séance, 13/10/2026) a été ajoutée le 14/10/2026.
 
 > Spécifications de recherche, pas des conseils d'investissement. Résultats du fil auto-déclarés
 > et non audités. Testez d'abord en backtest puis sur un compte simulé (Sim101).
@@ -26,15 +40,18 @@ bibliothèques branchées sur **toutes** les stratégies, plus deux outils exéc
 | 12 Régime de vol | `Nexus12_VolRegimeConditional.cs` | Nexus12_VolRegimeConditional | Jour |
 | 13 Trend prop 24/5 | `Nexus13_PropTrend8.cs` | Nexus13_PropTrend8 | Jour |
 | 14 Swing strict | `Nexus14_StrictSwing.cs` | Nexus14_StrictSwing | Jour |
+| 15 LETF rebalancing NQ/ES | `Nexus15_LetfRebalancing.cs` (+ `AddOns\NexusLetf.cs`) | Nexus15_LetfRebalancing | 1 min |
 | A HMM 3 états | `AddOns\NexusModuleA_RegimeHmm.cs` + outil `NexusA_RegimeMonitor.cs` | NexusA_RegimeMonitor | Jour |
 | B Kelly + plafonds | `AddOns\NexusModuleB_Sizing.cs` (dans toutes les stratégies) | — | — |
+| Groupe en direct (S1 + Gotobi) | `NexusGroupeS1.cs`, `NexusGroupeGotobi.cs` (socle `NexusGroupeBase.cs`, logique `AddOns\NexusGroupeLogique.cs`) + `AddOns\NexusTableau.cs` | NexusGroupeS1 (MNQ), NexusGroupeGotobi (6J) ; AddOn NexusTableau, fenêtre *New → Groupe* | 1 min |
 | C Disjoncteurs, exécution, validation | `AddOns\NexusModuleC_RiskValidation.cs` + socle + outil `NexusC_PortfolioMonitor.cs` | NexusC_PortfolioMonitor | — |
 
 Socle commun : `AddOns\NexusCore.cs` (maths, ADF/MacKinnon, OU, Black-Scholes, CSV, JSON),
 `NexusSignals.cs` (moteurs de signaux partagés), `NexusData.cs` (actualités, résultats,
 fondamentaux, agenda macro, facteurs), `NexusLlm.cs` (HTTP, Claude/DeepSeek/Gemini, cache,
-coûts, FinBERT, NewsAPI/Reddit, webhook), `Strategies\NexusStrategyBase.cs` (univers,
-exécution, comptabilité, modules B/C) et `Strategies\NexusLlmStrategyBase.cs` (fiches 7-10).
+coûts, FinBERT, NewsAPI/Reddit, webhook), `NexusLetf.cs` (fiche 15 : flux LETF, GEX, calendrier,
+Newey-West, protocole de backtest), `Strategies\NexusStrategyBase.cs` (univers, exécution,
+comptabilité, modules B/C) et `Strategies\NexusLlmStrategyBase.cs` (fiches 7-10).
 
 ## 2. Installation
 
@@ -96,7 +113,10 @@ modélisés et PnL positif, fills réels comparés au paper).
 | `earnings.csv` | 8, 14 | `symbol,date` (ou format Alpha Vantage) |
 | `fundamentals.csv` | 3, 8 | `symbol,available_date,book_equity,net_income_ttm,gross_profit_ttm,total_assets,total_liabilities,shares_outstanding` — **date de publication**, pas de fin de trimestre |
 | `ff_factors.csv` | 4A mensuel | `date,mkt_rf,smb,hml,rf` (fichier Ken French) |
-| `macro_events.csv` | 13 | `datetime_utc,currency,impact,title` |
+| `macro_events.csv` | 13, 15 | `datetime_utc,currency,impact,title` |
+| `letf_aum.csv` | 15 | `date,fund,shares_outstanding,nav[,aum][,net_flow_usd]` — parts × NAV **de la veille** |
+| `gex.csv` | 15 | `date[,underlying],gex[,gex_ref]` — $ par 1 %, date = séance d'application |
+| `letf_excluded_days.csv` | 15 | `date,reason` (FOMC, CPI, NFP, NDX rebalance, autre) |
 
 Les modèles fournis ne contiennent **aucune donnée** (exemples commentés par `#`) : sans vos
 données, les fiches concernées le signalent et se dégradent proprement (ex. fiche 3 en
@@ -162,6 +182,24 @@ dernières : les propriétés sont enregistrées en clair dans les workspaces.
   Webhook signé `X-Nexus-Secret`, comptes miroirs par l'API Account, interrupteur global.
 - **14** : les 6 conditions avec un compteur de rejets par condition ; repli brut ou résiduel
   (« tester les deux ») ; alerte au-delà de 2 trades/semaine.
+- **15 LETF rebalancing** : instrument du Strategy Analyzer **NQ 12-26, Minute 1** (série principale
+  ignorée ; NQ, ES, `^NDX` et `^SP500` sont ajoutés en 1 min). Futures en modèle d'horaires
+  « CME US Index Futures RTH » par défaut (3 fois moins de barres en mémoire sur 2012-2026 ; vide =
+  modèle de l'instrument) ; indices `^NDX` / `^SP500` (r_t sans le basis) — absents, le future est
+  utilisé avec un avertissement. Toutes les heures sont en **heure de New York** quel que soit le
+  fuseau de NinjaTrader (21:30 Paris = 15:30 ET, 20:30 pendant les semaines de décalage d'heure d'été).
+  Signal 15:25 (index à 15:25 vs clôture J-1 ; actif net de la veille ; V = volume moyen 15:30-16:00
+  des 20 dernières séances complètes), décision et entrée sur la barre de 15:30 (ordre au marché en
+  backtest ; en réel limite au mid si le spread dépasse 1 tick, valable 5 min), stop natif 1,5 × ATR(14)
+  de barres 30 min RTH, sortie au marché à 16:00 (ou TWAP 15:55-16:00 en 5 tranches), garde « jamais
+  d'overnight ». Coûts du module C remplacés par la fiche : 1 tick aller-retour + 2,50 $/contrat/côté
+  (stress 2 ticks dans le rapport) ; capital par défaut 500 000 $. Le rapport de fin de run contient
+  le protocole complet (régression Newey-West, 5 tests d'identification, IS 2012-2020 / OOS 2021+,
+  walk-forward 3 ans de w, critères d'acceptation, β2 annuel, concentration TQQQ, GEX vs source tierce)
+  et écrit le panel quotidien `Nexus\reports\*_panel_*.csv`. Sans `gex.csv` le régime est inconnu
+  (w = 1 par défaut = version « sans filtre gamma ») ; sans jours FOMC/CPI/NFP fournis, l'exclusion
+  macro est inactive (message au démarrage). Optimisables : w long gamma, quantile du seuil, filtre de
+  rendement, cible de risque, multiplicateur ATR, sortie, formule du flux, règle d'instrument.
 - **NexusA_RegimeMonitor** : à appliquer sur un graphique journalier de SPY ; trace P(calme/neutre/
   stress) et le régime des terciles ; probabilités **filtrées** (aucune information future), EMA 5 j,
   plafond 0,95, réestimation hebdomadaire, 10 initialisations.
@@ -177,6 +215,15 @@ dernières : les propriétés sont enregistrées en clair dans les workspaces.
 - Activer le journal (« TempsReelSeulement » par défaut), lancer `NexusC_PortfolioMonitor`, commencer
   sur Sim101 puis sur un petit montant (objectif : réalité de l'exécution, pas le profit).
 
+- **Groupe en direct** (S1 + Gotobi) : deux stratégies NinjaScript, `NexusGroupeS1` sur MNQ et `NexusGroupeGotobi`
+  sur 6J, sur le compte de démo **DEMO8920103** depuis le 2026-10-21. Leur logique (`AddOns\NexusGroupeLogique.cs`)
+  donne exactement les mêmes ordres que la recherche Python sur 2016-2026 (`python -m nexus.live.parite_ninjascript`).
+  Garde-fous : compte réel refusé sauf autorisation, plafond de contrats, interrupteur global (`Nexus\KILL_SWITCH`).
+  L'AddOn `NexusTableau` écrit `live.json` pour le tableau de bord et ouvre la fenêtre **Groupe** (Control Center →
+  *New* → Groupe : compte, stratégies, journal, bouton « Tout arrêter ») ; `python -m nexus.live.rapport` calcule les
+  statistiques vectorbt du forward. Activer / désactiver une stratégie : onglet *Strategies* du Control Center.
+  Détails : `Python/LISEZMOI.md`, § 17.
+
 ## 9. Choix d'interprétation (signalés aussi dans les en-têtes)
 
 - Kelly lu comme **fraction du bankroll en notionnel** (lecture du fil) ; option « fraction risquée ».
@@ -187,6 +234,21 @@ dernières : les propriétés sont enregistrées en clair dans les workspaces.
 - Fiche 11 « à 21 jours » : par défaut, clôturer si hors de la monnaie, sinon laisser l'assignation
   (pour que la roue tourne) ; « Clôturer » et « Rouler » disponibles.
 - Fiche 8 « retirer le dernier quart » : interprété comme le quart **le plus risqué**.
+- Fiche 15, formule du flux : la fiche écrit F = A·L(L−1)·r/(1+L·r) avec A = actif net **de la veille** ;
+  or avec la NAV de la veille le flux exact est A·L(L−1)·r (Cheng-Madhavan 2009) — la forme avec
+  1/(1+L·r) est exacte avec la NAV de **fin** de journée (vérifié par simulation dans les tests). La
+  formule de la fiche est gardée par défaut ; « Formule du flux = NavVeilleExacte » donne l'autre
+  (écart de 3 % à |r| = 1 %, 10 % à |r| = 3 %).
+- Fiche 15, taille : contrats = capital × cible de risque / (prix × $/point × vol réalisée 30 min
+  annualisée × √(30/98 280)) × |Score|/seuil, plafonnés à 2 % de V (1 % si |r| > 3 %). La fiche ne
+  borne pas |Score|/seuil : un jour extrême peut demander un levier élevé ; « Taille : levier max »
+  (hors fiche, 0 = désactivé) le borne.
+- Fiche 15, « NQ en priorité ; ES seulement si le score ES passe aussi le seuil » + « une position
+  par jour » : NQ si son score passe ; sinon ES si **son** score passe son propre seuil (règles
+  « les deux » et « NQ seul » disponibles). Créations/rachats nets du jour : ajoutés au flux sous la
+  forme L × C (des rachats, C < 0, réduisent le flux d'un fonds haussier) ; à défaut, tendance des
+  parts sur 5 jours en variable de contrôle. Seuil q70 calculé sur les 250 séances précédentes (jour
+  courant exclu), jours exclus compris. GEX à 0 traité comme long gamma.
 
 ## 10. Ce qui a été vérifié
 
@@ -202,7 +264,67 @@ dernières : les propriétés sont enregistrées en clair dans les workspaces.
   bande |Δ| 0,20-0,30, ou abstention quand la grille de strikes n'offre aucun strike dans la bande.
 - Rejouer ces contrôles (SDK .NET requis) : dossier `Tests\CompileCheck`, commande
   `dotnet build -c Release` (→ 0 erreur) ; dossier `Tests\Unit`, commande `dotnet run -c Release`
-  (→ « 76 OK, 0 ECHEC(S) »).
+  (→ « 120 OK, 0 ECHEC(S) » depuis l'ajout de la fiche 15).
+- **Fiche 15 (14/10/2026), vérifiée hors NinjaTrader** (Linux, SDK .NET 8, dossier `Tests\Linux`) :
+  - `Unit` : les mêmes tests que `Tests\Unit` (NinjaTrader.Core remplacé par un stub), dont 44 de la
+    fiche 15 → « 120 OK, 0 ECHEC(S) » : exemple chiffré de la fiche (+1 % → ~2,5 Md$ ≈ 5 000 NQ),
+    exactitude du flux (simulation d'un rebalancement 3x), A_i = parts × NAV de la veille, GEX et poids w,
+    jours fériés, demi-séances et quatre sorcières NYSE (dont le 18/06/2026, Juneteenth tombant le
+    3e vendredi), classement des libellés macro (minutes du FOMC et ADP non exclus), barres 1 et 30 min,
+    q70 glissant, taille et plafonds, Newey-West (= MCO en iid, plus large en autocorrélé).
+  - `Net48` : socle + fiche 15 compilés contre les assemblys de référence .NET Framework 4.8 en C# 7.3
+    → 0 erreur, 0 avertissement.
+  - `Sim` : la **vraie** classe `Nexus15LetfRebalancing` (et `NexusStrategyBase`) exécutée par un
+    émulateur minimal de l'API NinjaScript (barres horodatées à la clôture, ordres au marché à
+    l'ouverture de la barre suivante, stops/limites intrabar, callbacks d'ordres synchrones) sur des
+    marchés synthétiques 1 min. (1) 40 scénarios déterministes : signal, seuil q70, taille et stop
+    recalculés indépendamment ; entrée 15:30 / sortie 16:00 ET ; vente les jours de baisse ; filtre
+    |r| ; FOMC, CPI, NFP, rebalancement NDX, quatre sorcières, demi-séance ; stop sans réentrée ; ES en
+    secours ; une position par jour ; mêmes trades avec NinjaTrader réglé sur Paris (y compris pendant
+    le décalage d'heure d'été : entrée à 20:30 Paris) ; sortie TWAP. (2) Quatre backtests 2011-2026 :
+    effet LETF réaliste planté → H1 et les 5 tests d'identification passent, mais NO-GO sur la stabilité
+    de β2 (critère exigeant de la fiche) ; effet fort → GO ; momentum intraday générique seul (pourtant
+    rentable, Sharpe ≈ 2,3) → identifié comme non-LETF, NO-GO ; bruit → NO-GO. Invariants partout : jamais
+    d'overnight, une position par jour, aucun trade un jour exclu. (3) Taille des tests sous H0 (20
+    marchés de bruit) : ≈ 5 % de rejets, écart-type des t ≈ 1.
+  - Commandes : `Tests\Linux\Unit` → `dotnet run -c Release` ; `Tests\Linux\Net48` →
+    `dotnet build -c Release` ; `Tests\Linux\Sim` → `dotnet run -c Release` (tout, ~5 min), ou avec
+    l'argument `regles`, `stats` ou `taille`.
+  - Limites : la fiche 15 n'a **pas** été compilée contre les DLL NinjaTrader réelles (machine Linux) :
+    relancer `Tests\CompileCheck` sous Windows ; l'émulateur n'est pas NinjaTrader (ordre exact des
+    événements, remplissages partiels, sessions ETH) ; les marchés sont synthétiques. **Aucune donnée réelle** (parts des LETF, GEX, NQ/ES
+    1 min 2012-2026) n'était accessible depuis la machine de test : la validation de l'hypothèse elle-même
+    reste à faire sur vos données, dans le Strategy Analyzer.
 - **Non vérifié ici** : l'exécution dans le moteur NinjaTrader (aucun backtest lancé depuis cette
   machine) et les appels réels aux API (aucune clé utilisée). Premier pas recommandé : un backtest de
-  `Nexus01_TSMOM` sur SPY journalier, puis Sim101.
+  `Nexus01_TSMOM` sur SPY journalier, puis Sim101 ; pour la fiche 15, NQ 12-26 en 1 min avec
+  `letf_aum.csv`, `gex.csv` et les jours exclus remplis.
+
+## 11. Version Python (vectorbt) et tableau de bord
+
+Le dossier `Python/` contient le moteur de backtest Python. Il porte les fiches 1 à 14 et les modules
+A, B et C, ajoute les futures Databento du dossier `Cotations` (roulements détectés et ajustés, profil
+`futures`), la couche LLM avec un cache compatible avec ce C#, la collecte d'actualités et l'audit d'un
+rapport par une seconde IA. Les stratégies minute (fiche 15 LETF, fiche 16 Noise Area, S1, Gotobi, ORB,
+or la nuit) n'existent qu'en Python ou y sont recalculées avec vectorbt.
+
+```
+cd Python
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python -m nexus tableau          # calcule toutes les strategies du tableau de bord (environ 25 min)
+cd ..\Dashboard
+node serveur.js                                    # puis http://localhost:3000
+```
+
+Le tableau de bord (`Dashboard/`, Node.js sans dépendance) montre **toutes les stratégies** dans une seule liste : la
+validée **S1 Noise Area NQ**, les candidates des sessions cloud (**Gotobi 6J**, **ORB 5 min NQ**, **or la nuit (GC)**,
+**fiche 15 LETF NQ / ES**) et toutes celles testées en local par le runner (`nexus/perso`), passées par les mêmes objets
+vectorbt et les mêmes tests (statistiques vectorbt, trades, Monte Carlo, bootstrap, Sharpe déflaté du programme
+entier, stabilité). Pages communes : Comparaison (corrélations, portefeuille combiné), **Prop firm** (combinaison la
+plus fiable de futures intraday d'après les statistiques vectorbt, validée hors échantillon, règles du compte
+modifiables) et Études sur papiers.
+
+Détails : `Python/LISEZMOI.md` (moteur, fiches, résultats) et `Dashboard/LISEZMOI.md` (tableau de bord).
+Le dossier `Cotations` (licence Databento, redistribution interdite) est exclu du dépôt par `.gitignore`.
+

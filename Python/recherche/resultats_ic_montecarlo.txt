@@ -1,0 +1,77 @@
+Strategie | edge par trade [IC 95 % bootstrap] | P(edge > 0) | reussite [IC Wilson] | temps en position par trade : moyenne (mediane ; gagnants / perdants) | Sharpe [IC 95 %] | P(Sharpe > 0) | Monte Carlo 1 an : PnL median [5 % ; 95 %], P(perte), drawdown a 95 % | drawdown historique : centile du Monte Carlo
+# Bootstrap des trades (2 000 tirages) et du P&L quotidien par blocs de 10 jours. En $, a la taille du backtest.
+# Temps en position : calendaire, de l entree a la sortie (nuits et week-ends compris), a une barre pres.
+
+boombitch, taille inverse a la volatilite (alternative) | +53 $ [+33 ; +74] | 100% | 37% [36%-39%] | 5 h 48 (1 h 45 ; 11 h 09 / 2 h 36) | +1.50 [+0.94 ; +2.05] | 100% | +11 935 $ [+266 ; +24 229], 5%, +8 351 $ | 22%
+boombitch, filtre de tendance 200 j (alternative) | +10 $ [+5 ; +16] | 100% | 38% [36%-40%] | 5 h 43 (1 h 45 ; 10 h 56 / 2 h 28) | +1.09 [+0.54 ; +1.63] | 100% | +1 802 $ [-548 ; +4 192], 10%, +2 077 $ | 89%
+boombitch (Turtle Donchian 160/60, M15) | +9 $ [+4 ; +14] | 100% | 37% [36%-39%] | 5 h 48 (1 h 45 ; 11 h 09 / 2 h 36) | +0.98 [+0.44 ; +1.53] | 100% | +2 020 $ [-993 ; +5 006], 14%, +2 666 $ | 64%
+Fiche 4A Residu OU sectoriel | +17 $ [+7 ; +27] | 100% | 57% [54%-61%] | 9,6 j (10 j ; 9,7 j / 9,3 j) | +0.86 [+0.26 ; +1.47] | 100% | +1 248 $ [-1 201 ; +3 300], 20%, +2 570 $ | 76%
+Fiche 2 XSMOM quartile superieur (25 actions/ETF US) | +91 $ [+38 ; +145] | 100% | 46% [40%-52%] | 57 j (38 j ; 93 j / 26 j) | +0.80 [+0.19 ; +1.41] | 100% | +2 700 $ [-3 060 ; +7 962], 21%, +5 545 $ | 38%
+Fiche 3 Rotation multi-facteurs | +284 $ [+148 ; +439] | 100% | 66% [57%-74%] | 136 j (58 j ; 165 j / 78 j) | +0.80 [+0.19 ; +1.40] | 99% | +3 762 $ [-3 360 ; +9 841], 19%, +7 289 $ | 58%
+S20-A ERC, covariance sur 60 j (alternative) | position permanente : pas d edge par trade | - | - | position permanente | +0.79 [+0.20 ; +1.39] | 100% | +6 358 $ [-5 821 ; +18 137], 20%, +12 625 $ | 71%
+S20 1/N, memes 4 jambes (reference naive) | position permanente : pas d edge par trade | - | - | position permanente | +0.74 [+0.13 ; +1.34] | 99% | +9 972 $ [-11 163 ; +31 259], 21%, +22 359 $ | 71%
+S20-A Risk parity ERC multi-futures | position permanente : pas d edge par trade | - | - | position permanente | +0.72 [+0.13 ; +1.32] | 99% | +5 703 $ [-5 910 ; +16 719], 22%, +12 424 $ | 66%
+Fiche 1 TSMOM 12-1 (25 actions/ETF US) | +45 $ [+28 ; +61] | 100% | 48% [45%-52%] | 61 j (38 j ; 97 j / 27 j) | +0.72 [+0.11 ; +1.34] | 99% | +3 902 $ [-5 459 ; +11 999], 23%, +10 614 $ | 50%
+Fiche 11 Roue d options synthetique | +146 $ [+64 ; +244] | 100% | 76% [73%-79%] | 19 j (9,0 j ; 19 j / 18 j) | +0.72 [+0.11 ; +1.32] | 99% | +15 397 $ [-18 059 ; +45 814], 21%, +35 589 $ | 62%
+S20-B Risk parity inverse-vol multi-futures | position permanente : pas d edge par trade | - | - | position permanente | +0.70 [+0.11 ; +1.30] | 99% | +5 520 $ [-6 566 ; +16 980], 22%, +12 807 $ | 65%
+Fiche 5 Retour a la moyenne de vol (futures) | position permanente : pas d edge par trade | - | - | position permanente | +0.65 [+0.05 ; +1.26] | 98% | +116 145 $ [-167 704 ; +382 973], 24%, +312 550 $ | 48%
+Fiche 2 XSMOM (futures) | +5 019 $ [-793 ; +11 023] | 96% | 47% [37%-57%] | 58 j (46 j ; 93 j / 27 j) | +0.53 [-0.07 ; +1.14] | 96% | +45 954 $ [-87 849 ; +183 039], 28%, +158 796 $ | 81%
+S11-A Price discovery or, long seul (corrige, sans stop) | +6 $ [-1 ; +13] | 95% | 41% [39%-43%] | 9 h 37 (8 h ; 11 h 16 / 8 h 28) | +0.48 [-0.11 ; +1.06] | 95% | +937 $ [-2 364 ; +5 004], 33%, +3 763 $ | 82%
+Fiche 5 Retour a la moyenne de volatilite | position permanente : pas d edge par trade | - | - | position permanente | +0.44 [-0.15 ; +1.04] | 93% | +4 143 $ [-9 562 ; +16 840], 30%, +14 740 $ | 81%
+Fiche 1 TSMOM (futures) | +741 $ [+41 ; +1 531] | 98% | 47% [40%-53%] | 59 j (40 j ; 89 j / 32 j) | +0.44 [-0.16 ; +1.04] | 92% | +16 989 $ [-51 543 ; +95 615], 34%, +83 290 $ | 64%
+S01-B Momentum intraday : bande de bruit + VWAP, trailing | +4 $ [-3 ; +12] | 88% | 32% [30%-33%] | 1 h 43 (59 min ; 3 h 20 / 58 min) | +0.36 [-0.22 ; +0.94] | 89% | +1 060 $ [-3 385 ; +6 206], 37%, +4 914 $ | 71%
+S06-B Reversal de jump overnight (corrige) | +21 $ [-14 ; +57] | 88% | 51% [44%-59%] | 1 h (1 h ; 1 h / 1 h) | +0.36 [-0.22 ; +0.93] | 89% | +263 $ [-973 ; +2 083], 37%, +1 469 $ | 16%
+ZarattiniEnvelope (enveloppe de bruit, vol-cible) | +91 $ [-81 ; +276] | 84% | 38% [35%-41%] | 2 h 39 (2 h ; 4 h 31 / 1 h 31) | +0.31 [-0.27 ; +0.89] | 85% | +7 628 $ [-30 330 ; +48 405], 36%, +45 201 $ | 62%
+S06-B Reversal de jump overnight (tel que code) | +17 $ [-15 ; +48] | 84% | 50% [43%-57%] | 1 h (1 h ; 1 h / 1 h) | +0.31 [-0.27 ; +0.89] | 85% | +196 $ [-1 051 ; +1 865], 40%, +1 488 $ | 53%
+S11-B Price discovery or, long-short (corrige) | +1 $ [-1 ; +5] | 83% | 11% [10%-12%] | 2 h 19 (36 min ; 9 h 40 / 1 h 24) | +0.28 [-0.27 ; +0.83] | 84% | +463 $ [-2 320 ; +4 582], 42%, +3 179 $ | 95%
+Fiche 12 Regime de vol (terciles) | +9 $ [+1 ; +17] | 99% | 46% [44%-49%] | 40 j (21 j ; 60 j / 22 j) | +0.26 [-0.35 ; +0.87] | 80% | +1 981 $ [-9 449 ; +8 888], 34%, +14 679 $ | 66%
+Or 4 Fed accommodante (sortie 14:28) | +65 $ [-82 ; +209] | 80% | 56% [27%-81%] | 19 min (22 min ; 22 min / 14 min) | +0.26 [-0.27 ; +0.79] | 83% | +0 $ [-277 ; +395], 24%, +277 $ | 46%
+S06-C Tilt small-cap : reversal de jump (corrige, IWM ~ RTY) | +52 $ [-80 ; +185] | 77% | 50% [42%-58%] | 1 h (1 h ; 1 h / 1 h) | +0.24 [-0.34 ; +0.83] | 79% | +693 $ [-3 750 ; +5 126], 39%, +5 146 $ | 49%
+S06-C Tilt small-cap : fade de l overnight (corrige, IWM ~ RTY) | +14 $ [-29 ; +58] | 73% | 49% [47%-51%] | 6 h 31 (6 h 28 ; 6 h 32 / 6 h 30) | +0.20 [-0.40 ; +0.79] | 74% | +2 010 $ [-19 692 ; +25 928], 44%, +27 361 $ | 35%
+Fiche 14 Swing strict (futures) | +109 $ [-185 ; +396] | 76% | 63% [57%-69%] | 3,8 j (3,0 j ; 3,1 j / 4,9 j) | +0.19 [-0.41 ; +0.79] | 73% | +2 560 $ [-16 866 ; +21 503], 41%, +25 118 $ | 73%
+Fiche 6 Paires co-integrees (long seul) | +11 $ [-29 ; +42] | 73% | 50% [40%-59%] | 17 j (18 j ; 22 j / 13 j) | +0.16 [-0.45 ; +0.76] | 70% | +129 $ [-893 ; +972], 41%, +1 343 $ | 49%
+S11-A Price discovery or, long seul (corrige) | +1 $ [-3 ; +4] | 60% | 12% [11%-13%] | 2 h 24 (38 min ; 9 h 54 / 1 h 23) | +0.09 [-0.50 ; +0.67] | 62% | -34 $ [-1 778 ; +2 276], 51%, +2 358 $ | 92%
+Fiche 14 Swing strict | +0 $ [-3 ; +4] | 57% | 60% [57%-63%] | 4,3 j (4,0 j ; 3,8 j / 5,1 j) | +0.04 [-0.56 ; +0.64] | 55% | +38 $ [-1 437 ; +1 434], 48%, +1 928 $ | 39%
+Fiche 12 Regime de vol (futures) | +9 $ [-318 ; +381] | 52% | 45% [41%-50%] | 34 j (18 j ; 47 j / 23 j) | +0.01 [-0.58 ; +0.61] | 52% | +3 047 $ [-79 799 ; +66 946], 47%, +111 857 $ | 71%
+S11-A Price discovery or, long seul (tel que code) | -0 $ [-3 ; +3] | 42% | 14% [13%-15%] | 2 h (38 min ; 7 h 15 / 1 h 09) | -0.05 [-0.65 ; +0.55] | 44% | -147 $ [-1 879 ; +2 017], 55%, +2 374 $ | 91%
+S06-A Fade de l overnight (corrige : gap du jour) | -1 $ [-13 ; +10] | 40% | 49% [47%-51%] | 7 h 27 (6 h 28 ; 7 h 36 / 7 h 19) | -0.07 [-0.67 ; +0.52] | 41% | -416 $ [-8 191 ; +8 241], 53%, +10 531 $ | 50%
+S05-A Reversal de l opening range 5 min (Dow) | -0 $ [-3 ; +2] | 37% | 51% [48%-54%] | 41 min (16 min ; 33 min / 49 min) | -0.10 [-0.70 ; +0.49] | 36% | -51 $ [-763 ; +657], 55%, +949 $ | 43%
+Test OPR cassure 1re barre (corrige : short, stop, objectif 2R) | -6 $ [-34 ; +25] | 36% | 34% [32%-36%] | 1 h 25 (35 min ; 2 h 11 / 1 h) | -0.11 [-0.70 ; +0.49] | 36% | -1 214 $ [-17 628 ; +15 495], 55%, +22 519 $ | 35%
+Test OPR cassure 1re barre (tel que code) | -13 $ [-81 ; +52] | 34% | 52% [50%-54%] | 5 h 23 (5 h 55 ; 5 h 25 / 5 h 21) | -0.12 [-0.72 ; +0.48] | 35% | -3 014 $ [-35 122 ; +29 037], 57%, +46 049 $ | 41%
+Fiche 13 Trend 8 actifs (futures) | -73 $ [-263 ; +128] | 23% | 26% [23%-29%] | 25 j (7,0 j ; 56 j / 14 j) | -0.12 [-0.71 ; +0.47] | 34% | -7 172 $ [-74 473 ; +61 639], 56%, +95 587 $ | 29%
+Or 1 Ouverture US surevaluee | -4 $ [-16 ; +8] | 26% | 48% [44%-51%] | 1 h 50 (1 h 59 ; 1 h 59 / 1 h 42) | -0.19 [-0.79 ; +0.40] | 26% | -232 $ [-2 255 ; +1 877], 57%, +2 786 $ | 49%
+Fiche 6 Paires co-integrees (futures) | -104 $ [-437 ; +205] | 31% | 33% [10%-70%] | 24 j (24 j ; 26 j / 22 j) | -0.23 [-0.81 ; +0.36] | 22% | +0 $ [-395 ; +184], 40%, +523 $ | 50%
+IntradayMomentumGamma (Noise Area + VWAP, sans gamma) | -15 $ [-50 ; +21] | 21% | 28% [26%-29%] | 1 h 34 (46 min ; 3 h 36 / 47 min) | -0.25 [-0.85 ; +0.36] | 21% | -5 639 $ [-31 850 ; +24 668], 63%, +39 330 $ | 52%
+Or 7 Apres le fixing de l apres-midi | -5 $ [-12 ; +2] | 7% | 47% [45%-49%] | 1 h 19 (1 h 29 ; 1 h 29 / 1 h 10) | -0.45 [-1.05 ; +0.14] | 7% | -1 380 $ [-5 355 ; +2 901], 70%, +6 589 $ | 60%
+S06-A Fade de l overnight (tel que code) | -10 $ [-22 ; +2] | 4% | 48% [46%-50%] | 7 h 30 (6 h 29 ; 7 h 23 / 7 h 36) | -0.51 [-1.09 ; +0.07] | 4% | -2 285 $ [-10 363 ; +5 271], 70%, +12 560 $ | 48%
+ICT2022Model (sweep/FVG HTF, killzone, MSS + FVG 1 min) | -56 $ [-115 ; +3] | 4% | 23% [21%-25%] | 53 min (16 min ; 1 h 50 / 37 min) | -0.54 [-1.17 ; +0.08] | 4% | -7 022 $ [-26 661 ; +13 105], 71%, +30 925 $ | 48%
+S09-A Fade du fix WM/R fin de mois sur 6B | -2 $ [-3 ; -0] | 1% | 38% [33%-44%] | 12 min (15 min ; 15 min / 10 min) | -0.83 [-1.74 ; +0.07] | 4% | -41 $ [-100 ; +51], 84%, +106 $ | 71%
+S02-C Momentum or session de nuit | -11 $ [-18 ; -3] | 0% | 47% [45%-48%] | 13 h 58 (13 h 49 ; 13 h 59 / 13 h 58) | -0.84 [-1.42 ; -0.25] | 0% | -2 624 $ [-7 703 ; +2 185], 81%, +8 809 $ | 52%
+Or 10 Momentum des jours agites | -36 $ [-59 ; -11] | 0% | 39% [34%-43%] | 24 min (29 min ; 29 min / 21 min) | -0.86 [-1.52 ; -0.21] | 0% | -1 756 $ [-4 934 ; +1 737], 81%, +5 426 $ | 70%
+S19-A Rebalancement LETF, derniere 1/2 h US | -5 $ [-7 ; -1] | 0% | 28% [27%-30%] | 16 min (15 min ; 30 min / 11 min) | -0.91 [-1.59 ; -0.22] | 0% | -1 230 $ [-3 040 ; +1 149], 81%, +3 365 $ | 40%
+Or 9 Fuite vers l or | -20 $ [-31 ; -8] | 0% | 39% [37%-41%] | 44 min (1 h ; 59 min / 34 min) | -0.95 [-1.53 ; -0.38] | 0% | -3 569 $ [-16 203 ; +3 502], 79%, +18 234 $ | 58%
+Gotobi pre-fix USD/JPY (Ito & Yamada) | -31 $ [-50 ; -13] | 0% | 44% [40%-49%] | 49 min (54 min ; 54 min / 45 min) | -0.98 [-1.59 ; -0.37] | 0% | -1 145 $ [-3 133 ; +735], 85%, +3 420 $ | 66%
+ZarattiniSPYMomentum (Beat the Market) | -5 $ [-7 ; -2] | 0% | 23% [22%-24%] | 16 min (2 min ; 51 min / 5 min) | -1.06 [-1.68 ; -0.44] | 0% | -6 828 $ [-20 093 ; +3 416], 86%, +22 252 $ | 45%
+Gotobi seconde jambe : vente apres le fixing (hypothese) | -38 $ [-56 ; -20] | 0% | 41% [37%-45%] | 59 min (1 h 04 ; 1 h 04 / 55 min) | -1.23 [-1.85 ; -0.61] | 0% | -1 772 $ [-4 471 ; +797], 87%, +4 796 $ | 46%
+Or 8 Barrieres des chiffres ronds (100 $) | -40 $ [-58 ; -22] | 0% | 29% [27%-31%] | 58 min (41 min ; 1 h 51 / 36 min) | -1.26 [-1.86 ; -0.66] | 0% | -7 787 $ [-19 272 ; +2 122], 90%, +20 903 $ | 56%
+FX post-annonce NFP / CPI + flux (walk-forward) | -119 $ [-154 ; -84] | 0% | 36% [30%-42%] | 40 min (30 min ; 50 min / 34 min) | -1.35 [-1.94 ; -0.77] | 0% | -3 782 $ [-9 058 ; +783], 91%, +9 431 $ | 45%
+S02-B Momentum 6J ouverture de Londres | -18 $ [-27 ; -10] | 0% | 45% [43%-47%] | 4 h (4 h ; 4 h / 4 h) | -1.36 [-1.96 ; -0.75] | 0% | -4 491 $ [-10 067 ; +985], 91%, +11 002 $ | 71%
+IntradayMomentumMES (bande VWAP, trailing ATR) | -3 $ [-4 ; -2] | 0% | 27% [26%-28%] | 14 min (5 min ; 34 min / 7 min) | -1.49 [-2.17 ; -0.81] | 0% | -1 345 $ [-2 539 ; +26], 95%, +2 713 $ | 43%
+S01-D Momentum intraday : derniere 1/2 h, taille vol-scale | -7 $ [-9 ; -4] | 0% | 43% [41%-45%] | 29 min (29 min ; 29 min / 29 min) | -1.51 [-2.12 ; -0.90] | 0% | -1 556 $ [-3 402 ; +396], 91%, +3 626 $ | 47%
+S01-A Momentum intraday : derniere 1/2 h dans le sens de r_first30 | -5 $ [-7 ; -3] | 0% | 43% [41%-45%] | 29 min (29 min ; 29 min / 29 min) | -1.55 [-2.16 ; -0.93] | 0% | -1 260 $ [-2 654 ; +299], 91%, +2 861 $ | 49%
+S09-A Fade du fix WM/R fin de mois sur 6E | -3 $ [-4 ; -2] | 0% | 35% [29%-41%] | 12 min (15 min ; 15 min / 11 min) | -1.64 [-2.20 ; -1.08] | 0% | -77 $ [-158 ; -4], 96%, +165 $ | 54%
+Or 3 Retour apres exces non informe | -41 $ [-54 ; -26] | 0% | 45% [43%-48%] | 19 min (12 min ; 23 min / 16 min) | -1.66 [-2.25 ; -1.06] | 0% | -5 840 $ [-11 745 ; -14], 95%, +12 586 $ | 62%
+S09-B Or entre fixings de Londres (corrige : 1 entree par soiree) | -3 $ [-5 ; -2] | 0% | 45% [43%-47%] | 4 min (1 min ; 3 min / 4 min) | -1.75 [-2.31 ; -1.19] | 0% | -849 $ [-1 626 ; -22], 95%, +1 741 $ | 63%
+AUDusd (paires z-score, 15 min) | -4 $ [-5 ; -3] | 0% | 41% [40%-43%] | 6 h 15 (5 h 30 ; 6 h 33 / 6 h 01) | -1.81 [-2.39 ; -1.22] | 0% | -1 199 $ [-2 254 ; -142], 97%, +2 416 $ | 45%
+Or 2 Momentum premiere demi-heure | -39 $ [-50 ; -29] | 0% | 37% [35%-40%] | 26 min (29 min ; 29 min / 24 min) | -2.23 [-2.90 ; -1.55] | 0% | -5 630 $ [-10 500 ; -959], 98%, +10 981 $ | 69%
+Fiche 4B Retournement crypto 15 min (mode strategie) | -1 $ [-1 ; -0] | 0% | 46% [46%-47%] | 38 min (45 min ; 23 min / 51 min) | -2.24 [-3.13 ; -1.35] | 0% | -4 716 $ [-8 137 ; -989], 98%, +8 420 $ | 81%
+Or 6 Avant le fixing du matin | -30 $ [-38 ; -23] | 0% | 40% [38%-42%] | 53 min (59 min ; 59 min / 48 min) | -2.31 [-3.04 ; -1.57] | 0% | -7 392 $ [-12 570 ; -2 172], 98%, +13 216 $ | 68%
+FX fix flow fin de mois (Krohn + Melvin & Prins) | -106 $ [-120 ; -93] | 0% | 23% [20%-27%] | 33 min (14 min ; 43 min / 29 min) | -2.39 [-2.74 ; -2.04] | 0% | -4 742 $ [-7 777 ; -1 987], 100%, +7 816 $ | 52%
+S19-B Rebalancement LETF, DAX 17:00-17:30 | -411 $ [-649 ; -190] | 0% | 33% [28%-38%] | 16 min (14 min ; 27 min / 11 min) | -2.78 [-4.13 ; -1.43] | 0% | -93 083 $ [-175 371 ; -29 184], 99%, +181 610 $ | 45%
+S02-A Momentum WTI 1re 1/2 h (filtre EIA) | -4 $ [-4 ; -3] | 0% | 30% [28%-32%] | 29 min (29 min ; 29 min / 29 min) | -4.19 [-5.00 ; -3.39] | 0% | -878 $ [-1 270 ; -539], 100%, +1 282 $ | 63%
+Fil ES/NQ fiche 3 : retour au POC | -106 $ [-117 ; -95] | 0% | 41% [39%-42%] | 22 min (10 min ; 24 min / 21 min) | -4.74 [-5.33 ; -4.15] | 0% | -31 668 $ [-43 852 ; -20 035], 100%, +44 387 $ | 54%
+FX cascade de stops sur chiffres ronds (walk-forward) | -67 $ [-74 ; -58] | 0% | 33% [31%-34%] | 1 h 31 (2 h ; 1 h 56 / 1 h 19) | -5.03 [-5.90 ; -4.17] | 0% | -32 433 $ [-42 312 ; -22 157], 100%, +42 718 $ | 46%
+FX trois strategies combinees | -73 $ [-80 ; -65] | 0% | 32% [31%-34%] | 1 h 23 (1 h 54 ; 1 h 47 / 1 h 12) | -5.57 [-6.39 ; -4.74] | 0% | -40 962 $ [-52 273 ; -30 371], 100%, +52 488 $ | 45%
+Fil ES/NQ fiche 1 : choc prix + volume | -110 $ [-116 ; -104] | 0% | 36% [35%-37%] | < 1 min (< 1 min ; < 1 min / < 1 min) | -5.72 [-6.38 ; -5.05] | 0% | -120 326 $ [-173 075 ; -78 334], 100%, +173 630 $ | 50%
+S09-B Or entre fixings de Londres | -3 $ [-3 ; -3] | 0% | 27% [27%-28%] | 2 min (1 min ; 2 min / 2 min) | -18.75 [-19.79 ; -17.71] | 0% | -15 537 $ [-16 880 ; -14 213], 100%, +16 886 $ | 47%
+S07-A Post-settle 16:00-17:00 -> gap (regression ridge) | moins de 5 trades | - | - | n/d | Sharpe n/d | - | n/d

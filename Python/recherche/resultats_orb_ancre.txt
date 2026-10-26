@@ -1,0 +1,52 @@
+Controle « ancre au hasard » de l ORB NQ (contre-papier Fetna 2026, SSRN 7428398) - controle de robustesse, PAS un essai.
+
+    python -m nexus.perso.orb_ancre [--tirages 200]   -> recherche/resultats_orb_ancre.txt
+
+Protocole ecrit le 2026-10-22 AVANT le calcul (aucune regle de l ORB n est modifiee) :
+- Question : l avantage de l ORB (nexus/orb.py, regles figees, NQ 2016-2026) vient-il de l OUVERTURE (9:30), ou d une
+  simple continuation des mouvements quand la volatilite monte, comme le conclut Fetna 2026 pour sa meilleure case ?
+- Methode : memes regles exactement (bougie de 5 min, filtre de volume = volume de la bougie / moyenne de la bougie A LA
+  MEME HEURE sur les 14 seances precedentes >= 1, ordre stop au plus haut / plus bas dans le sens de la bougie, stop a
+  10 % de l ATR 14 jours, sortie a la cloture, risque 1 %, levier max 4, memes couts) ; seule l heure de debut de la
+  bougie change. Ancres possibles : toutes les 5 minutes.
+- Controle principal (A) : chaque seance recoit une ancre tiree au hasard entre 10:00 et 11:30 (duree jusqu a la
+  cloture comparable a celle de l ORB) ; 200 tirages independants.
+- Controle secondaire (B) : ancre au hasard entre 10:00 et 14:30 ; 200 tirages. Profil (C) : ancres fixes toutes les
+  30 minutes de 10:00 a 14:30.
+- Mesures : R moyen par trade (P&L net / 1 % du capital) et Sharpe vectorbt des rendements journaliers.
+- Critere : l avantage vient de l ouverture si l ORB reelle (9:30) depasse le 95e centile des tirages de A sur LES DEUX
+  mesures ; sinon on retient la lecture de Fetna (continuation de volatilite) et l achat de NQ 2010-2015 pour le rejeu
+  n est pas justifie.
+- Verification du calcul (critere 9) : l ancre 9:30 de cette fonction doit redonner exactement les trades de nexus.orb.
+- Biais connu, dans le sens FAVORABLE a l ORB reelle : une ancre plus tardive laisse moins de temps jusqu a la cloture.
+
+CONTROLE « ANCRE AU HASARD » DE L ORB NQ (Fetna 2026, SSRN 7428398) - controle de robustesse, pas un essai
+donnees : NQ.v.0 (CME Globex, contrat continu roule au volume), 2016-01-04 -> 2026-08-28, 2679 seances
+
+VERIFICATION : ancre 9:30 de ce module 1174 trades, nexus.orb 1174 trades, P&L identiques : True
+ORB REELLE (9:30) : 1174 trades | R moyen +0.182 | Sharpe +0.92
+
+C - PROFIL A ANCRES FIXES (toutes les seances a la meme heure)
+   10:00   1072 trades | R moyen +0.094 | Sharpe +0.62
+   10:30   1076 trades | R moyen -0.015 | Sharpe -0.01
+   11:00   1018 trades | R moyen +0.066 | Sharpe +0.44
+   11:30   1026 trades | R moyen -0.009 | Sharpe +0.03
+   12:00   1039 trades | R moyen +0.015 | Sharpe +0.17
+   12:30    990 trades | R moyen +0.036 | Sharpe +0.26
+   13:00    964 trades | R moyen +0.085 | Sharpe +0.43
+   13:30    992 trades | R moyen -0.042 | Sharpe -0.18
+   14:00    837 trades | R moyen +0.014 | Sharpe +0.14
+   14:30    901 trades | R moyen -0.013 | Sharpe -0.01
+
+A - ancre au hasard 10:00-11:30 (controle principal) : 200 tirages
+   trades par tirage : mediane 1058
+   R moyen : mediane +0.032, 95e centile +0.105, max +0.180 ; ORB reelle +0.182 -> part des tirages >= reelle : 0.0%
+   Sharpe  : mediane +0.25, 95e centile +0.60, max +0.93 ; ORB reelle +0.92 -> part des tirages >= reelle : 0.5%
+
+B - ancre au hasard 10:00-14:30 : 200 tirages
+   trades par tirage : mediane 999
+   R moyen : mediane +0.017, 95e centile +0.082, max +0.147 ; ORB reelle +0.182 -> part des tirages >= reelle : 0.0%
+   Sharpe  : mediane +0.17, 95e centile +0.50, max +0.84 ; ORB reelle +0.92 -> part des tirages >= reelle : 0.0%
+
+VERDICT : l avantage vient de l OUVERTURE (l ORB reelle depasse le 95e centile du controle A sur les deux mesures) : le rejeu 2010-2015 garde son sens
+(calcule en 1471 s le 2026-10-22 12:00)
